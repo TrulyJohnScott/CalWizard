@@ -207,10 +207,6 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
   }
 
   // resolvable ladder as faint ticks just inside the concentration axis (Shift-click near one adds it)
-  for (const c of x.ladderTicks) {
-    const tick = { color: withAlpha(pal.accent, 0.55), width: 1.5 }
-    shapes.push(flip ? { type: 'line', xref: 'paper', yref: 'y', x0: 0, x1: 0.018, y0: c, y1: c, line: tick } : { type: 'line', xref: 'x', yref: 'paper', x0: c, x1: c, y0: 0, y1: 0.03, line: tick })
-  }
 
   // hovered fit (ghost): dashed preview before applying
   if (x.ghost) {
@@ -304,7 +300,8 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
     )
   }
 
-  const cAxis = { ...axisStyle(pal, `Concentration${s.units ? ` (${s.units})` : ''}`), range: cr, autorange: false }
+  // the even concentration grid is replaced by the fading ladder grid (overlay)
+  const cAxis = { ...axisStyle(pal, `Concentration${s.units ? ` (${s.units})` : ''}`), range: cr, autorange: false, showgrid: x.ladderTicks.length === 0 }
   const sAxis = { ...axisStyle(pal, s.signalLabel || 'Signal'), range: [sLo, sHi], autorange: false }
   const layout: Partial<Layout> = {
     ...baseLayout(pal),

@@ -114,3 +114,37 @@ export function HistHover({ plot, model, space, xRange, top, skip }: { plot: Ref
     </svg>
   )
 }
+
+/**
+ * Concentration gridlines at the resolvable ladder (replacing the even 1, 2, 3… grid): each starts at the concentration
+ * axis and fades out across the plot, so the resolvable steps read as a quiet ruler.
+ */
+export function LadderGrid({ plot, ladder, flip }: { plot: RefObject<HTMLDivElement | null>; ladder: number[]; flip: boolean }) {
+  const ax = useAxes(plot)
+  if (!ax) return null
+  const { x, y, w, h } = ax.box
+  const id = flip ? 'ladder-fade-h' : 'ladder-fade-v'
+  const lines = ladder
+    .map((c) => (flip ? ax.Y(c) : ax.X(c)))
+    .filter((p) => Number.isFinite(p) && (flip ? p >= y - 0.5 && p <= y + h + 0.5 : p >= x - 0.5 && p <= x + w + 0.5))
+  return (
+    <svg className="pointer-events-none absolute inset-0 h-full w-full">
+      <defs>
+        {flip ? (
+          <linearGradient id={id} gradientUnits="userSpaceOnUse" x1={x} y1={0} x2={x + w * 0.85} y2={0}>
+            <stop offset="0" stopColor="var(--accent)" stopOpacity={0.55} />
+            <stop offset="1" stopColor="var(--accent)" stopOpacity={0} />
+          </linearGradient>
+        ) : (
+          <linearGradient id={id} gradientUnits="userSpaceOnUse" x1={0} y1={y + h} x2={0} y2={y + h * 0.15}>
+            <stop offset="0" stopColor="var(--accent)" stopOpacity={0.55} />
+            <stop offset="1" stopColor="var(--accent)" stopOpacity={0} />
+          </linearGradient>
+        )}
+      </defs>
+      {lines.map((p, i) =>
+        flip ? <line key={i} x1={x} x2={x + w} y1={p} y2={p} stroke={`url(#${id})`} strokeWidth={1.2} /> : <line key={i} x1={p} x2={p} y1={y + h} y2={y} stroke={`url(#${id})`} strokeWidth={1.2} />,
+      )}
+    </svg>
+  )
+}
