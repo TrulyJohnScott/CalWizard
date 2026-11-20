@@ -255,6 +255,13 @@ the input drawer) · Flip axes button (`c → S` / `S → c`) · small Settings 
 - **Readings below** (gear, was "Dot histogram"): each replicate reading drawn as a short tick (rug) along the
   histogram's baseline in its level colour, read back to concentration in c → S. Replaces binned bars, which are
   noise at small n.
+- **One colour language (v2.6).** Every closeness colour on the scatter (Heat haze, Band wash/ribbon, ruler brackets)
+  colours a stretch of the curve by the §12 closeness q of the neighbouring pair it lies between, in one comparison
+  set: the anchors (blank included) when any are placed, otherwise the levels; same metric, k and red→blue ramp as
+  the sidebar. Beyond the last point the haze is neutral grey.
+  Shading `Band | Heat | Lines`: **Lines** (Bollinger-style) draws ±1σ solid, ±2σ dashed, ±3σ dotted around the curve,
+  each stretch in its closeness colour (neutral outside the comparison set). (The old fixed "c vs r·c" heat and its `Heat step ×`
+  setting are gone.)
 - **SD band always on**: the neutral ±1σ/±2σ band covers the whole curve; closeness wash and glow sit on top
   between adjacent levels (no gap where a pair is comfortably resolved).
 - **Double-click resets the view** to the ranges computed from the current data (whole `[0, cMax]`, signal
@@ -273,9 +280,9 @@ the input drawer) · Flip axes button (`c → S` / `S → c`) · small Settings 
   c above it whose separation from it is j target units, i.e. closeness q = j (dsum/ssmd: |value| = j·k; Z′: |dsum| =
   j·3/(1 − k); none when k ≥ 1). Each further segment fainter; anchors drawn darker than levels.
 - **Anchors (N-point ruler, v2.6):** each click places an anchor on the curve (snapping to levels/ladder ticks; Alt =
-  free), clicking an anchor removes it; any number. The blank (c = 0) is always the first anchor, so the
-  separation from 0 to the first placed point is shown too. Backspace (or ↶) removes the last point placed, Esc (or ×)
-  clears all. Every adjacent pair of anchors shows a bracket coloured by
+  free); any number. Pressing a placed anchor selects it (ring) and dragging moves it; Delete/Backspace removes the
+  selected anchor (else the last placed); Esc deselects, a second Esc clears all. The blank (c = 0) is always the first anchor, so the
+  separation from 0 to the first placed point is shown too. The sidebar's ↶ and × do the same as Delete and Esc. Every adjacent pair of anchors shows a bracket coloured by
   closeness with its metric value; the sidebar lists each pair (metric, overlap, misread, steps between); the
   histogram emphasises the anchors and fills their adjacent overlaps. While only one anchor is placed the next is
   previewed live under the mouse. Anchors are independent of the tested concentrations and of the curve's source

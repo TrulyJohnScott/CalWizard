@@ -150,7 +150,7 @@ function dragTargets(d: Derived, editable: boolean, measure: { pts: number[] } |
       const p = at(c)
       if (p) out.push({ i, x: p[0], y: p[1] })
     })
-  if (measure && measure.pts.length >= 2)
+  if (measure)
     measure.pts.forEach((c, j) => {
       const p = at(c)
       if (p) out.push({ i: rulerId(j), x: p[0], y: p[1] })
@@ -192,8 +192,8 @@ export function CalibrationChart({ d }: { d: Derived }) {
   )
   const estimates = useMemo(() => d.exp?.first.levels.map((l) => ({ c: l.c, mean: l.mean })) ?? null, [d.exp])
   const spec = useMemo(
-    () => buildCalibration({ series, model, dots, listed, flip: ui.flip, shading: ui.shading, stepR: ui.stepR, jitter: ui.jitter, measure, live, range, focus, viewRev, reading, probe: null, onCurve: ui.marginal, estimates, ghost, ladderTicks: d.resolvable, pal }),
-    [series, model, dots, listed, ui.flip, ui.shading, ui.stepR, ui.jitter, measure, live, range, focus, viewRev, reading, ui.marginal, estimates, ghost, d.resolvable, pal],
+    () => buildCalibration({ series, model, dots, listed, flip: ui.flip, shading: ui.shading, jitter: ui.jitter, measure, live, range, focus, viewRev, reading, probe: null, onCurve: ui.marginal, estimates, ghost, ladderTicks: d.resolvable, pal }),
+    [series, model, dots, listed, ui.flip, ui.shading, ui.jitter, measure, live, range, focus, viewRev, reading, ui.marginal, estimates, ghost, d.resolvable, pal],
   )
   const ref = usePlot(spec)
   const down = useRef<{ x: number; y: number } | null>(null)
@@ -220,7 +220,7 @@ export function CalibrationChart({ d }: { d: Derived }) {
       if (i > 0) {
         breakCoalescing()
         setLadder(null)
-      }
+      } else useStore.getState().selectMeasure(-i - 1)
     },
     onMove: (i, x, y) => {
       const fl = (ref.current as any)._fullLayout

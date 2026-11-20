@@ -9,7 +9,7 @@ export interface Ui {
   left: boolean
   sidebar: boolean
   flip: boolean
-  shading: 'band' | 'heat'
+  shading: 'band' | 'heat' | 'lines'
   stepR: number
   jitter: number
   histBars: boolean
@@ -54,6 +54,8 @@ export const COALESCE_MS = 1000
 /** The ruler: any number of points in the order placed (unique); never part of the levels until "Keep as levels". */
 export interface Measure {
   pts: number[]
+  /** index (into pts) of the selected point, if any */
+  sel?: number | null
 }
 
 /** One point placed: the next point is previewed live under the mouse. */
@@ -112,8 +114,10 @@ interface State {
   clickMeasure: (c: number) => void
   /** drag ruler point i to c */
   setMeasurePoint: (i: number, c: number) => void
-  /** remove the most recently placed ruler point */
+  /** remove the selected ruler point, or the most recently placed one */
   popMeasure: () => void
+  /** select ruler point i (null = none) */
+  selectMeasure: (i: number | null) => void
   clearMeasure: () => void
   /** add every ruler point to the levels (equations mode): one undo step */
   keepMeasure: () => void
@@ -281,17 +285,18 @@ export const useStore = create<State>((set) => ({
   clickMeasure: (c) =>
     set((s) => {
       const pts = s.measure?.pts ?? []
-      if (pts.includes(c)) {
-        const left = pts.filter((p) => p !== c)
-        return { measure: left.length ? { pts: left } : null }
-      }
-      return { measure: { pts: [...pts, c] } }
+      const j = pts.indexOf(c)
+      if (j >= 0) return { measure: { pts, sel: j } } // clicking a placed point selects it
+      return { measure: { pts: [...pts, c], sel: pts.length } }
     }),
+  selectMeasure: (i) => set((s) => (s.measure ? { measure: { ...s.measure, sel: i !== null && i >= 0 && i < s.measure.pts.length ? i : null } } : {})),
   popMeasure: () =>
     set((s) => {
-      const pts = s.measure?.pts
-      if (!pts) return {}
-      return { measure: pts.length > 1 ? { pts: pts.slice(0, -1) } : null }
+      const m = s.measure
+      if (!m) return {}
+      const drop = m.sel !== null && m.sel !== undefined ? m.sel : m.pts.length - 1
+      const pts = m.pts.filter((_, i) => i !== drop)
+      return { measure: pts.length ? { pts, sel: null } : null }
     }),
   setMeasurePoint: (i, c) =>
     set((s) => {
@@ -299,7 +304,7 @@ export const useStore = create<State>((set) => ({
       if (!pts || i < 0 || i >= pts.length || pts[i] === c || pts.includes(c)) return {}
       const next = [...pts]
       next[i] = c
-      return { measure: { pts: next } }
+      return { measure: { pts: next, sel: i } }
     }),
   clearMeasure: () => set((s) => (s.measure ? { measure: null } : {})),
   addSimLevel: (c) => {

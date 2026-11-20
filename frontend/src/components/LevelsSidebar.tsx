@@ -143,7 +143,7 @@ export function LevelsSidebar({ d }: { d: Derived }) {
                     Keep as levels
                   </button>
                 )}
-                <button className="btn ghost text-[11px]" style={{ height: 18, padding: '0 4px' }} onClick={popMeasure} title="Remove the last point placed (Backspace)">
+                <button className="btn ghost text-[11px]" style={{ height: 18, padding: '0 4px' }} onClick={popMeasure} title="Remove the selected point, or the last one placed (Delete)">
                   ↶
                 </button>
                 <button className="btn ghost" style={{ height: 18, padding: '0 4px' }} onClick={clearMeasure} title="Clear all points (Esc)">
@@ -151,7 +151,7 @@ export function LevelsSidebar({ d }: { d: Derived }) {
                 </button>
               </span>
             </div>
-            <div className="mb-1 text-[10.5px] text-faint">click to add · click a point to remove · Backspace: last · Esc: all</div>
+            <div className="mb-1 text-[10.5px] text-faint">click: add · press a point: select, drag to move · Delete: selected (or last) · Esc: deselect, then clear</div>
             {rulerRows.length > 0 && (
               <>
                 <div className="grid text-[10.5px] text-muted" style={{ gridTemplateColumns: '1fr 52px 44px 44px 30px' }}>

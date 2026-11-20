@@ -8,7 +8,7 @@ import type { Model } from '../math/model'
 import { hashUnit, type LevelDots } from '../math/sim'
 import type { Series } from '../math/types'
 import { rulerPoints, type Measure } from '../state/store'
-import { heatRgb, levelColor, withAlpha, type Palette } from '../theme'
+import { levelColor, withAlpha, type Palette } from '../theme'
 import { axisStyle, baseLayout, concRange, linspace, MARGIN, nn } from './common'
 import type { PlotSpec } from './usePlot'
 
@@ -19,8 +19,7 @@ export interface CalibrationIn {
   /** levels drawn as markers on the curve (the sidebar list) */
   listed: number[]
   flip: boolean
-  shading: 'band' | 'heat'
-  stepR: number
+  shading: 'band' | 'heat' | 'lines'
   jitter: number
   measure: Measure | null
   /** hovered concentration while only one ruler point is placed (live preview of the next) */
@@ -62,11 +61,49 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
   const shapes: Partial<Layout['shapes'][number]>[] = []
   const notes: Partial<Layout['annotations'][number]>[] = []
 
-  if (x.shading === 'heat') {
-    const hk = `${flip}|${sLo}|${sHi}|${x.stepR}`
+  // one comparison set for every closeness colour on this chart: the anchors (blank included) when any are placed,
+  // otherwise the levels. Haze, wash and brackets all colour a stretch by the pair it lies between.
+  const cmp = x.measure ? rulerPoints(x.measure, x.live) : x.listed
+  const cmpRows = pairRows(m, cmp, s.metric, s.kTarget)
+  const cmpRgb = cmpRows.map((r) => {
+    const col = closenessColor(closenessQ(r, s.metric, s.kTarget))
+    return [col[0], col[1], col[2]] as [number, number, number]
+  })
+  const NEUTRAL: [number, number, number] = pal.dark ? [140, 140, 155] : [150, 150, 165]
+  const pairColourAt = (c: number): [number, number, number] => {
+    for (let i = 0; i < cmpRows.length; i++) if (c >= cmpRows[i].c1 && c <= cmpRows[i].c2) return cmpRgb[i]
+    return NEUTRAL
+  }
+
+  if (x.shading === 'lines') {
+    // Bollinger-style: ±1σ solid, ±2σ dashed, ±3σ dotted; each stretch coloured by its pair's closeness, neutral beyond
+    const stretches: { a: number; b: number; rgb: [number, number, number] }[] = cmpRows.map((r, i) => ({ a: r.c1, b: r.c2, rgb: cmpRgb[i] }))
+    const last = cmp[cmp.length - 1] ?? 0
+    if (cEnd > last) stretches.push({ a: last, b: cEnd, rgb: NEUTRAL })
+    if (cmp.length && cmp[0] > 0) stretches.unshift({ a: 0, b: cmp[0], rgb: NEUTRAL })
+    const styles = [
+      { k: 1, dash: 'solid', width: 1.6, alpha: 0.95 },
+      { k: 2, dash: 'dash', width: 1.1, alpha: 0.75 },
+      { k: 3, dash: 'dot', width: 1, alpha: 0.6 },
+    ] as const
+    for (const st of stretches) {
+      const cs = linspace(st.a, st.b, 48)
+      const colr = `rgba(${st.rgb[0]},${st.rgb[1]},${st.rgb[2]},`
+      for (const sty of styles)
+        for (const sign of [1, -1])
+          traces.push({
+            type: 'scatter',
+            mode: 'lines',
+            ...xy(cs, cs.map((c) => nn(m.mean(c) + sign * sty.k * m.sd(c)))),
+            line: { color: `${colr}${sty.alpha})`, width: sty.width, dash: sty.dash },
+            hoverinfo: 'skip',
+          } as Data)
+    }
+  } else if (x.shading === 'heat') {
+    const hk = `${flip}|${sLo}|${sHi}|${cEnd}|${cmp.join(',')}|${s.metric}|${s.kTarget}`
     let hm = heatMemo.get(m)
     if (!hm || hm.k !== hk) {
-      hm = { k: hk, img: heatImage(m, { space: flip ? 's2c' : 'c2s', cMax: m.cMax, sLo, sHi, nc: 400, ns: 260, r: x.stepR }, heatRgb) }
+      hm = { k: hk, img: heatImage(m, { space: flip ? 's2c' : 'c2s', cMax: cEnd, sLo, sHi, nc: 400, ns: 260 }, pairColourAt) }
       heatMemo.set(m, hm)
     }
     const img = hm.img
@@ -89,7 +126,7 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
         hoverinfo: 'skip',
       }) as Data
     if (idx.length > 1) traces.push(mk(2, -1, false, 0), mk(2, 1, true, 0.07), mk(1, -1, false, 0), mk(1, 1, true, 0.12))
-    pairRows(m, x.listed, s.metric, s.kTarget).forEach((r) => {
+    cmpRows.forEach((r) => {
       const col = closenessColor(closenessQ(r, s.metric, s.kTarget))
       if (col[3] < 0.01) return
       const cs = linspace(r.c1, r.c2, 40)
@@ -265,6 +302,17 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
       marker: { size: 9, color: pal.fg, symbol: 'circle-open', line: { width: 1.6, color: pal.fg } },
       hoverinfo: 'skip',
     } as Data)
+    const sel = x.measure.sel
+    if (sel !== null && sel !== undefined && x.measure.pts[sel] !== undefined) {
+      const c = x.measure.pts[sel]
+      traces.push({
+        type: 'scatter',
+        mode: 'markers',
+        ...xy([c], [nn(m.mean(c))]),
+        marker: { size: 15, color: withAlpha(pal.accent, 0.25), line: { width: 2, color: pal.accent } },
+        hovertemplate: `selected anchor c ${fmt(c)} · drag to move · Delete to remove<extra></extra>`,
+      } as Data)
+    }
     for (let i = 0; i + 1 < cs.length; i++) {
       const [c1, c2] = [cs[i], cs[i + 1]]
       const [m1, m2] = [m.mean(c1), m.mean(c2)]

@@ -36,13 +36,8 @@ function Settings() {
         <NumField value={ui.jitter} min={0} max={100} step={5} onCommit={(jitter) => setUi({ jitter })} />
       </Row>
       <Row label="Shading">
-        <Seg value={ui.shading} options={[['band', 'Band'], ['heat', 'Heat']]} onChange={(shading) => setUi({ shading })} />
+        <Seg value={ui.shading} options={[['band', 'Band'], ['heat', 'Heat'], ['lines', 'Lines']]} onChange={(shading) => setUi({ shading })} />
       </Row>
-      {ui.shading === 'heat' && (
-        <Row label="Heat step ×" title="colour = overlap with the level at r·c">
-          <NumField value={ui.stepR} min={1.01} step={0.5} onCommit={(stepR) => setUi({ stepR })} />
-        </Row>
-      )}
       <Row label="Gaussians on curve" title="each level's signal spread drawn sideways on the curve">
         <Seg value={ui.marginal ? 'on' : 'off'} options={[['off', 'Off'], ['on', 'On']]} onChange={(v) => setUi({ marginal: v === 'on' })} />
       </Row>

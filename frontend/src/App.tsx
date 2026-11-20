@@ -18,7 +18,9 @@ export default function App() {
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        useStore.getState().setReading(null)
+        const st = useStore.getState()
+        if (st.measure?.sel !== null && st.measure?.sel !== undefined) return st.selectMeasure(null)
+        st.setReading(null)
         return clearMeasure()
       }
       const t = e.target as HTMLElement | null

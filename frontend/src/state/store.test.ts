@@ -105,7 +105,7 @@ describe('undo / redo', () => {
     st().clickMeasure(3)
     st().clickMeasure(7)
     st().setMeasurePoint(1, 9)
-    expect(st().measure).toEqual({ pts: [3, 9] })
+    expect(st().measure!.pts).toEqual([3, 9])
     expect(active().levels).toBe(levels)
     expect(st().past).toHaveLength(0)
   })
@@ -182,17 +182,18 @@ describe('undoKey', () => {
 })
 
 describe('ruler (N points)', () => {
-  it('each click adds a point (in placing order); clicking a point again removes it', () => {
+  it('each click adds a point (in placing order) and selects it; clicking a placed point selects it', () => {
     st().clickMeasure(5)
-    expect(st().measure).toEqual({ pts: [5] })
+    expect(st().measure).toEqual({ pts: [5], sel: 0 })
     st().clickMeasure(2)
     st().clickMeasure(9)
-    st().clickMeasure(3)
-    expect(st().measure).toEqual({ pts: [5, 2, 9, 3] })
+    expect(st().measure).toEqual({ pts: [5, 2, 9], sel: 2 })
     st().clickMeasure(5)
-    expect(st().measure).toEqual({ pts: [2, 9, 3] })
-    for (const c of [2, 3, 9]) st().clickMeasure(c)
-    expect(st().measure).toBeNull()
+    expect(st().measure).toEqual({ pts: [5, 2, 9], sel: 0 })
+    st().selectMeasure(null)
+    expect(st().measure!.sel).toBeNull()
+    st().selectMeasure(7)
+    expect(st().measure!.sel).toBeNull()
   })
 
   it('rulerPoints: blank first, sorted; the live point only while one point is placed', () => {
@@ -210,18 +211,20 @@ describe('ruler (N points)', () => {
     expect(st().measure).toBeNull()
     for (const c of [1, 5, 9]) st().clickMeasure(c)
     st().setMeasurePoint(0, 7)
-    expect(st().measure).toEqual({ pts: [7, 5, 9] })
+    expect(st().measure).toEqual({ pts: [7, 5, 9], sel: 0 })
     st().setMeasurePoint(0, 9)
     st().setMeasurePoint(5, 2)
-    expect(st().measure).toEqual({ pts: [7, 5, 9] })
+    expect(st().measure!.pts).toEqual([7, 5, 9])
   })
 
-  it('popMeasure removes the last point placed; the last one clears the ruler', () => {
+  it('popMeasure removes the selected point, else the last placed; the last one clears the ruler', () => {
     st().popMeasure()
     for (const c of [5, 1, 9]) st().clickMeasure(c)
+    st().selectMeasure(0)
     st().popMeasure()
-    expect(st().measure).toEqual({ pts: [5, 1] })
+    expect(st().measure).toEqual({ pts: [1, 9], sel: null })
     st().popMeasure()
+    expect(st().measure).toEqual({ pts: [1], sel: null })
     st().popMeasure()
     expect(st().measure).toBeNull()
   })
