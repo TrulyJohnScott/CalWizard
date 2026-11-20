@@ -118,6 +118,8 @@ interface State {
   popMeasure: () => void
   /** select ruler point i (null = none) */
   selectMeasure: (i: number | null) => void
+  /** replace the ruler points (auto-spacing); empty = no ruler */
+  setMeasurePts: (pts: number[]) => void
   clearMeasure: () => void
   /** add every ruler point to the levels (equations mode): one undo step */
   keepMeasure: () => void
@@ -289,6 +291,10 @@ export const useStore = create<State>((set) => ({
       if (j >= 0) return { measure: { pts, sel: j } } // clicking a placed point selects it
       return { measure: { pts: [...pts, c], sel: pts.length } }
     }),
+  setMeasurePts: (pts) => {
+    const u = [...new Set(pts.filter((c) => Number.isFinite(c) && c >= 0))]
+    set({ measure: u.length ? { pts: u, sel: null } : null })
+  },
   selectMeasure: (i) => set((s) => (s.measure ? { measure: { ...s.measure, sel: i !== null && i >= 0 && i < s.measure.pts.length ? i : null } } : {})),
   popMeasure: () =>
     set((s) => {

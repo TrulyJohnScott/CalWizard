@@ -282,7 +282,8 @@ the input drawer) · Flip axes button (`c → S` / `S → c`) · small Settings 
 - **Anchors (N-point ruler, v2.6):** each click places an anchor on the curve (snapping to levels/ladder ticks; Alt =
   free); any number. Pressing a placed anchor selects it (ring) and dragging moves it; Delete/Backspace removes the
   selected anchor (else the last placed); Esc deselects, a second Esc clears all. The blank (c = 0) is always the first anchor, so the
-  separation from 0 to the first placed point is shown too. The sidebar's ↶ and × do the same as Delete and Esc. Every adjacent pair of anchors shows a bracket coloured by
+  separation from 0 to the first placed point is shown too. The sidebar's ↶ and × do the same as Delete and Esc. **Auto-space** replaces the anchors from the selected one (else 0) upward
+  with the §12 ladder (sig 4) from there to cMax, keeping anchors below the start; levels are not changed. Every adjacent pair of anchors shows a bracket coloured by
   closeness with its metric value; the sidebar lists each pair (metric, overlap, misread, steps between); the
   histogram emphasises the anchors and fills their adjacent overlaps. While only one anchor is placed the next is
   previewed live under the mouse. Anchors are independent of the tested concentrations and of the curve's source

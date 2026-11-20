@@ -293,3 +293,12 @@ describe('simulated levels, reading, view reset', () => {
     expect(st().viewRev).toBe(r + 1)
   })
 })
+
+describe('auto-spaced anchors', () => {
+  it('setMeasurePts replaces the anchors (unique, finite, >= 0); empty clears', () => {
+    st().setMeasurePts([1, 2, 2, -1, NaN, 5])
+    expect(st().measure).toEqual({ pts: [1, 2, 5], sel: null })
+    st().setMeasurePts([])
+    expect(st().measure).toBeNull()
+  })
+})
