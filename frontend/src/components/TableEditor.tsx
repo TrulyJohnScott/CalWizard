@@ -26,12 +26,13 @@ function refOf(col: number, row: number, reps: number): CellRef | null {
  * computed mean / sd rows (typed directly when a column has no replicates). No +/x buttons: typing in
  * the spare edge column / row grows the table.
  */
-export function TableEditor({ d, onFocusChange }: { d: Derived; onFocusChange: (focused: boolean) => void }) {
+export function TableEditor({ d, onFocusChange, data }: { d: Derived; onFocusChange: (focused: boolean) => void; data?: TableData }) {
   const patch = useStore((s) => s.patch)
   const setLadder = useStore((s) => s.setLadder)
   const clearMeasure = useStore((s) => s.clearMeasure)
   const pal = usePalette()
-  const table = useMemo(() => toTable(d.series), [d.series])
+  // `data`: a derived table (from the equations) — editing it commits it, which makes the table drive the curve
+  const table = useMemo(() => data ?? toTable(d.series), [data, d.series])
   const stats = useMemo(() => columnStats(table), [table])
   const maxLen = Math.max(0, ...table.cells.map((c) => c.length))
   const reps = maxLen + 1 // exactly one spare replicate row

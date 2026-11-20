@@ -5,7 +5,7 @@ import { useStore } from '../state/store'
 import type { Derived } from '../state/derived'
 import { NumField } from './ui'
 
-function ExprField({
+export function ExprField({
   label,
   variable,
   value,

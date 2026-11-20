@@ -193,6 +193,17 @@ tooltip on a header. No cards-within-cards, no badges, no colourbars unless the 
   histogram, so moving the mouse along the curve visibly slides/widens the distribution.
 - **Right sidebar** (~280px, collapsible): the Levels sidebar (§11 item 3) — separability by points.
 
+**One truth, two views (v2.9) — supersedes the convert buttons below:** the curve (μ(c) and σ) has one *source*:
+the equations or the table (`mode`). The left panel's `Equations | Table` switch only picks the *view*; a marker
+says whether the view "● drives the curve" or is "○ fitted from the table / from the equations · edit to drive".
+- Equations view while the table drives: the best fits of μ(c) and σ(S) (§8, refitted 400 ms after any table change)
+  shown as editable formulas, plus the other ranked fits (hover previews dashed on the chart). Editing a formula,
+  picking a fit, or **Drive from these fits** makes the equations drive (keeping the table's levels and range),
+  as one undo step.
+- Table view while the equations drive: the equations' mean and SD at each level, live. Editing any cell (or quick
+  entry) makes the table drive, as one undo step; "fill with simulated readings (n)" does so with simulated replicates.
+- `Equations → Table` and `Table → Equations` buttons are gone. Headless: `calwizard fit` gives the same fits.
+
 **Unified Table + two-way sync (v2.2) — supersedes the Replicates and Mean & SD editors:**
 - Left-panel selector becomes `Equations | Table` (the `replicates`/`summary` payloads stay in the
   Series for compatibility; Table writes `replicates`, and mean/sd typed without replicates go to `summary`).
