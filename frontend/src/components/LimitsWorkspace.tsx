@@ -301,7 +301,7 @@ export function LimitsWorkspace({ d }: { d: Derived }) {
   const x1 = whole ? m.cMax : zoom
   return (
     <Page>
-      <Verdict ok={lim.lod !== null} sub="Limit of blank: the highest signal a blank is expected to give. Limit of detection: the lowest concentration reliably told from a blank. Limit of quantitation: the lowest concentration reported within the allowed CV.">
+      <Verdict ok={lim.lod !== null} sub={`Limit of blank: the ${lim.direction > 0 ? 'highest' : 'lowest'} signal a blank is expected to give${lim.direction > 0 ? '' : ' (the signal falls as concentration rises)'}. Limit of detection: the lowest concentration reliably told from a blank. Limit of quantitation: the lowest concentration reported within the allowed CV.`}>
         {limitsSentence(lim, s)}
       </Verdict>
 
