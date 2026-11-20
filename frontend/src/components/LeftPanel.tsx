@@ -7,6 +7,7 @@ import type { Derived } from '../state/derived'
 import { useStore } from '../state/store'
 import { EquationsEditor, ExprField } from './EquationsEditor'
 import { FitList, useAutoFit } from './FitPanel'
+import { LayersEditor } from './LayersEditor'
 import { QuickEntry, TableEditor } from './TableEditor'
 import { IconChevron, Seg } from './ui'
 
@@ -161,6 +162,9 @@ export function LeftPanel({ d }: { d: Derived }) {
             )}
           </div>
         )}
+        <div className="mt-4">
+          <LayersEditor d={d} />
+        </div>
       </div>
     </aside>
   )

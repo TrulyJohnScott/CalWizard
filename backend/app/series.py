@@ -107,6 +107,45 @@ class Sample(Camel):
     dilution: float = 1.0
 
 
+class Layer(Camel):
+    """A source of variability on top of the within-run curve (spec section 22)."""
+    name: str = "Layer"
+    units: int = 3
+    on: bool = True
+    offset_sd: float = 0.0
+    cv: float = 0.0
+    gain_cv: float = 0.0
+    noise_cv: float = 0.0
+
+    @field_validator("offset_sd", "cv", "gain_cv", "noise_cv")
+    @classmethod
+    def _nonneg(cls, v):
+        if not (math.isfinite(v) and v >= 0):
+            raise ValueError("layer sizes must be finite and >= 0")
+        return v
+
+    @field_validator("units")
+    @classmethod
+    def _units(cls, v):
+        if not 1 <= v <= 50:
+            raise ValueError("units must be between 1 and 50")
+        return v
+
+
+def layer_terms(mu, sd, mu0: float, layers) -> tuple[np.ndarray, list[np.ndarray]]:
+    """Spec 22.1: (within variance, [each layer's variance]) at signal mean `mu` with within-run SD `sd`.
+    `within` uses the noise CVs of the layers that are on; each layer's term is computed whether on or not."""
+    mu = np.asarray(mu, dtype=float)
+    sd = np.asarray(sd, dtype=float)
+    k2 = 1.0
+    for lay in layers:
+        if lay.on:
+            k2 *= 1 + lay.noise_cv ** 2
+    within = sd ** 2 * k2
+    terms = [(mu - mu0) ** 2 * lay.gain_cv ** 2 + mu ** 2 * lay.cv ** 2 + lay.offset_sd ** 2 for lay in layers]
+    return within, terms
+
+
 def normalize_levels(values) -> list[float]:
     """Finite, >= 0, unique, ascending, always containing 0."""
     out = {0.0}
@@ -140,6 +179,7 @@ class Series(Camel):
     limits: LimitSettings = LimitSettings()
     requirements: list[Requirement] = []
     samples: list[Sample] = []
+    layers: list[Layer] = []
 
     @field_validator("levels")
     @classmethod
@@ -236,6 +276,19 @@ class Model:
         self.adjust_params: dict | None = None
         if self.adjusted:
             self._apply_adjust(series.adjust)
+        # variability layers (spec section 22) sit on top of the curve, what-if included
+        self._sd_within = self._sd
+        on = [lay for lay in series.layers if lay.on]
+        if on:
+            within_sd, mean_f = self._sd, self._mean
+            mu0 = float(np.asarray(mean_f(np.float64(0.0))))
+
+            def sd_eff(c):
+                mu = mean_f(c)
+                w, terms = layer_terms(mu, within_sd(c), mu0, on)
+                return np.sqrt(w + sum(terms))
+
+            self._sd = sd_eff
 
     def _apply_adjust(self, adj: Adjust) -> None:
         """Spec section 14: mean'(c) = B' + (f(c/xs) - B) * gain; sd' = sdScale * sd (of the new signal in equations
@@ -264,6 +317,10 @@ class Model:
 
     def mean(self, c) -> np.ndarray:
         return self._mean(np.asarray(c, dtype=float))
+
+    def sd_within(self, c) -> np.ndarray:
+        """Within-run SD (the curve's own σ, before layers)."""
+        return self._sd_within(np.asarray(c, dtype=float))
 
     def sd(self, c) -> np.ndarray:
         return self._sd(np.asarray(c, dtype=float))

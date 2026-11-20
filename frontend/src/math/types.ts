@@ -77,6 +77,19 @@ export interface Series {
   limits: LimitSettings
   requirements: Requirement[]
   samples: Sample[]
+  /** variability layers on top of the within-run curve (spec §22) */
+  layers: Layer[]
+}
+
+/** A source of variability (spec §22): per-unit offset SD, proportional CV, gain CV ("performance"), noise CV. */
+export interface Layer {
+  name: string
+  units: number
+  on: boolean
+  offsetSd: number
+  cv: number
+  gainCv: number
+  noiseCv: number
 }
 
 export const NO_ADJUST: Adjust = { bottom: null, top: null, cScale: 1, sdScale: 1 }

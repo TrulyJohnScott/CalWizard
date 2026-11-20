@@ -1,7 +1,7 @@
 import { compileExpr } from './expr'
 import { makeInterp } from './interp'
 import { normLevels, replicateStats, summaryPoints } from './tables'
-import { adjustActive, type Series } from './types'
+import { adjustActive, type Layer, type Series } from './types'
 
 /** The numbers behind an active what-if layer (spec §14). */
 export interface AdjustParams {
@@ -26,6 +26,8 @@ export interface Model {
   sdError?: string
   /** table mode with no SD information at all (sd = 0) */
   noSd: boolean
+  /** within-run SD (the curve's own σ, before layers; spec §22) */
+  sdWithin?: (c: number) => number
   /** mean(c)/sd(c) are defined beyond cMax (equations; tables continue the mean linearly, hold the SD) */
   extrapolates: boolean
   /** a what-if layer is applied; `base` is the curve without it */
@@ -83,12 +85,18 @@ function compileBase(s: Series): Model & { sdOfSignal?: (S: number) => number } 
   }
 }
 
-/**
- * Spec §14 (port of Model._apply_adjust): mean'(c) = B' + (f(c / xs) − B)·gain with B = f(0), T = f(cMax) of the
- * unadjusted curve; sd' = sdScale·σ(new signal) in equations mode, sdScale·sd(c / xs) in table modes.
- */
-export function compileModel(s: Series): Model {
-  const { sdOfSignal, ...base } = compileBase(s)
+/** Spec §22.1 terms at signal mean mu with within-run SD sd: within variance and each layer's variance. */
+export function layerTerms(mu: number, sd: number, mu0: number, layers: Layer[]): { within: number; terms: number[] } {
+  let k2 = 1
+  for (const l of layers) if (l.on) k2 *= 1 + l.noiseCv * l.noiseCv
+  return {
+    within: sd * sd * k2,
+    terms: layers.map((l) => (mu - mu0) ** 2 * l.gainCv ** 2 + mu * mu * l.cv ** 2 + l.offsetSd ** 2),
+  }
+}
+
+/** The what-if layer of spec §14 on a compiled base (port of Model._apply_adjust). */
+function applyAdjust(s: Series, base: Model, sdOfSignal?: (S: number) => number): Model {
   const adj = s.adjust
   if (!adjustActive(adj)) return base
   const f = base.mean
@@ -103,4 +111,22 @@ export function compileModel(s: Series): Model {
   const mean = (c: number) => b1 + (f(c / xs) - b0) * gain
   const sd = s.mode === 'equations' ? (sdOfSignal ? (c: number) => ss * sdOfSignal(mean(c)) : () => NaN) : (c: number) => ss * g(c / xs)
   return { ...base, mean, sd, adjusted: true, adjust: { b0, t0, b1, t1, gain, cScale: xs, sdScale: ss }, base: { mean: f, sd: g } }
+}
+
+/**
+ * Compile a Series: the curve from its source, then the what-if layer (spec §14: mean'(c) = B' + (f(c / xs) − B)·gain,
+ * sd' = sdScale·σ), then the variability layers (spec §22: sd becomes the effective SD; sdWithin keeps the curve's σ).
+ */
+export function compileModel(s: Series): Model {
+  const { sdOfSignal, ...raw } = compileBase(s)
+  const base = applyAdjust(s, raw, sdOfSignal)
+  const on = (s.layers ?? []).filter((l) => l.on)
+  if (!on.length) return { ...base, sdWithin: base.sd }
+  const mu0 = base.mean(0)
+  const sd = (c: number) => {
+    const mu = base.mean(c)
+    const { within, terms } = layerTerms(mu, base.sd(c), mu0, on)
+    return Math.sqrt(within + terms.reduce((a, b) => a + b, 0))
+  }
+  return { ...base, sd, sdWithin: base.sd }
 }

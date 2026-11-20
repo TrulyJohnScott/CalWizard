@@ -55,5 +55,6 @@ export function defaultSeries(): Series {
     limits: { ...DEFAULT_LIMITS },
     requirements: [],
     samples: [],
+    layers: [],
   }
 }

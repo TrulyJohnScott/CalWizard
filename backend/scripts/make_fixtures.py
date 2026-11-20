@@ -16,6 +16,7 @@ from app import analysis as A  # noqa: E402
 from app import experiment as EX  # noqa: E402
 from app import expr as E  # noqa: E402
 from app import importer as IM  # noqa: E402
+from app import layers as LY  # noqa: E402
 from app import limits as L  # noqa: E402
 from app import metrics as K  # noqa: E402
 from app import readback as RB  # noqa: E402
@@ -86,6 +87,7 @@ def case(name: str, **kw) -> dict:
         "inverse": {"signals": signals, "c": inv},
         "ladder": ladders,
         "measure": measure,
+        **({"budget": LY.budget(m), "cumulative": LY.cumulative(m)} if series.layers else {}),
     })
 
 
@@ -125,6 +127,14 @@ def build_cases() -> list[dict]:
                       summary=[{"c": 0, "mean": 50, "sd": 15}, {"c": 5, "mean": 95, "sd": 16},
                                {"c": 25, "mean": 400, "sd": 30}, {"c": 100, "mean": 1500, "sd": 90},
                                {"c": 500, "mean": 3500, "sd": 210}]))
+    cases.append(case("eq-4pl-layers", mode="equations", meanExpr=MEANS["4pl"], sdExpr=SDS["floor_cv"], levels=LEVELS,
+                      cMax=500, layers=[
+                          {"name": "Lot", "units": 3, "cv": 0.02, "gainCv": 0.04, "noiseCv": 0.1},
+                          {"name": "Reader", "units": 4, "offsetSd": 12, "cv": 0.01},
+                          {"name": "Day", "units": 3, "offsetSd": 5, "on": False}]))
+    cases.append(case("summary-layers", mode="summary", summary=[
+        {"c": 0, "mean": 50, "sd": 15}, {"c": 5, "mean": 95, "sd": 16}, {"c": 25, "mean": 400, "sd": 30},
+        {"c": 100, "mean": 1500, "sd": 90}], layers=[{"name": "Lot", "units": 2, "gainCv": 0.05, "noiseCv": 0.2}]))
     cases.append(case("summary", mode="summary", summary=[
         {"c": 0, "mean": 50, "sd": 15}, {"c": 5, "mean": 95, "sd": 16}, {"c": 25, "mean": 400, "sd": 30},
         {"c": 100, "mean": 1500, "sd": 90}, {"c": 500, "mean": 3500, "sd": 210}]))

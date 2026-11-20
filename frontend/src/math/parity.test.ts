@@ -18,6 +18,7 @@ import { parseReader } from './reader'
 import { checkRequirements } from './requirements'
 import { separate } from './separate'
 import { bake } from './whatif'
+import { budget, cumulative } from './layers'
 import type { Series } from './types'
 
 const FIXTURE = resolve(process.cwd(), '../spec/fixtures/model_vectors.json')
@@ -148,6 +149,15 @@ suite(`parity with backend fixtures${fx ? '' : ` (${why})`}`, () => {
           close(mb.mean(c), cs.mean[i], `baked mean[${i}]`, 1e-6, 1e-9)
           close(mb.sd(c), cs.sd[i], `baked sd[${i}]`, 1e-6, 1e-9)
         })
+      }
+      if (cs.budget) {
+        const ser = { ...defaultSeries(), ...(cs.series as Partial<Series>) } as Series
+        const got = budget(ser, m)
+        cs.budget.forEach((w: Json, j: number) => {
+          for (const key of ['c', 'mean', 'total', 'within'] as const) close(got[j][key], w[key], `budget[${j}].${key}`)
+          w.layers.forEach((lw: Json, q: number) => close(got[j].layers[q].var, lw.var, `budget[${j}].layers[${q}].var`))
+        })
+        expect(cumulative(ser).map((x) => x.n)).toEqual(cs.cumulative.map((x: Json) => x.n))
       }
       if (cs.inverse) {
         cs.inverse.signals.forEach((S: number, i: number) => {

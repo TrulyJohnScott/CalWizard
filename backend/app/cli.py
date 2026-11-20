@@ -110,6 +110,37 @@ def cmd_recover(args) -> None:
         raise CliError(str(e)) from e
 
 
+def cmd_budget(args) -> None:
+    from . import layers as LY
+
+    m = _compile(_load_series(args.series))
+    _out({"rows": LY.budget(m, args.c), "cumulative": LY.cumulative(m)})
+
+
+def cmd_design(args) -> None:
+    from . import layers as LY
+
+    m = _compile(_load_series(args.series))
+    try:
+        _out(LY.simulate_design(m, args.concs, args.n, args.runs, args.seed, args.metric, args.k, args.alpha))
+    except ValueError as e:
+        raise CliError(str(e)) from e
+
+
+def cmd_dialin(args) -> None:
+    from . import layers as LY
+
+    m = _compile(_load_series(args.series))
+    try:
+        text = Path(args.data).read_text(encoding="utf-8")
+    except OSError as e:
+        raise CliError(f"cannot read {args.data!r}: {e.strerror or e}") from e
+    try:
+        _out(LY.dial_in(m, LY.read_csv_rows(text)))
+    except ValueError as e:
+        raise CliError(str(e)) from e
+
+
 def cmd_rule(args) -> None:
     try:
         _out(A.rule(args.metric, args.k, args.error))
@@ -301,6 +332,17 @@ def build_parser() -> argparse.ArgumentParser:
     sp = add("recover", cmd_recover, "read back concentration from signal, with the range consistent with it")
     sp.add_argument("signals", type=float, nargs="+", metavar="S")
     sp.add_argument("--conf", type=float, default=0.95, help="coverage of the range (default 0.95)")
+    sp = add("budget", cmd_budget, "variance budget per concentration and cumulative resolvable levels by layer (spec 22)")
+    sp.add_argument("--c", type=float, nargs="+", metavar="C", help="concentrations (default: the levels)")
+    sp = add("design", cmd_design, "experiments drawing actual lots/readers/days: separation, power, component precision (spec 22.3)")
+    sp.add_argument("--concs", type=float, nargs="+", metavar="C")
+    sp.add_argument("--n", type=int, default=2, help="replicates per unit combination (default 2)")
+    sp.add_argument("--runs", type=int, default=200)
+    sp.add_argument("--seed", type=int, default=1)
+    sp.add_argument("--alpha", type=float, default=0.05)
+    metric_opts(sp)
+    sp = add("dialin", cmd_dialin, "measured layer sizes from real data CSV (c,<layer names>,y) vs predicted (spec 22.4)")
+    sp.add_argument("data", metavar="DATA.csv")
     sp = add("rule", cmd_rule, "pass rule in plain words: {metric, k, error, text} from --k or --error", False)
     sp.add_argument("--metric", choices=list(A.METRICS), default="ssmd")
     g = sp.add_mutually_exclusive_group(required=True)

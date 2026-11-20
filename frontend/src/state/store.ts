@@ -54,6 +54,8 @@ export interface Snap {
 export interface ExpState {
   /** sidebar shows the Experiment view (and the scatter shows this run's readings) */
   open: boolean
+  /** sidebar shows the Budget view (spec §22) */
+  budget?: boolean
   n: number
   /** table modes: n per column = readings actually measured */
   asMeasured: boolean
@@ -234,6 +236,17 @@ export function sanitizeSeries(raw: unknown): Series {
     summary,
     metric,
     kTarget: isNum(r.kTarget) ? r.kTarget : metric === 'zprime' ? 0.5 : 3,
+    layers: Array.isArray(r.layers)
+      ? (r.layers as Record<string, unknown>[]).filter((l) => l && typeof l === 'object').map((l) => ({
+          name: typeof l.name === 'string' ? l.name : 'Layer',
+          units: isNum(l.units) ? Math.min(50, Math.max(1, Math.round(l.units))) : 3,
+          on: l.on !== false,
+          offsetSd: isNum(l.offsetSd) && l.offsetSd >= 0 ? l.offsetSd : 0,
+          cv: isNum(l.cv) && l.cv >= 0 ? l.cv : 0,
+          gainCv: isNum(l.gainCv) && l.gainCv >= 0 ? l.gainCv : 0,
+          noiseCv: isNum(l.noiseCv) && l.noiseCv >= 0 ? l.noiseCv : 0,
+        }))
+      : [],
     sim: { n: isNum(sim?.n) ? Math.max(0, Math.floor(sim!.n as number)) : 5, seed: isNum(sim?.seed) ? Math.floor(sim!.seed as number) : 42 },
     adjust: adjustActive(adjRaw) ? adjRaw : null,
     limits: {

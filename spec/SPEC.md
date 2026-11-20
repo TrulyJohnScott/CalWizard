@@ -1,7 +1,7 @@
 # Cal Wizard — Spec v3 (the contract)
 
 > §1–§13 are v2 (curve, levels, ladder, experiments). §14–§21 are v3: what-if, limits, separation, requirements,
-> read-back, reader import, report and the workspaces. Where §21 and §11 disagree about the top bar or layout, §21 wins.
+> read-back, reader import, report and the workspaces. §22 is the variability layers (lots, readers, days). Where §21 and §11 disagree about the top bar or layout, §21 wins.
 
 **Purpose:** help lateral flow assay developers see how mean signal and its variability together
 determine their ability to resolve concentrations, and judge how good an assay is.
@@ -658,3 +658,66 @@ using §11's paste). `calwizard import FILE [--conc COL --signal COL --name N]` 
 - **Present:** the report full-screen; ← → step through sections; Esc leaves; printing shows only the report.
 - Figures outside the Curve workspace are plain SVG (`frontend/src/charts/svg.tsx`), styled by CSS variables, so the
   same components draw on screen, in print and in the exported file. Still no log axes and no sliders.
+
+## 22. Variability layers: predict, plan, dial in (v3.0)
+
+The curve (μ(c), σ) describes **one run** (within-run spread). Real assays add sources — lots with slightly different
+performance, readers with bias and noise, days, operators. A Series carries `layers` (outermost first), each
+
+```json
+{ "name": "Lot", "units": 3, "on": true, "offsetSd": 0, "cv": 0.02, "gainCv": 0.03, "noiseCv": 0.1 }
+```
+
+| field | per-unit effect | meaning |
+|---|---|---|
+| `offsetSd` | a ~ N(0, offsetSd²) | reads a fixed amount high/low (signal units) |
+| `cv` | m ~ N(0, cv²) | reads x % high/low everywhere |
+| `gainCv` | g ~ N(1, gainCv²) on the signal above the blank | steeper/flatter curve: "performance" |
+| `noiseCv` | k ~ N(1, noiseCv²) scaling σ | noisier units |
+| `units` | — | how many units an experiment uses |
+| `on` | — | counts toward the variability the app uses |
+
+**22.1 Model.** One reading at c from one unit of every layer:
+`y = [μ0 + G·(μ(c) − μ0)]·(1 + M) + A + K·σ(c)·ε`, μ0 = μ(0), `G = Π g`, `M = Σ m`, `A = Σ a`, `K = Π k`.
+Mean μ(c); variance to first order (exact for the offsets)
+
+`var(c) = σ(c)²·Π_on(1 + noiseCv²) + Σ_on [ (μ(c) − μ0)²·gainCv² + μ(c)²·cv² + offsetSd² ]`.
+
+When any layer is on, `sd_eff(c) = √var(c)` replaces σ(c) **everywhere** (§5 rows, ladder, closeness, recovery,
+heat, experiments). No layer on → unchanged. (Equations mode: σ(c) = sd(S) at S = μ(c).)
+
+**22.2 Budget.** `budget(c)` → `{c, mean, total, within, layers: [{name, on, var, share}]}`: `within` = the first
+term; each layer's `var` is its own bracket (computed even when off); `share = var / total` for layers that are on,
+null when off; `total = within + Σ_on var`. `cumulative()` → for k = 0…L: `{layers: first k names, n}` = §12 headline
+ladder length with only the first k layers on (the story "within-run → + Day → + Reader → + Lot").
+
+**22.3 Plan (design-aware experiments).** `simulateDesign(model, concs, n, runs, seed, metric, k, alpha)`: every run
+draws, for each layer, `units` independent unit effects (g, m, a, k) — **crossed** design: every combination of one
+unit per layer reads every concentration n times (so Π units · n readings per concentration). Random-number order:
+for each run, for each layer (outermost first), for each unit: g, m, a, k (four normals, §13 generator); then for
+each concentration, for each combination (lexicographic, outermost slowest), for each replicate: ε. Per run and
+concentration the pooled readings give mean/SD → §13 rows, significance, pass; plus the **estimated components**
+of 22.4 on that run's data. Output = §13 output + `components: [{name, true, Q}]` (per layer and `within`, the run
+spread of the estimated variance at the middle concentration, `true` from 22.1).
+
+**22.4 Dial in (real data).** Input: long rows `{c, <layer names…>, y}` (the unit label per layer, any strings).
+Per concentration, a **crossed main-effects ANOVA** (method of moments, unweighted unit means, balanced-design
+formulas): for each layer L with u_L units, `MS_L` from its unit means; residual `MS_e` from the remainder;
+`σ²_L(c) = max(0, (MS_L − MS_e)/(N_c/u_L))`, `σ²_e(c) = MS_e`. Then per layer a non-negative least-squares fit over
+concentrations of `σ²_L(c) = offsetSd² + μ(c)²·cv² + (μ(c) − μ0)²·gainCv²` gives the **measured** offsetSd, cv,
+gainCv — when the cv and gain columns are nearly collinear across the data (correlation ≥ 0.995, e.g. a small
+blank signal) they cannot be told apart: a two-term fit [offset, cv] is used and a note says so. Each layer also
+reports `units` and `rough` = the 90% range factor [√(df/χ²₀.₉₅), √(df/χ²₀.₀₅)] (df = units − 1) of an SD estimated
+from that many units, with a note below 5 units; `σ²_e(c)` is compared with the predicted within term. Output: `{perConc: [{c, n, within, layers: {name: var}}],
+layers: [{name, measured: {offsetSd, cv, gainCv}, predicted: {…}}], notes}`; notes flag unbalanced cells and layers
+with < 2 units. **Adopt** copies measured values into the layers (one undo step).
+
+**Headless.** `calwizard budget SERIES [--c C…]` → `{rows, cumulative}`; `calwizard design SERIES [--n N --runs R
+--seed S --alpha A]` → 22.3; `calwizard dialin SERIES DATA.csv` → 22.4 (CSV header: `c,<layer names>,y`).
+`POST /api/budget`, `/api/design`, `/api/dialin` the same.
+
+**GUI (story flow).** The Budget tab opens with a three-step guide: `1 Predict · 2 Plan · 3 Dial in`. Left panel gets a third step under the curve: **Layers** (Predict) — one compact row per layer
+with on/off, name, units and the four sizes as %/SD, add/remove; a one-line summary ("4 resolvable levels within a run
+→ 2 with all layers"). Right sidebar gets **Budget** next to Levels | Experiment: stacked bar per level showing each
+source's share, the cumulative counts, and a **Dial in** drop zone (paste CSV) showing predicted vs measured with
+**Adopt**. The Experiment tab uses the design (units per layer × n) when layers exist.
