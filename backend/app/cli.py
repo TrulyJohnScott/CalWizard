@@ -20,9 +20,14 @@ from . import export as X
 from . import expr as E
 from . import experiment as EX
 from . import fit as F
+from . import importer as IM
+from . import limits as L
 from . import metrics as K
+from . import readback as RB
+from . import report as RP
+from . import requirements as R
 from .jsonutil import clean
-from .series import Series, compile_series
+from .series import Sample, Series, bake, compile_series
 
 
 class CliError(Exception):
@@ -161,6 +166,95 @@ def cmd_simulate(args) -> None:
         raise CliError(str(e)) from e
 
 
+def _lim(args, s: Series) -> dict:
+    lim = s.limits
+    return {"alpha": lim.alpha if args.alpha is None else args.alpha, "beta": lim.beta if args.beta is None else args.beta}
+
+
+def cmd_limits(args) -> None:
+    s = _load_series(args.series)
+    m = _compile(s)
+    ab = _lim(args, s)
+    try:
+        out = L.limits(m, ab["alpha"], ab["beta"], s.limits.cv if args.cv is None else args.cv,
+                       s.limits.reads if args.reads is None else args.reads, profile=not args.no_profile)
+        out["data"] = L.limits_data(m, ab["alpha"], ab["beta"], args.low)
+    except ValueError as e:
+        raise CliError(str(e)) from e
+    _out(out)
+
+
+def cmd_plan(args) -> None:
+    s = _load_series(args.series)
+    m = _compile(s)
+    ab = _lim(args, s)
+    try:
+        _out(L.plan(m, args.n_blank, args.n_low, args.low, args.runs, args.seed, ab["alpha"], ab["beta"], args.conf))
+    except ValueError as e:
+        raise CliError(str(e)) from e
+
+
+def cmd_separate(args) -> None:
+    s = _load_series(args.series)
+    m = _compile(s)
+    metric, k = _metric_k(args, s)
+    try:
+        _out(A.separate(m, args.c1, args.c2, metric, k, args.n, args.runs, args.seed, args.conf, args.alpha))
+    except ValueError as e:
+        raise CliError(str(e)) from e
+
+
+def cmd_requirements(args) -> None:
+    _out(R.check(_compile(_load_series(args.series))))
+
+
+def cmd_read(args) -> None:
+    s = _load_series(args.series)
+    m = _compile(s)
+    samples = [Sample(id=str(i + 1), signal=v) for i, v in enumerate(args.signals)] if args.signals else None
+    try:
+        if args.output:
+            data = RB.workbook_bytes(m, samples, args.conf)
+            try:
+                Path(args.output).write_bytes(data)
+            except OSError as e:
+                raise CliError(f"cannot write {args.output!r}: {e.strerror or e}") from e
+            _out({"ok": True, "path": str(Path(args.output)), "bytes": len(data)})
+        else:
+            _out(RB.readback(m, samples, args.conf))
+    except ValueError as e:
+        raise CliError(str(e)) from e
+
+
+def cmd_import(args) -> None:
+    try:
+        text = sys.stdin.read() if args.input == "-" else Path(args.input).read_text(encoding="utf-8-sig")
+    except OSError as e:
+        raise CliError(f"cannot read {args.input!r}: {e.strerror or e}") from e
+
+    def col(v):
+        return int(v) if v is not None and v.lstrip("-").isdigit() else v
+
+    parsed = IM.parse_reader(text, col(args.conc), col(args.signal))
+    if parsed is None:
+        raise CliError("not a reader table: need a header row, a concentration column and a signal column "
+                       "(choose them with --conc / --signal)")
+    base = {"name": args.name or (Path(args.input).stem if args.input != "-" else "Imported")}
+    series = _validate(IM.to_series(parsed, base))
+    _out({"series": series.model_dump(by_alias=True), "columns": parsed["columns"], "concCol": parsed["concCol"],
+          "signalCols": parsed["signalCols"], "rows": parsed["rows"]})
+
+
+def cmd_bake(args) -> None:
+    s = _load_series(args.series)
+    _compile(s)
+    _out(bake(s).model_dump(by_alias=True))
+
+
+def cmd_report(args) -> None:
+    _out(RP.report(_compile(_load_series(args.series))))
+
+
 def cmd_parse(args) -> None:
     try:
         node = E.parse(args.expr, args.var)
@@ -229,6 +323,44 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--measured-n", action="store_true", help="replicates tables: n = readings per column")
     sp.add_argument("--alpha", type=float, default=0.05, help="significance level for the Welch t-test power (default 0.05)")
     metric_opts(sp)
+    sp = add("limits", cmd_limits, "LoB / LoD / LoQ and the precision profile (spec 15); data = the classical "
+                                   "estimate from blank and low-level replicates when the table has them")
+    sp.add_argument("--alpha", type=float, help="false-positive rate for the LoB (default: the series', 0.05)")
+    sp.add_argument("--beta", type=float, help="false-negative rate for the LoD (default: the series', 0.05)")
+    sp.add_argument("--cv", type=float, help="concentration CV allowed at the LoQ, as a fraction (default 0.2)")
+    sp.add_argument("--reads", type=int, help="readings averaged per result (default 1)")
+    sp.add_argument("--low", type=float, nargs="+", metavar="C", help="low-level columns for the classical estimate")
+    sp.add_argument("--no-profile", action="store_true", help="omit the 201-point precision profile")
+    sp = add("plan", cmd_plan, "simulate the LoB / LoD verification experiment: design, and how widely the estimates scatter")
+    sp.add_argument("--n-blank", type=int, default=20, help="blank readings (default 20)")
+    sp.add_argument("--n-low", type=int, default=20, help="readings at each low concentration (default 20)")
+    sp.add_argument("--low", type=float, nargs="+", metavar="C", help="low concentrations (default: LoD and 2 x LoD)")
+    sp.add_argument("--runs", type=int, default=500)
+    sp.add_argument("--seed", type=int, default=1)
+    sp.add_argument("--conf", type=float, default=0.9, help="range coverage (default 0.9)")
+    sp.add_argument("--alpha", type=float)
+    sp.add_argument("--beta", type=float)
+    sp = add("separate", cmd_separate, "two concentrations in depth: metrics, threshold, sensitivity, AUC, replicates needed, power")
+    sp.add_argument("c1", type=float, metavar="C1")
+    sp.add_argument("c2", type=float, metavar="C2")
+    metric_opts(sp)
+    sp.add_argument("--n", type=int, default=3, help="readings per concentration for the power estimate (default 3)")
+    sp.add_argument("--runs", type=int, default=1000)
+    sp.add_argument("--seed", type=int, default=1)
+    sp.add_argument("--conf", type=float, default=0.95, help="coverage of the read-back ranges (default 0.95)")
+    sp.add_argument("--alpha", type=float, default=0.05)
+    add("requirements", cmd_requirements, "check the series' requirements: met or not, measured value, SD factor needed")
+    sp = add("read", cmd_read, "read signals back to concentrations (the series' samples, or the signals given)")
+    sp.add_argument("signals", type=float, nargs="*", metavar="S")
+    sp.add_argument("--conf", type=float, default=0.95)
+    sp.add_argument("-o", "--output", metavar="FILE.xlsx", help="write the sheet as an Excel workbook")
+    sp = add("import", cmd_import, "turn a reader export (CSV / TSV text) into a Series", False)
+    sp.add_argument("input", metavar="FILE", help="delimited text file, or - for stdin")
+    sp.add_argument("--conc", help="concentration column (header name or 0-based index)")
+    sp.add_argument("--signal", help="signal column (header name or 0-based index)")
+    sp.add_argument("--name", help="series name (default: the file name)")
+    add("bake", cmd_bake, "fold the what-if layer into the equations / table: the same curve as a plain Series")
+    add("report", cmd_report, "the claim sheet: levels, limits, requirements and read-back in one JSON object")
     sp = add("parse", cmd_parse, "check an expression and print its Excel form", False)
     sp.add_argument("expr", metavar="EXPR")
     sp.add_argument("--var", choices=["c", "S"], default="c", help="the variable the expression may use")

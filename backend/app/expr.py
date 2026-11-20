@@ -271,3 +271,18 @@ def to_excel(node: Node, ref: str) -> str:
     if isinstance(node, Bin):
         return f"({to_excel(node.left, ref)}{node.op}{to_excel(node.right, ref)})"
     return f"{FUNCS[node.name][2]}({','.join(to_excel(a, ref) for a in node.args)})"
+
+
+def to_text(node: Node, var: str) -> str:
+    """Fully parenthesised expression text in this language, the variable replaced by `var`."""
+    if isinstance(node, Num):
+        return node.text
+    if isinstance(node, Var):
+        return var
+    if isinstance(node, Pi):
+        return "pi"
+    if isinstance(node, Neg):
+        return f"(-{to_text(node.arg, var)})"
+    if isinstance(node, Bin):
+        return f"({to_text(node.left, var)}{node.op}{to_text(node.right, var)})"
+    return f"{node.name}({','.join(to_text(a, var) for a in node.args)})"

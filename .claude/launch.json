@@ -4,14 +4,64 @@
     {
       "name": "api",
       "runtimeExecutable": "uv",
-      "runtimeArgs": ["run", "--project", "backend", "uvicorn", "app.main:app", "--app-dir", "backend", "--reload", "--port", "8000"],
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "backend",
+        "uvicorn",
+        "app.main:app",
+        "--app-dir",
+        "backend",
+        "--reload",
+        "--port",
+        "8000"
+      ],
       "port": 8000
     },
     {
       "name": "web",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "frontend", "run", "dev"],
+      "runtimeArgs": [
+        "--prefix",
+        "frontend",
+        "run",
+        "dev"
+      ],
       "port": 5173
+    },
+    {
+      "name": "layers-api",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "../calwizard-layers/backend",
+        "uvicorn",
+        "app.main:app",
+        "--app-dir",
+        "../calwizard-layers/backend",
+        "--reload",
+        "--port",
+        "8001"
+      ],
+      "port": 8001
+    },
+    {
+      "name": "layers-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "../calwizard-layers/frontend",
+        "exec",
+        "--",
+        "vite",
+        "../calwizard-layers/frontend",
+        "--mode",
+        "alt",
+        "--port",
+        "5174"
+      ],
+      "port": 5174
     }
   ]
 }

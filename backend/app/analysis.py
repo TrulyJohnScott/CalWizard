@@ -272,3 +272,47 @@ def measure_points(model: Model, concs, metric: str = "ssmd", k: float = 3.0) ->
 
     srt = sorted(set(cs))
     return {**full(cs[0], cs[1]), "pairs": [full(a, b) for a, b in zip(srt, srt[1:])]}
+
+
+# ---------------------------------------------------------------- separation of two concentrations (spec section 16)
+def separate(model: Model, c1: float, c2: float, metric: str = "ssmd", k: float = 3.0, n: int = 3,
+             runs: int = 1000, seed: int = 1, conf: float = 0.95, alpha: float = 0.05) -> dict:
+    """Everything about telling two concentrations apart: the section 5 row, the decision threshold with its
+    sensitivity / specificity, AUC, d-prime, CVs, replicates needed, read-back ranges and the power of an
+    n-versus-n experiment."""
+    from . import experiment as EX  # local: experiment imports this module
+
+    c1, c2 = float(c1), float(c2)
+    if not (math.isfinite(c1) and math.isfinite(c2) and c1 >= 0 and c2 >= 0) or c1 == c2:
+        raise ValueError("separate needs two different finite concentrations >= 0")
+    row = pair(model, c1, c2, metric, k)
+    mu1, mu2, s1, s2 = row["mu1"], row["mu2"], row["sd1"], row["sd2"]
+    (ml, sl), (mh, sh) = sorted([(mu1, s1), (mu2, s2)])
+    t = K.crossing(mu1, s1, mu2, s2)
+    var = s1 * s1 + s2 * s2
+    with np.errstate(all="ignore"):
+        sens = float(1 - ndtr((t - mh) / sh)) if sh > 0 else (1.0 if mh > t else 0.5)
+        spec = float(ndtr((t - ml) / sl)) if sl > 0 else (1.0 if ml < t else 0.5)
+        auc = float(ndtr(abs(mu2 - mu1) / math.sqrt(var))) if var > 0 else (1.0 if mu1 != mu2 else 0.5)
+        dprime = abs(mu2 - mu1) / math.sqrt(var / 2) if var > 0 else math.inf
+    q = closeness_q(row, metric, k)
+    n_needed = None
+    if math.isfinite(q) and q > 0:
+        n_needed = max(1, math.ceil(1 / (q * q) - 1e-9))
+        if n_needed > 100000:
+            n_needed = None
+    lo_c, hi_c = sorted((c1, c2))
+    sim = EX.simulate(model, [lo_c, hi_c], n, runs, seed, metric, k, 0.9, False, alpha)
+    return {
+        **row, "metric": metric, "k": float(k),
+        "stepsBetween": steps_between(model, c1, c2, metric, k),
+        "whyNot": why_not(model, c1, c2, metric, k),
+        "closeness": q,
+        "threshold": float(t), "sensitivity": sens, "specificity": spec, "auc": auc, "dprime": float(dprime),
+        "cv1": float(s1 / abs(mu1)) if mu1 != 0 else None, "cv2": float(s2 / abs(mu2)) if mu2 != 0 else None,
+        "fold": (c2 / c1) if c1 > 0 else None,
+        "nNeeded": n_needed,
+        "readback": recover(model, [mu1, mu2], conf),
+        "power": {"n": int(n), "runs": sim["runs"], "seed": sim["seed"], "alpha": alpha,
+                  "pSig": sim["pairs"][0]["pSig"], "pPass": sim["pairs"][0]["pPass"]},
+    }

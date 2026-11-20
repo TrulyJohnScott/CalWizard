@@ -16,9 +16,14 @@ from . import export as X
 from . import expr as E
 from . import experiment as EX
 from . import fit as F
+from . import importer as IM
+from . import limits as L
 from . import metrics as K
+from . import readback as RB
+from . import report as RP
+from . import requirements as R
 from .jsonutil import clean
-from .series import Camel, Series, compile_series
+from .series import Camel, Sample, Series, bake, compile_series
 
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
@@ -157,6 +162,132 @@ def simulate(req: SimulateRequest):
         return ok(EX.simulate(m, req.concs, req.n, req.runs, req.seed, req.metric, req.k, req.conf, req.measured_n, req.alpha))
     except ValueError as e:
         raise HTTPException(422, detail={"error": str(e), "pos": None})
+
+
+class LimitsRequest(SeriesRequest):
+    alpha: float | None = None
+    beta: float | None = None
+    cv: float | None = None
+    reads: int | None = None
+    low: list[float] | None = None
+    profile: bool = True
+
+
+def _guard(fn):
+    try:
+        return ok(fn())
+    except ValueError as e:
+        raise HTTPException(422, detail={"error": str(e), "pos": None})
+
+
+@router.post("/limits")
+def limits(req: LimitsRequest):
+    m = _compile(req.series)
+    lim = req.series.limits
+    a = lim.alpha if req.alpha is None else req.alpha
+    b = lim.beta if req.beta is None else req.beta
+
+    def run():
+        out = L.limits(m, a, b, lim.cv if req.cv is None else req.cv, lim.reads if req.reads is None else req.reads,
+                       profile=req.profile)
+        out["data"] = L.limits_data(m, a, b, req.low)
+        return out
+
+    return _guard(run)
+
+
+class PlanRequest(SeriesRequest):
+    n_blank: int = 20
+    n_low: int = 20
+    low: list[float] | None = None
+    runs: int = 500
+    seed: int = 1
+    conf: float = 0.9
+    alpha: float | None = None
+    beta: float | None = None
+
+
+@router.post("/plan")
+def plan(req: PlanRequest):
+    m = _compile(req.series)
+    lim = req.series.limits
+    return _guard(lambda: L.plan(m, req.n_blank, req.n_low, req.low, req.runs, req.seed,
+                                 lim.alpha if req.alpha is None else req.alpha,
+                                 lim.beta if req.beta is None else req.beta, req.conf))
+
+
+class SeparateRequest(SeriesRequest):
+    c1: float
+    c2: float
+    metric: Literal["dsum", "ssmd", "zprime"] | None = None
+    k: float | None = None
+    n: int = 3
+    runs: int = 1000
+    seed: int = 1
+    conf: float = 0.95
+    alpha: float = 0.05
+
+
+@router.post("/separate")
+def separate(req: SeparateRequest):
+    m = _compile(req.series)
+    return _guard(lambda: A.separate(m, req.c1, req.c2, req.metric or req.series.metric,
+                                     req.series.k_target if req.k is None else req.k, req.n, req.runs, req.seed,
+                                     req.conf, req.alpha))
+
+
+@router.post("/requirements")
+def requirements(req: SeriesRequest):
+    return ok(R.check(_compile(req.series)))
+
+
+class ReadbackRequest(SeriesRequest):
+    samples: list[Sample] | None = None
+    conf: float = 0.95
+
+
+@router.post("/readback")
+def readback(req: ReadbackRequest):
+    m = _compile(req.series)
+    return _guard(lambda: RB.readback(m, req.samples, req.conf))
+
+
+@router.post("/readback/export")
+def readback_export(req: ReadbackRequest):
+    m = _compile(req.series)
+    try:
+        data = RB.workbook_bytes(m, req.samples, req.conf)
+    except ValueError as e:
+        raise HTTPException(422, detail={"error": str(e), "pos": None})
+    name = X.export_filename(req.series).replace("calwizard_", "calwizard_results_")
+    plain = name.encode("ascii", "ignore").decode()
+    return Response(data, media_type=XLSX, headers={
+        "Content-Disposition": f"attachment; filename=\"{plain}\"; filename*=UTF-8''{quote(name)}"})
+
+
+class ImportRequest(Camel):
+    text: str
+    conc: str | int | None = None
+    signal: str | int | None = None
+
+
+@router.post("/import")
+def import_reader(req: ImportRequest):
+    parsed = IM.parse_reader(req.text, req.conc, req.signal)
+    if parsed is None:
+        return {"ok": False, "error": "not a reader table: need a header row, a concentration column and a signal column"}
+    return ok({"ok": True, **parsed})
+
+
+@router.post("/bake")
+def bake_series(req: SeriesRequest):
+    _compile(req.series)
+    return ok(bake(req.series).model_dump(by_alias=True))
+
+
+@router.post("/report")
+def report(req: SeriesRequest):
+    return ok(RP.report(_compile(req.series)))
 
 
 @router.post("/fit")

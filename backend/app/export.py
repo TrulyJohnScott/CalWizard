@@ -12,7 +12,7 @@ from openpyxl.styles import Font, PatternFill
 
 from . import expr as E
 from . import metrics as K
-from .series import Model, Series, compile_series
+from .series import bake, Model, Series, compile_series
 
 BOLD = Font(bold=True)
 INPUT_FILL = PatternFill("solid", fgColor="FFF2CC")
@@ -219,6 +219,7 @@ def _data(wb: Workbook, series: Series) -> None:
 
 
 def build_workbook(series: Series) -> Workbook:
+    series = bake(series)  # a what-if layer is folded into the formulas / table (spec section 14)
     model = compile_series(series)
     rows = K.level_rows(model)
     wb = Workbook()
