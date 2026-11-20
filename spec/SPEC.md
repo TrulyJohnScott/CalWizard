@@ -258,7 +258,8 @@ the input drawer) · Flip axes button (`c → S` / `S → c`) · small Settings 
 - **Colour (v2.7).** Two layers, one red→blue ramp. **Background** (Heat haze, Band wash/ribbon, Lines): the *local
   resolution* at each concentration c, i.e. the smallest Δc > 0 with closeness q(c, c + Δc) = 1 under the series
   metric and k (searched up to 3·max(cEnd, cMax); none → red), as r = Δc / max(c, c_ref) (c_ref = first positive
-  level) mapped to q = 0.5 / r: ±25% or better clear blue, ±50% the yellow edge, c vs 2c orange, unresolvable red.
+  level) mapped to q = 0.5 / r on a continuous ramp (no step at the edge): red (q ≤ 0.25) → orange (0.6) → yellow
+  (1, the edge, ±50%) → teal (1.5) → blue (≥ 2, ±25% or better).
   Intrinsic, continuous, independent of placed points. **Foreground** (ruler brackets, sidebar rows): the closeness
   of that specific pair. Shading `Band | Heat | Lines`; **Lines** (Bollinger-style) = ±1σ solid, ±2σ dashed, ±3σ
   dotted, coloured like the background.
