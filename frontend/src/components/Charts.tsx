@@ -1,0 +1,507 @@
+import { useEffect, useMemo, useRef, type RefObject } from 'react'
+import { buildCalibration } from '../charts/calibration'
+import { concRange } from '../charts/common'
+import { buildHistogram } from '../charts/histogram'
+import { usePlot, loadPlotly } from '../charts/usePlot'
+import { fmt } from '../format'
+import { inverse } from '../math/analysis'
+import { compileExpr } from '../math/expr'
+import type { Derived } from '../state/derived'
+import { breakCoalescing, measurePair, useStore } from '../state/store'
+import { usePalette } from '../theme'
+import { Seg } from './ui'
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/** Concentration under the mouse (x in c → S, y in S → c), or null outside the plot area. Never below 0. */
+function concAt(gd: any, e: { clientX: number; clientY: number }, flip: boolean): number | null {
+  const fl = gd._fullLayout
+  if (!fl?.xaxis || !fl.yaxis) return null
+  const r = gd.getBoundingClientRect()
+  const px = e.clientX - r.left
+  const py = e.clientY - r.top
+  const xa = fl.xaxis
+  const ya = fl.yaxis
+  if (px < xa._offset || px > xa._offset + xa._length || py < ya._offset || py > ya._offset + ya._length) return null
+  const v = flip ? ya.p2d(py - ya._offset) : xa.p2d(px - xa._offset)
+  return Number.isFinite(v) ? Math.max(0, v) : null
+}
+
+interface Target {
+  i: number
+  x: number
+  y: number
+}
+
+/** Pointer-down within ~8px of a target starts a drag (capturing the event so Plotly's zoom does not start). */
+function useDrag(
+  ref: RefObject<HTMLDivElement | null>,
+  cfg: { enabled: boolean; axis: 'ew' | 'ns'; targets: () => Target[]; onMove: (i: number, x: number, y: number) => void; onStart: (i: number) => void; onEnd: (i: number) => void },
+) {
+  const cur = useRef(cfg)
+  cur.current = cfg
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const hit = (e: MouseEvent): Target | null => {
+      if (!cur.current.enabled) return null
+      const r = el.getBoundingClientRect()
+      const x = e.clientX - r.left
+      const y = e.clientY - r.top
+      let best: Target | null = null
+      let bd = 8
+      for (const t of cur.current.targets()) {
+        const d = Math.hypot(t.x - x, t.y - y)
+        if (d <= bd) {
+          bd = d
+          best = t // later targets win ties (ruler handles are listed last)
+        }
+      }
+      return best
+    }
+    const down = (e: MouseEvent) => {
+      if (e.button !== 0 || e.shiftKey || (e.target as Element).closest?.('.modebar')) return
+      const t = hit(e)
+      if (!t) return
+      e.stopPropagation()
+      e.preventDefault()
+      cur.current.onStart(t.i)
+      el.dataset.cursor = cur.current.axis
+      const mv = (ev: MouseEvent) => {
+        const r = el.getBoundingClientRect()
+        cur.current.onMove(t.i, ev.clientX - r.left, ev.clientY - r.top)
+      }
+      const up = () => {
+        window.removeEventListener('mousemove', mv)
+        window.removeEventListener('mouseup', up)
+        cur.current.onEnd(t.i)
+        el.dataset.cursor = ''
+      }
+      window.addEventListener('mousemove', mv)
+      window.addEventListener('mouseup', up)
+    }
+    const hover = (e: MouseEvent) => {
+      if (e.buttons) return
+      el.dataset.cursor = hit(e) ? cur.current.axis : ''
+    }
+    el.addEventListener('mousedown', down, true)
+    el.addEventListener('mousemove', hover)
+    return () => {
+      el.removeEventListener('mousedown', down, true)
+      el.removeEventListener('mousemove', hover)
+    }
+  }, [ref])
+}
+
+/** Ruler handles are drag targets with negative ids. */
+const RULER_A = -1
+const RULER_B = -2
+
+/** rAF-throttled mover: levels clamp between neighbours (3 significant digits); ruler ends move freely (c ≥ 0). */
+function useLevelMover(d: Derived) {
+  const live = useRef(d)
+  live.current = d
+  const pending = useRef<{ i: number; c: number } | null>(null)
+  const raf = useRef(0)
+  const apply = () => {
+    raf.current = 0
+    const p = pending.current
+    pending.current = null
+    if (!p) return
+    const c3 = (c: number) => +Math.max(0, c).toPrecision(3)
+    if (p.i === RULER_A || p.i === RULER_B) {
+      useStore.getState().setMeasureEnd(p.i === RULER_A ? 'a' : 'b', c3(p.c))
+      return
+    }
+    const { listed, model } = live.current
+    const i = p.i
+    if (i <= 0 || i >= listed.length) return
+    const gap = model.cMax * 1e-4
+    const lo = listed[i - 1] + gap
+    const hi = i + 1 < listed.length ? listed[i + 1] - gap : Infinity
+    if (!(hi >= lo)) return
+    let c = Math.min(hi, Math.max(lo, p.c))
+    const r = c3(c)
+    if (r >= lo && r <= hi) c = r
+    if (c === listed[i]) return
+    const levels = [...listed]
+    levels[i] = c
+    useStore.getState().patch({ levels, ...(c > model.cMax ? { cMax: c } : {}) })
+  }
+  useEffect(() => () => cancelAnimationFrame(raf.current), [])
+  return {
+    move: (i: number, c: number) => {
+      pending.current = { i, c }
+      if (!raf.current) raf.current = requestAnimationFrame(apply)
+    },
+    flush: () => {
+      cancelAnimationFrame(raf.current)
+      apply()
+    },
+  }
+}
+
+/** Levels editable by dragging (equations mode, no display-only ladder) + the committed ruler's two handles (last). */
+function dragTargets(d: Derived, editable: boolean, measure: { a: number; b: number | null } | null, at: (c: number) => [number, number] | null): Target[] {
+  const out: Target[] = []
+  if (editable)
+    d.listed.forEach((c, i) => {
+      if (i === 0) return
+      const p = at(c)
+      if (p) out.push({ i, x: p[0], y: p[1] })
+    })
+  if (measure && measure.b !== null)
+    for (const [i, c] of [
+      [RULER_A, measure.a],
+      [RULER_B, measure.b],
+    ] as const) {
+      const p = at(c)
+      if (p) out.push({ i, x: p[0], y: p[1] })
+    }
+  return out
+}
+
+export function CalibrationChart({ d }: { d: Derived }) {
+  const ui = useStore((s) => s.ui)
+  const measure = useStore((s) => s.measure)
+  const clickMeasure = useStore((s) => s.clickMeasure)
+  const setLadder = useStore((s) => s.setLadder)
+  const lad = useStore((s) => s.ladder)
+  const probe = useStore((s) => s.probe)
+  const setProbe = useStore((s) => s.setProbe)
+  const viewRev = useStore((s) => s.viewRev)
+  const resetView = useStore((s) => s.resetView)
+  const addSimLevel = useStore((s) => s.addSimLevel)
+  const notify = useStore((s) => s.notify)
+  const reading = useStore((s) => s.reading)
+  const setReading = useStore((s) => s.setReading)
+  const setUi = useStore((s) => s.setUi)
+  const pal = usePalette()
+  const { series, model, dots, listed, range, focus } = d
+  const setFocus = useStore((s) => s.setFocus)
+  const live = measure && measure.b === null ? probe : null
+  const ghostSrc = useStore((s) => s.ghost)
+  const ghost = useMemo(() => {
+    if (!ghostSrc) return null
+    const m = ghostSrc.meanExpr ? compileExpr(ghostSrc.meanExpr, 'c') : null
+    const sd = ghostSrc.sdExpr ? compileExpr(ghostSrc.sdExpr, 'S') : null
+    return { mean: m?.ok ? m.fn : undefined, sd: sd?.ok ? sd.fn : undefined }
+  }, [ghostSrc])
+  const estimates = useMemo(() => d.exp?.first.levels.map((l) => ({ c: l.c, mean: l.mean })) ?? null, [d.exp])
+  const spec = useMemo(
+    () => buildCalibration({ series, model, dots, listed, flip: ui.flip, shading: ui.shading, stepR: ui.stepR, jitter: ui.jitter, measure, live, range, focus, viewRev, reading, probe, onCurve: ui.marginal, estimates, ghost, ladderTicks: d.resolvable, pal }),
+    [series, model, dots, listed, ui.flip, ui.shading, ui.stepR, ui.jitter, measure, live, range, focus, viewRev, reading, probe, ui.marginal, estimates, ghost, d.resolvable, pal],
+  )
+  const ref = usePlot(spec)
+  const down = useRef<{ x: number; y: number } | null>(null)
+  /** ruler state before the latest single click, so a double-click (view reset) can take that click back */
+  const beforeClick = useRef<{ a: number; b: number | null } | null>(null)
+  const mover = useLevelMover(d)
+  const editable = series.mode === 'equations' && !lad?.list
+  useDrag(ref, {
+    enabled: true,
+    axis: ui.flip ? 'ns' : 'ew',
+    targets: () => {
+      const fl = (ref.current as any)?._fullLayout
+      if (!fl?.xaxis) return []
+      const { xaxis: xa, yaxis: ya } = fl
+      return dragTargets(d, editable, measure, (c) => {
+        const mu = model.mean(c)
+        const px = xa._offset + xa.d2p(ui.flip ? mu : c)
+        const py = ya._offset + ya.d2p(ui.flip ? c : mu)
+        return Number.isFinite(px) && Number.isFinite(py) ? [px, py] : null
+      })
+    },
+    onStart: (i) => {
+      down.current = null
+      if (i > 0) {
+        breakCoalescing()
+        setLadder(null)
+      }
+    },
+    onMove: (i, x, y) => {
+      const fl = (ref.current as any)._fullLayout
+      mover.move(i, ui.flip ? fl.yaxis.p2d(y - fl.yaxis._offset) : fl.xaxis.p2d(x - fl.xaxis._offset))
+    },
+    onEnd: () => mover.flush(),
+  })
+  // the recovery line: grab it anywhere within 6px and drag along the signal axis
+  const rd = useRef({ reading, flip: ui.flip })
+  rd.current = { reading, flip: ui.flip }
+  useEffect(() => {
+    const el = ref.current as any
+    if (!el) return
+    const pos = (e: MouseEvent) => {
+      const fl = el._fullLayout
+      if (!fl?.xaxis) return null
+      const r = el.getBoundingClientRect()
+      const ax = rd.current.flip ? fl.xaxis : fl.yaxis
+      const p = rd.current.flip ? e.clientX - r.left - ax._offset : e.clientY - r.top - ax._offset
+      return { ax, p }
+    }
+    const near = (e: MouseEvent) => {
+      const S = rd.current.reading
+      const q = pos(e)
+      return S !== null && q !== null && Math.abs(q.ax.d2p(S) - q.p) <= 6
+    }
+    const down = (e: MouseEvent) => {
+      if (e.button !== 0 || !near(e)) return
+      e.stopPropagation()
+      e.preventDefault()
+      const mv = (ev: MouseEvent) => {
+        const q = pos(ev)
+        if (q) setReading(+q.ax.p2d(q.p).toPrecision(4))
+      }
+      const up = () => {
+        window.removeEventListener('mousemove', mv)
+        window.removeEventListener('mouseup', up)
+        el.dataset.cursor = ''
+      }
+      el.dataset.cursor = rd.current.flip ? 'ew' : 'ns'
+      window.addEventListener('mousemove', mv)
+      window.addEventListener('mouseup', up)
+    }
+    const hover = (e: MouseEvent) => {
+      if (!e.buttons && near(e)) el.dataset.cursor = rd.current.flip ? 'ew' : 'ns'
+    }
+    el.addEventListener('mousedown', down, true)
+    el.addEventListener('mousemove', hover)
+    return () => {
+      el.removeEventListener('mousedown', down, true)
+      el.removeEventListener('mousemove', hover)
+    }
+  }, [ref, setReading])
+
+  const raf = useRef(0)
+  const lv = useRef({ flip: ui.flip, cMax: model.cMax })
+  lv.current = { flip: ui.flip, cMax: model.cMax }
+  useEffect(() => () => cancelAnimationFrame(raf.current), [])
+
+  // Box-zoom / pan on the concentration axis -> focus window (may reach past cMax: the curve continues).
+  useEffect(() => {
+    let el: any = null
+    let timer = 0
+    const onRelayout = (ev: Record<string, unknown>) => {
+      const { flip, cMax } = lv.current
+      const ka = flip ? 'yaxis' : 'xaxis'
+      if (ev[`${ka}.autorange`]) return setFocus(null)
+      const r0 = ev[`${ka}.range[0]`] ?? (ev[`${ka}.range`] as number[] | undefined)?.[0]
+      const r1 = ev[`${ka}.range[1]`] ?? (ev[`${ka}.range`] as number[] | undefined)?.[1]
+      if (typeof r0 !== 'number' || typeof r1 !== 'number') return
+      const lo = Math.max(0, Math.min(r0, r1))
+      const hi = Math.max(r0, r1)
+      if (!(hi > lo)) return
+      const whole = lo <= 0.02 * cMax && hi >= 0.98 * cMax && hi <= 1.05 * cMax
+      setFocus(whole ? null : [lo, hi])
+    }
+    const attach = () => {
+      el = ref.current as any
+      if (!el?.on) {
+        timer = window.setTimeout(attach, 200)
+        return
+      }
+      el.on('plotly_relayout', onRelayout)
+    }
+    attach()
+    return () => {
+      clearTimeout(timer)
+      el?.removeListener?.('plotly_relayout', onRelayout)
+    }
+  }, [ref, setFocus])
+
+  const onModebar = (t: EventTarget) => (t as Element).closest?.('.modebar') !== null
+  return (
+    <>
+      <div className="absolute z-10 flex items-center gap-1" style={{ right: 36, top: 6 }}>
+        <Seg
+          value={ui.flip ? 's2c' : 'c2s'}
+          options={[
+            ['c2s', 'c → S', 'Concentration across, signal up (histogram below: read-back concentration)'],
+            ['s2c', 'S → c', 'Signal across, concentration up (histogram below: signal)'],
+          ]}
+          onChange={(v) => setUi({ flip: v === 's2c' })}
+        />
+        {reading === null ? (
+          <button
+            className="btn"
+            style={{ height: 24, fontSize: 11.5 }}
+            title="Place a signal line and read back its concentration (drag the line to move it)"
+            onClick={() => setReading(+(0.5 * (range[0] + range[1])).toPrecision(4))}
+          >
+            Read signal
+          </button>
+        ) : (
+          <button className="btn" style={{ height: 24, fontSize: 11.5 }} title="Remove the signal line (Esc)" onClick={() => setReading(null)}>
+            Read signal ×
+          </button>
+        )}
+      </div>
+      {focus && (
+        <button className="btn absolute z-10" style={{ left: 66, top: 6, height: 22, fontSize: 11 }} onClick={resetView} title="Back to the whole range (or double-click the chart)">
+          {fmt(focus[0], 3)}–{fmt(focus[1], 3)}
+          {series.units ? ` ${series.units}` : ''} · Show all
+        </button>
+      )}
+      <div
+        ref={ref}
+        data-plot="scatter"
+        className="absolute inset-0 cursor-crosshair"
+        onMouseDown={(e) => {
+          down.current = e.button === 0 && !onModebar(e.target) ? { x: e.clientX, y: e.clientY } : null
+        }}
+        onClick={(e) => {
+          const p = down.current
+          down.current = null
+          if (onModebar(e.target)) return
+          if (e.detail === 2) {
+            // double-click: whole range again (Plotly swallows dblclick, so detect it here) and undo the first click
+            useStore.setState({ measure: beforeClick.current })
+            resetView()
+            return
+          }
+          if (!p || e.detail > 2 || Math.hypot(e.clientX - p.x, e.clientY - p.y) >= 4) return // drag = zoom, not a click
+          const raw = concAt(ref.current, e, lv.current.flip)
+          if (raw === null) return
+          // snap to a level or a ladder tick within 7px (hold Alt for a free point)
+          let c = raw
+          if (!e.altKey) {
+            const fl = (ref.current as any)._fullLayout
+            const ax = lv.current.flip ? fl.yaxis : fl.xaxis
+            let best = 7
+            for (const t of [...listed, ...d.resolvable]) {
+              const dpx = Math.abs(ax.d2p(t) - ax.d2p(raw))
+              if (dpx <= best) {
+                best = dpx
+                c = t
+              }
+            }
+          }
+          const c3 = c === raw ? +c.toPrecision(3) : c
+          if (e.shiftKey) {
+            if (addSimLevel(c3)) notify(`Added ${fmt(c3)}${series.units ? ` ${series.units}` : ''} as a simulated level`)
+            return
+          }
+          beforeClick.current = useStore.getState().measure
+          clickMeasure(c3)
+        }}
+        onMouseMove={(e) => {
+          if (e.buttons || onModebar(e.target)) return
+          const ev = { clientX: e.clientX, clientY: e.clientY }
+          cancelAnimationFrame(raf.current)
+          raf.current = requestAnimationFrame(() => {
+            setProbe(ref.current ? concAt(ref.current, ev, lv.current.flip) : null)
+          })
+        }}
+        onMouseLeave={() => {
+          cancelAnimationFrame(raf.current)
+          setProbe(null)
+        }}
+      />
+    </>
+  )
+}
+
+export function HistogramChart({ d }: { d: Derived }) {
+  const histBars = useStore((s) => s.ui.histBars)
+  const flip = useStore((s) => s.ui.flip)
+  const measure = useStore((s) => s.measure)
+  const probe = useStore((s) => s.probe)
+  const lad = useStore((s) => s.ladder)
+  const setLadder = useStore((s) => s.setLadder)
+  const viewRev = useStore((s) => s.viewRev)
+  const resetView = useStore((s) => s.resetView)
+  const pal = usePalette()
+  const { series, model, dots, listed, range, focus } = d
+  const space = flip ? 'signal' : 'conc'
+  const xRange = useMemo<[number, number]>(() => (flip ? range : concRange(model.cMax, focus)), [flip, range, model.cMax, focus])
+  const pair = useMemo(() => measurePair(measure, measure && measure.b === null ? probe : null), [measure, probe])
+  const spec = useMemo(
+    () => buildHistogram({ series, model, listed, dots, histBars, pair, probe, space, xRange, viewRev, pal }),
+    [series, model, listed, dots, histBars, pair, probe, space, xRange, viewRev, pal],
+  )
+  const ref = usePlot(spec)
+  const mover = useLevelMover(d)
+  const editable = series.mode === 'equations' && !lad?.list
+  useDrag(ref, {
+    enabled: true,
+    axis: 'ew',
+    targets: () => {
+      const fl = (ref.current as any)?._fullLayout
+      if (!fl?.xaxis) return []
+      const { xaxis: xa, yaxis: ya } = fl
+      const peak = new Map(spec.targets.map((t) => [t.c, t]))
+      return dragTargets(d, editable, measure, (c) => {
+        const t = peak.get(c)
+        if (!t) return null
+        const px = xa._offset + xa.d2p(t.x)
+        const py = ya._offset + ya.d2p(t.y)
+        return Number.isFinite(px) && Number.isFinite(py) ? [px, py] : null
+      })
+    },
+    onStart: (i) => {
+      if (i > 0) {
+        breakCoalescing()
+        setLadder(null)
+      }
+    },
+    onMove: (i, x) => {
+      const fl = (ref.current as any)._fullLayout
+      const v = fl.xaxis.p2d(x - fl.xaxis._offset)
+      const c = space === 'conc' ? v : inverse(model, v)
+      if (c !== null && Number.isFinite(c)) mover.move(i, c)
+    },
+    onEnd: () => mover.flush(),
+  })
+  return (
+    <div
+      ref={ref}
+      data-plot="hist"
+      className="absolute inset-0"
+      onClick={(e) => {
+        if (e.detail === 2 && !(e.target as Element).closest?.('.modebar')) resetView()
+      }}
+    />
+  )
+}
+
+/** The histogram shares the scatter's x axis (concentration when c → S, signal when S → c): zoom/pan together. */
+export function useLinkedSignalAxis(flip: boolean) {
+  useEffect(() => {
+    let off: (() => void) | null = null
+    let stopped = false
+    const attach = async () => {
+      const a = document.querySelector<any>('[data-plot="scatter"]')
+      const b = document.querySelector<any>('[data-plot="hist"]')
+      if (!a?.on || !b?.on || !a._fullLayout || !b._fullLayout) return false
+      const P = await loadPlotly()
+      if (stopped) return true
+      let busy = false
+      const mk = (src: any, dst: any) => (ev: Record<string, unknown>) => {
+        if (busy || !Object.keys(ev).some((k) => k.startsWith('xaxis'))) return
+        const r = src._fullLayout?.xaxis?.range
+        if (!r || !dst?._fullLayout || !document.contains(dst)) return // chart was replaced (e.g. hot reload)
+        busy = true
+        Promise.resolve(P.relayout(dst, { 'xaxis.range': [r[0], r[1]] }))
+          .catch(() => undefined)
+          .finally(() => (busy = false))
+      }
+      const fa = mk(a, b)
+      const fb = mk(b, a)
+      a.on('plotly_relayout', fa)
+      b.on('plotly_relayout', fb)
+      off = () => {
+        a.removeListener?.('plotly_relayout', fa)
+        b.removeListener?.('plotly_relayout', fb)
+      }
+      return true
+    }
+    const t = setInterval(() => {
+      attach().then((ok) => ok && clearInterval(t))
+    }, 250)
+    return () => {
+      stopped = true
+      clearInterval(t)
+      off?.()
+    }
+  }, [flip])
+}

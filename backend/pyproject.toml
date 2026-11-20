@@ -1,0 +1,43 @@
+[project]
+name = "calwizard-backend"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.163.2",
+    "numpy>=2.5.5",
+    "openpyxl>=3.1.5",
+    "pydantic>=2.14.3",
+    "scipy>=1.18.1",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "formulas>=1.3.4",
+    "httpx>=0.28.1",
+    "hypothesis>=6.170.15",
+    "pytest>=9.2.0",
+    "pytest-cov>=7.1.0",
+    "sympy>=1.14.0",
+]
+
+[project.scripts]
+calwizard = "app.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# default = the essential suite (fast); `-m deep` adds the exhaustive black-box oracle and property tests
+addopts = "-m 'not deep' --cov=app --cov-branch --cov-report=term-missing:skip-covered --cov-fail-under=95"
+markers = ["deep: exhaustive independent-oracle and property tests (slow; run with -m deep or -m '')"]
+filterwarnings = [
+    "error",
+    "ignore:Using `httpx` with `starlette.testclient`:Warning",
+    "ignore::SyntaxWarning",  # third-party `formulas` (dev-only) compiles with SyntaxWarnings
+]

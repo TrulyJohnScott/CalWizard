@@ -1,0 +1,321 @@
+import type { Data, Layout } from 'plotly.js'
+import { fmt, recoveryText } from '../format'
+import { pairRow, pairRows, recover } from '../math/analysis'
+import { closenessColor, closenessQ, rgbaCss } from '../math/closeness'
+import { METRIC_LABEL } from '../math/metrics'
+import { heatImage, type HeatImage } from '../math/heat'
+import type { Model } from '../math/model'
+import { hashUnit, type LevelDots } from '../math/sim'
+import type { Series } from '../math/types'
+import { measurePair, type Measure } from '../state/store'
+import { heatRgb, levelColor, withAlpha, type Palette } from '../theme'
+import { axisStyle, baseLayout, concRange, linspace, MARGIN, nn } from './common'
+import type { PlotSpec } from './usePlot'
+
+export interface CalibrationIn {
+  series: Series
+  model: Model
+  dots: LevelDots[]
+  /** levels drawn as markers on the curve (the sidebar list) */
+  listed: number[]
+  flip: boolean
+  shading: 'band' | 'heat'
+  stepR: number
+  jitter: number
+  measure: Measure | null
+  /** hovered concentration while the second measure point is pending */
+  live: number | null
+  range: [number, number]
+  /** zoomed concentration window, or null */
+  focus: [number, number] | null
+  /** bumps on a view reset (double-click) so Plotly re-applies the computed ranges */
+  viewRev: number
+  /** recovery signal line, or null */
+  reading: number | null
+  /** hovered concentration (hover Gaussian + guide lines), or null */
+  probe: number | null
+  /** draw each level's Gaussian sideways on the curve */
+  onCurve: boolean
+  /** the headline ladder: faint ticks on the concentration axis */
+  ladderTicks: number[]
+  /** hovered fit drawn dashed: a mean curve, or ±2σ edges of the current mean with a new sd(S) */
+  ghost: { mean?: (c: number) => number; sd?: (S: number) => number } | null
+  /** simulated experiment: this run's estimated mean per concentration (short dashes), or null */
+  estimates: { c: number; mean: number }[] | null
+  pal: Palette
+}
+
+const heatMemo = new WeakMap<object, { k: string; img: HeatImage }>()
+
+export function buildCalibration(x: CalibrationIn): PlotSpec {
+  const { series: s, model: m, flip, pal } = x
+  const [sLo, sHi] = x.range
+  // dense grid inside the zoom window so the curve stays smooth when zoomed in
+  const cr = concRange(m.cMax, x.focus)
+  const cEnd = Math.max(m.cMax, cr[1])
+  const grid = [...new Set([...linspace(0, cEnd, 360), ...(x.focus ? linspace(Math.max(0, x.focus[0]), x.focus[1], 240) : [])])].sort((a, b) => a - b)
+  const mu = grid.map((c) => m.mean(c))
+  const sd = grid.map((c) => m.sd(c))
+  const xy = (c: (number | null)[], sig: (number | null)[]) => (flip ? { x: sig, y: c } : { x: c, y: sig })
+  const band = (k: number, sign: 1 | -1) => grid.map((_, i) => nn(mu[i] + sign * k * sd[i]))
+  const traces: Data[] = []
+  const shapes: Partial<Layout['shapes'][number]>[] = []
+  const notes: Partial<Layout['annotations'][number]>[] = []
+
+  if (x.shading === 'heat') {
+    const hk = `${flip}|${sLo}|${sHi}|${x.stepR}`
+    let hm = heatMemo.get(m)
+    if (!hm || hm.k !== hk) {
+      hm = { k: hk, img: heatImage(m, { space: flip ? 's2c' : 'c2s', cMax: m.cMax, sLo, sHi, nc: 400, ns: 260, r: x.stepR }, heatRgb) }
+      heatMemo.set(m, hm)
+    }
+    const img = hm.img
+    traces.push({ type: 'image', colormodel: 'rgba', z: img.z, x0: img.x0, dx: img.dx, y0: img.y0, dy: img.dy, hoverinfo: 'skip' } as unknown as Data)
+  } else {
+    const fillMode = flip ? 'tonextx' : 'tonexty'
+    // neutral ±1/±2 SD band over the whole range (uncertainty is always visible); closeness heat on top
+    const idx = grid.map((_, i) => i)
+    const mk = (k: number, sign: 1 | -1, fill: boolean, alpha: number): Data =>
+      ({
+        type: 'scatter',
+        mode: 'lines',
+        ...xy(
+          idx.map((i) => grid[i]),
+          idx.map((i) => band(k, sign)[i]),
+        ),
+        line: { width: 0, color: 'rgba(0,0,0,0)' },
+        fill: fill ? fillMode : 'none',
+        fillcolor: withAlpha(pal.accent, alpha),
+        hoverinfo: 'skip',
+      }) as Data
+    if (idx.length > 1) traces.push(mk(2, -1, false, 0), mk(2, 1, true, 0.07), mk(1, -1, false, 0), mk(1, 1, true, 0.12))
+    pairRows(m, x.listed, s.metric, s.kTarget).forEach((r) => {
+      const col = closenessColor(closenessQ(r, s.metric, s.kTarget))
+      if (col[3] < 0.01) return
+      const cs = linspace(r.c1, r.c2, 40)
+      const up = cs.map((c) => m.mean(c) + 2 * m.sd(c))
+      const dn = cs.map((c) => m.mean(c) - 2 * m.sd(c))
+      const cc = [...cs, ...cs.slice().reverse(), cs[0]]
+      const sg = [...up, ...dn.slice().reverse(), up[0]].map(nn)
+      // faint ±2σ wash + a ±1σ heat ribbon: the colour says how close, its width follows the SD at each point
+      const up1 = cs.map((c) => m.mean(c) + m.sd(c))
+      const dn1 = cs.map((c) => m.mean(c) - m.sd(c))
+      const s1 = [...up1, ...dn1.slice().reverse(), up1[0]].map(nn)
+      traces.push({ type: 'scatter', mode: 'lines', ...xy(cc, sg), line: { width: 0 }, fill: 'toself', fillcolor: rgbaCss(col, 0.14), hoverinfo: 'skip' } as Data)
+      traces.push({ type: 'scatter', mode: 'lines', ...xy(cc, s1), line: { width: 0 }, fill: 'toself', fillcolor: rgbaCss(col, 0.75), hoverinfo: 'skip' } as Data)
+    })
+  }
+
+  // mean curve
+  const u = s.units ? ` ${s.units}` : ''
+  traces.push({
+    type: 'scatter',
+    mode: 'lines',
+    ...xy(grid, mu.map(nn)),
+    line: { color: pal.accent, width: 1.8 },
+    text: grid.map((c, i) => `c ${fmt(c)}${u}<br>${s.signalLabel || 'Signal'} ${fmt(mu[i], 4)}<br>SD ${fmt(sd[i])} · CV ${fmt((100 * sd[i]) / Math.abs(mu[i]), 2)}%`),
+    hovertemplate: '%{text}<extra></extra>',
+  } as Data)
+
+  // replicate dots: horizontal (concentration-direction) jitter, visual only
+  const levels = x.listed
+  const gaps = levels.slice(1).map((c, i) => c - levels[i]).filter((g) => g > 0)
+  const unit = ((x.jitter / 100) * (gaps.length ? Math.min(...gaps) : m.cMax / 10)) || 0
+  const dc: number[] = []
+  const dy: number[] = []
+  const col: string[] = []
+  const sym: string[] = []
+  const hollow = s.mode !== 'equations' // in table modes, simulated draws (extra levels) are hollow; data filled
+  let k = 0
+  const idxOf = (c: number) => {
+    let best = 0
+    let bd = Infinity
+    levels.forEach((l, i) => {
+      const d = Math.abs(l - c)
+      if (d < bd) {
+        bd = d
+        best = i
+      }
+    })
+    return best
+  }
+  for (const lv of x.dots) {
+    const cc = levels.length ? levelColor(idxOf(lv.c), levels.length, pal.dark, 0.8) : withAlpha(pal.accent, 0.7)
+    for (const y of lv.ys) {
+      dc.push(lv.c + hashUnit(k++) * unit)
+      dy.push(y)
+      col.push(cc)
+      sym.push(hollow && lv.sim ? 'circle-open' : 'circle')
+    }
+  }
+  if (dy.length)
+    traces.push({ type: 'scatter', mode: 'markers', ...xy(dc, dy), marker: { size: 5, color: col, symbol: sym, line: { width: 1.2, color: col } }, hoverinfo: 'skip' } as Data)
+
+  // sideways Gaussians on the curve: each level's signal spread, drawn out from its concentration. True density
+  // (tight = wide bump, noisy = narrow-and-long), the tightest drawn one spanning GW of the concentration axis.
+  const span = cr[1] - cr[0]
+  const GW = 0.07 * span
+  const gauss = (c: number) => {
+    const mu = m.mean(c)
+    const sd = m.sd(c)
+    return Number.isFinite(mu) && sd > 0 && Number.isFinite(sd) ? { mu, sd } : null
+  }
+  const drawn = [...levels, ...(x.probe !== null ? [x.probe] : [])].map(gauss)
+  const sdRef = Math.min(...drawn.filter((g): g is { mu: number; sd: number } => !!g).map((g) => g.sd), Infinity)
+  const bump = (c: number, g: { mu: number; sd: number }) => {
+    const ys = linspace(g.mu - 3.5 * g.sd, g.mu + 3.5 * g.sd, 71)
+    const w = GW * (sdRef / g.sd)
+    const cs = ys.map((y) => c + w * Math.exp(-0.5 * ((y - g.mu) / g.sd) ** 2))
+    return { cs: [c, ...cs, c], ys: [ys[0], ...ys, ys[ys.length - 1]] }
+  }
+  if (x.onCurve && Number.isFinite(sdRef))
+    levels.forEach((c, i) => {
+      const g = gauss(c)
+      if (!g) return
+      const b = bump(c, g)
+      traces.push({
+        type: 'scatter',
+        mode: 'lines',
+        ...xy(b.cs, b.ys),
+        fill: 'toself',
+        fillcolor: levelColor(i, levels.length, pal.dark, 0.1),
+        line: { color: levelColor(i, levels.length, pal.dark, 0.85), width: 1.1 },
+        hoverinfo: 'skip',
+      } as Data)
+    })
+
+  // hover: dashed Gaussian at the hovered concentration + guide lines from both axes to the curve
+  if (x.probe !== null) {
+    const c = x.probe
+    const g = gauss(c)
+    if (g) {
+      const guide = { color: pal.muted, width: 1, dash: 'dot' as const }
+      // concentration guide from the c axis up to the curve; signal guide from the signal axis across to it
+      shapes.push(
+        flip
+          ? { type: 'line', xref: 'x', yref: 'y', x0: sLo, x1: g.mu, y0: c, y1: c, line: guide }
+          : { type: 'line', xref: 'x', yref: 'y', x0: c, x1: c, y0: sLo, y1: g.mu, line: guide },
+        flip
+          ? { type: 'line', xref: 'x', yref: 'y', x0: g.mu, x1: g.mu, y0: cr[0], y1: c, line: guide }
+          : { type: 'line', xref: 'x', yref: 'y', x0: cr[0], x1: c, y0: g.mu, y1: g.mu, line: guide },
+      )
+      if (Number.isFinite(sdRef)) {
+        const b = bump(c, g)
+        traces.push({ type: 'scatter', mode: 'lines', ...xy(b.cs, b.ys), line: { color: pal.fg, width: 1.1, dash: 'dash' }, hoverinfo: 'skip' } as Data)
+      }
+    }
+  }
+
+  // resolvable ladder as faint ticks just inside the concentration axis (Shift-click near one adds it)
+  for (const c of x.ladderTicks) {
+    const tick = { color: withAlpha(pal.accent, 0.55), width: 1.5 }
+    shapes.push(flip ? { type: 'line', xref: 'paper', yref: 'y', x0: 0, x1: 0.018, y0: c, y1: c, line: tick } : { type: 'line', xref: 'x', yref: 'paper', x0: c, x1: c, y0: 0, y1: 0.03, line: tick })
+  }
+
+  // hovered fit (ghost): dashed preview before applying
+  if (x.ghost) {
+    const g = x.ghost
+    const dash = { color: pal.fg, width: 1.6, dash: 'dash' as const }
+    if (g.mean) traces.push({ type: 'scatter', mode: 'lines', ...xy(grid, grid.map((c) => nn(g.mean!(c)))), line: dash, hoverinfo: 'skip' } as Data)
+    if (g.sd)
+      for (const sign of [1, -1])
+        traces.push({ type: 'scatter', mode: 'lines', ...xy(grid, mu.map((v) => nn(v + sign * 2 * g.sd!(v)))), line: { ...dash, width: 1.2 }, hoverinfo: 'skip' } as Data)
+  }
+
+  // experiment: this run's estimated means as short dashes across each level's dots
+  if (x.estimates?.length)
+    traces.push({
+      type: 'scatter',
+      mode: 'markers',
+      ...xy(x.estimates.map((e) => e.c), x.estimates.map((e) => e.mean)),
+      marker: { symbol: flip ? 'line-ns' : 'line-ew', size: 16, line: { width: 2.2, color: pal.fg } },
+      hoverinfo: 'skip',
+    } as Data)
+
+  // level markers on the curve
+  if (levels.length)
+    traces.push({
+      type: 'scatter',
+      mode: 'markers',
+      ...xy(levels, levels.map((c) => nn(m.mean(c)))),
+      marker: { size: 8, color: pal.panel, line: { width: 1.6, color: levels.map((_, i) => levelColor(i, levels.length, pal.dark)) } },
+      text: levels.map((c) => `c ${fmt(c)}${u}<br>mean ${fmt(m.mean(c), 4)} · SD ${fmt(m.sd(c))}`),
+      hovertemplate: '%{text}<extra></extra>',
+    } as Data)
+
+  // measure markers + bracket, coloured by the pair's closeness (live while the second point is pending)
+  const pair = measurePair(x.measure, x.live)
+  if (x.measure) {
+    const cs = pair ? [pair[0], pair[1]] : [x.measure.a]
+    traces.push({
+      type: 'scatter',
+      mode: 'markers',
+      ...xy(cs, cs.map((c) => nn(m.mean(c)))),
+      marker: { size: 9, color: pal.fg, symbol: 'circle-open', line: { width: 1.6, color: pal.fg } },
+      hoverinfo: 'skip',
+    } as Data)
+    if (pair) {
+      const [c1, c2] = pair
+      const [m1, m2] = [m.mean(c1), m.mean(c2)]
+      const off = 0.04 * (sHi - sLo) * (m2 >= m1 ? -1 : 1)
+      const row = pairRow(m, c1, c2, s.metric, s.kTarget)
+      const col = closenessColor(closenessQ(row, s.metric, s.kTarget))
+      const mid = 0.5 * (c1 + c2)
+      const label = `${METRIC_LABEL[s.metric]} ${fmt(row[s.metric])}`
+      notes.push({
+        ...(flip ? { x: 0.5 * (m1 + m2) + off, y: mid, xanchor: off < 0 ? 'right' : 'left' } : { x: mid, y: 0.5 * (m1 + m2) + off, yanchor: off < 0 ? 'top' : 'bottom' }),
+        xref: 'x',
+        yref: 'y',
+        text: label,
+        showarrow: false,
+        font: { size: 11, color: rgbaCss([col[0], col[1], col[2], 1]) },
+        bgcolor: pal.panel,
+        borderpad: 2,
+      } as Partial<Layout['annotations'][number]>)
+      traces.push({
+        type: 'scatter',
+        mode: 'lines',
+        ...xy([c1, c1, c2, c2], [m1, m1 + off, m2 + off, m2]),
+        line: { color: rgbaCss([col[0], col[1], col[2], 1]), width: 2 },
+        hoverinfo: 'skip',
+      } as Data)
+    }
+  }
+
+  // recovery: signal line, read-back point, and the consistent concentration range shaded on the c axis
+  if (x.reading !== null) {
+    const S = x.reading
+    const r = recover(m, S)
+    const line = { color: pal.fg, width: 1.2, dash: 'dash' as const }
+    shapes.push(flip ? { type: 'line', xref: 'x', yref: 'paper', x0: S, x1: S, y0: 0, y1: 1, line } : { type: 'line', xref: 'paper', yref: 'y', x0: 0, x1: 1, y0: S, y1: S, line })
+    if (r.lo !== null && r.hi !== null) {
+      const fill = withAlpha(pal.accent, 0.1)
+      shapes.push(
+        flip
+          ? { type: 'rect', xref: 'paper', yref: 'y', x0: 0, x1: 1, y0: r.lo, y1: r.hi, fillcolor: fill, line: { width: 0 }, layer: 'below' }
+          : { type: 'rect', xref: 'x', yref: 'paper', x0: r.lo, x1: r.hi, y0: 0, y1: 1, fillcolor: fill, line: { width: 0 }, layer: 'below' },
+      )
+    }
+    if (r.c !== null) traces.push({ type: 'scatter', mode: 'markers', ...xy([r.c], [S]), marker: { size: 9, color: pal.fg }, hoverinfo: 'skip' } as Data)
+    notes.push(
+      flip
+        ? { xref: 'x', yref: 'paper', x: S, y: 1, yanchor: 'top', xanchor: 'left', xshift: 4, text: recoveryText(r, s.units), showarrow: false, font: { size: 11, color: pal.fg }, bgcolor: pal.panel, borderpad: 3 }
+        : { xref: 'paper', yref: 'y', x: 1, y: S, xanchor: 'right', yanchor: 'bottom', yshift: 2, text: recoveryText(r, s.units), showarrow: false, font: { size: 11, color: pal.fg }, bgcolor: pal.panel, borderpad: 3 },
+    )
+  }
+
+  const cAxis = { ...axisStyle(pal, `Concentration${s.units ? ` (${s.units})` : ''}`), range: cr, autorange: false }
+  const sAxis = { ...axisStyle(pal, s.signalLabel || 'Signal'), range: [sLo, sHi], autorange: false }
+  const layout: Partial<Layout> = {
+    ...baseLayout(pal),
+    margin: { ...MARGIN, t: 10, b: 40 },
+    hovermode: 'closest',
+    modebar: { orientation: 'v' },
+    shapes: shapes as Layout['shapes'],
+    annotations: notes as Layout['annotations'],
+    xaxis: { ...(flip ? sAxis : cAxis), constrain: 'range', scaleanchor: false } as unknown as Layout['xaxis'],
+    yaxis: { ...(flip ? cAxis : sAxis), constrain: 'range', scaleanchor: false } as unknown as Layout['yaxis'],
+    uirevision: `${x.focus?.join('-') ?? 'all'}|${flip}|${m.cMax}|${sLo.toPrecision(4)}|${sHi.toPrecision(4)}|${x.shading}|${x.viewRev}`,
+  }
+  return { data: traces, layout, animateKey: flip ? 's2c' : 'c2s' }
+}

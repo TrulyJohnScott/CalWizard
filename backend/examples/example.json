@@ -1,0 +1,13 @@
+{
+  "name": "Example",
+  "units": "ng/mL",
+  "signalLabel": "Signal",
+  "mode": "equations",
+  "meanExpr": "4000 + (50 - 4000)/(1 + (c/40)^1.2)",
+  "sdExpr": "sqrt(15^2 + (0.08*S)^2)",
+  "levels": [0, 1, 5, 25, 100, 500],
+  "cMax": 500,
+  "metric": "ssmd",
+  "kTarget": 3,
+  "sim": { "n": 5, "seed": 42 }
+}
