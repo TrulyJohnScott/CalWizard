@@ -108,3 +108,31 @@ export function useDerived(): Derived {
   const shownDots = exp ? exp.first.levels.map((l) => ({ c: l.c, ys: l.ys })) : dots
   return { series, model, dots: shownDots, listed, range, focus, resolvable, exp, expError, limits, limitsData, requirements, baseline }
 }
+
+/** The same derived values without React: for the static report, tests and any headless use in the browser bundle. */
+export function deriveStatic(series: Series): Derived {
+  const model = compileModel(series)
+  const dots = levelDots(series, model)
+  const lim = series.limits
+  const baseline = model.adjusted
+    ? (() => {
+        const bm = compileModel({ ...series, adjust: null })
+        return { model: bm, resolvable: ladder(bm, series.metric, series.kTarget, 4).length, limits: safe(() => computeLimits(bm, { ...lim, profile: false })) }
+      })()
+    : null
+  return {
+    series,
+    model,
+    listed: model.levels,
+    dots,
+    range: signalRange(model, dots, null),
+    focus: null,
+    resolvable: ladder(model, series.metric, series.kTarget, 4),
+    exp: null,
+    expError: null,
+    limits: safe(() => computeLimits(model, lim)),
+    limitsData: safe(() => computeLimitsData(series, model, lim.alpha, lim.beta)),
+    requirements: safe(() => checkRequirements(series, model)) ?? { results: [], met: 0, total: 0 },
+    baseline,
+  }
+}

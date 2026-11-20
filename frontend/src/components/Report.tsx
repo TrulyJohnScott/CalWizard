@@ -36,7 +36,8 @@ font-family:var(--font);color:var(--fg);background:var(--bg);font-size:14px;line
 .rp-tile b{display:block;font-size:26px;font-weight:650;letter-spacing:-.02em;line-height:1.15}
 .rp-tile span{display:block;font-size:11.5px;color:var(--muted)}
 .rp-tile small{display:block;font-size:11.5px;color:var(--muted)}
-.rp-two{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:16px}
+.rp-two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;margin-top:16px}
+.rp-two>div{min-width:0}
 .rp-fig{margin-top:14px}
 .rp-cap{font-size:11.5px;color:var(--muted);margin:0 0 4px}
 .rp-table{width:100%;border-collapse:collapse;margin-top:14px;font-size:13px}
@@ -53,7 +54,7 @@ font-family:var(--font);color:var(--fg);background:var(--bg);font-size:14px;line
 .rp-foot{font-size:11.5px;color:var(--muted);line-height:1.6}
 .rp-foot code{font-family:ui-monospace,Consolas,monospace;font-size:11px}
 .rp-slot{border:1px dashed var(--line);border-radius:10px;padding:18px;color:var(--muted);font-size:12.5px;text-align:center}
-@media (max-width:760px){.rp-tiles{grid-template-columns:repeat(2,1fr)}.rp-two{grid-template-columns:1fr}}
+@media (max-width:760px){.rp-tiles{grid-template-columns:repeat(2,1fr)}.rp-two{grid-template-columns:minmax(0,1fr)}}
 @media print{.rp-page{padding:0;max-width:none}.rp-sec{break-inside:avoid}}
 `
 

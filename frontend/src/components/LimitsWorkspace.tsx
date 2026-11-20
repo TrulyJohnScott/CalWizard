@@ -50,12 +50,12 @@ export function DetectPlot({ m, lim, signalLabel, units, height = 230, width }: 
                 <path d={areaPath(pts(ps), base)} style={{ fill: 'var(--accent)', opacity: 0.13 }} />
                 <path d={tail(ps, (x) => !beyond(x))} style={{ fill: 'var(--bad)', opacity: 0.45 }} />
                 <path d={linePath(pts(ps))} style={{ fill: 'none', stroke: 'var(--accent)', strokeWidth: 1.8 }} />
-                <Label x={c.X(s.mu)} y={c.Y(gaussPdf(s.mu, s.mu, s.sd)) - 8} color="var(--accent)" weight={600} size={12}>
+                <Label x={c.X(s.mu) - d * 6} y={c.Y(gaussPdf(s.mu, s.mu, s.sd)) - 8} anchor={d > 0 ? 'start' : 'end'} color="var(--accent)" weight={600} size={12}>
                   sample at the LoD · {withUnits(lod!.c, units)}
                 </Label>
               </>
             )}
-            <Label x={c.X(b.mu)} y={c.Y(gaussPdf(b.mu, b.mu, b.sd)) - 8} color="var(--muted)" weight={600} size={12}>
+            <Label x={c.X(b.mu) + d * 6} y={c.Y(gaussPdf(b.mu, b.mu, b.sd)) - 8} anchor={d > 0 ? 'end' : 'start'} color="var(--muted)" weight={600} size={12}>
               blank
             </Label>
             <line x1={lx} x2={lx} y1={c.t + 14} y2={c.b} style={{ stroke: 'var(--fg)', strokeDasharray: '4 3', opacity: 0.75 }} />

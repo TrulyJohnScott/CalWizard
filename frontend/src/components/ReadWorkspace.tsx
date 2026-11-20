@@ -192,7 +192,7 @@ export function ReadWorkspace({ d }: { d: Derived }) {
             <th className="px-2 py-1 text-right">{concLabel(s)}</th>
             <th className="px-2 py-1 text-right">{fmt(conf * 100, 3)}% range</th>
             <th className="w-[62px] px-2 py-1 text-right">CV</th>
-            <th className="px-2 py-1 text-left">Note</th>
+            <th className="py-1 pl-4 pr-2 text-left">Note</th>
           </tr>
         </thead>
         <tbody>
@@ -211,7 +211,7 @@ export function ReadWorkspace({ d }: { d: Derived }) {
                 </td>
                 <td className="px-2 text-right text-muted">{out ? rangeText(r) : ''}</td>
                 <td className="px-2 text-right text-muted">{out && r.cv !== null ? pct2(r.cv) : ''}</td>
-                <td className="px-2 text-left" style={{ color: tone }}>
+                <td className="pl-4 pr-2 text-left" style={{ color: tone }}>
                   {out ? FLAG_TEXT[r.flag] : ''}
                 </td>
               </tr>
