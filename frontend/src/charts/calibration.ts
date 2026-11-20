@@ -1,7 +1,7 @@
 import type { Data, Layout } from 'plotly.js'
 import { fmt, recoveryText } from '../format'
 import { pairRow, recover, resolutionProfile } from '../math/analysis'
-import { closenessColor, closenessQ, rgbaCss } from '../math/closeness'
+import { closenessColor, closenessQ, closenessRgbSmooth, rgbaCss } from '../math/closeness'
 import { METRIC_LABEL } from '../math/metrics'
 import { heatImage, type HeatImage } from '../math/heat'
 import type { Model } from '../math/model'
@@ -65,8 +65,7 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
   const prof = resolutionProfile(m, s.metric, s.kTarget, cEnd)
   const resColourAt = (c: number): [number, number, number] => {
     const i = Math.min(prof.c.length - 1, Math.max(0, Math.round((c / cEnd) * (prof.c.length - 1))))
-    const col = closenessColor(prof.q[i])
-    return [col[0], col[1], col[2]]
+    return closenessRgbSmooth(prof.q[i])
   }
   const SEG = linspace(0, cEnd, 41)
 
