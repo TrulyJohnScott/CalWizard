@@ -40,8 +40,8 @@ export function WhatIfBar({ d }: { d: Derived }) {
       <span className="text-[12px] font-semibold text-accent">What if</span>
       <Scrub label="background" value={s.adjust?.bottom ?? b0} step={span / 400} width={62} onChange={(v) => set({ bottom: v === b0 ? null : v })} title="Signal of a blank: lower it to model less non-specific binding. Drag the label, type, or use the arrow keys." />
       <Scrub label="top" value={s.adjust?.top ?? t0} step={span / 200} width={62} onChange={(v) => set({ top: v === t0 ? null : v })} title="Signal at the top of the range: raise it to model a stronger test line" />
-      <Scrub label="midpoint ×" value={s.adjust?.cScale ?? 1} step={0.005} min={0.05} max={20} width={50} onChange={(v) => set({ cScale: v })} title="Stretch of the concentration axis: below 1 the curve responds at lower concentrations" />
-      <Scrub label="noise ×" value={s.adjust?.sdScale ?? 1} step={0.005} min={0} max={10} width={50} onChange={(v) => set({ sdScale: v })} title="Every SD is multiplied by this: 0.7 means CVs 30% tighter" />
+      <Scrub label="midpoint ×" value={s.adjust?.cScale ?? 1} step={0.005} min={0.05} max={20} width={50} digits={3} onChange={(v) => set({ cScale: v })} title="Stretch of the concentration axis: below 1 the curve responds at lower concentrations" />
+      <Scrub label="noise ×" value={s.adjust?.sdScale ?? 1} step={0.005} min={0} max={10} width={50} digits={3} onChange={(v) => set({ sdScale: v })} title="Every SD is multiplied by this: 0.7 means CVs 30% tighter" />
       {base ? (
         <span className="flex flex-wrap items-center gap-x-4 text-[12px]">
           <Delta label="levels" from={String(base.resolvable)} to={String(d.resolvable.length)} better={d.resolvable.length === base.resolvable ? null : d.resolvable.length > base.resolvable} />

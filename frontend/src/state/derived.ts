@@ -54,7 +54,9 @@ export function useDerived(): Derived {
   const model = useMemo(() => compileModel(series), [series])
   const dots = useMemo(() => levelDots(series, model), [series, model])
   const focus = useStore((s) => s.focus)
-  const range = useMemo(() => signalRange(model, dots, focus), [model, dots, focus])
+  const hold = useStore((s) => s.hold)
+  const fitted = useMemo(() => signalRange(model, dots, focus), [model, dots, focus])
+  const range = hold ?? fitted
   const listed = lad?.list ?? model.levels
   // independent of the levels list, so dragging/editing levels does not recompute it
   const { mode, meanExpr, sdExpr, cMax, replicates, summary, metric, kTarget, adjust } = series

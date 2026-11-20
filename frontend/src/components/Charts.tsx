@@ -6,6 +6,7 @@ import { usePlot, loadPlotly } from '../charts/usePlot'
 import { fmt } from '../format'
 import { inverse } from '../math/analysis'
 import { compileExpr } from '../math/expr'
+import { dragHandle, handles } from '../math/whatif'
 import type { Derived } from '../state/derived'
 import { breakCoalescing, isPending, rulerPoints, useStore, type Measure } from '../state/store'
 import { usePalette } from '../theme'
@@ -33,7 +34,12 @@ interface Target {
   i: number
   x: number
   y: number
+  /** cursor / drag direction for this target (default: the chart's) */
+  axis?: 'ew' | 'ns'
 }
+
+/** What-if handle k is drag target WHATIF + k. */
+const WHATIF = 1_000_000
 
 /** Pointer-down within ~8px of a target starts a drag (capturing the event so Plotly's zoom does not start). */
 function useDrag(
@@ -68,7 +74,7 @@ function useDrag(
       e.stopPropagation()
       e.preventDefault()
       cur.current.onStart(t.i)
-      el.dataset.cursor = cur.current.axis
+      el.dataset.cursor = t.axis ?? cur.current.axis
       const mv = (ev: MouseEvent) => {
         const r = el.getBoundingClientRect()
         cur.current.onMove(t.i, ev.clientX - r.left, ev.clientY - r.top)
@@ -84,7 +90,8 @@ function useDrag(
     }
     const hover = (e: MouseEvent) => {
       if (e.buttons) return
-      el.dataset.cursor = hit(e) ? cur.current.axis : ''
+      const h = hit(e)
+      el.dataset.cursor = h ? h.axis ?? cur.current.axis : ''
     }
     el.addEventListener('mousedown', down, true)
     el.addEventListener('mousemove', hover)
@@ -192,16 +199,20 @@ export function CalibrationChart({ d }: { d: Derived }) {
     [listed, measure],
   )
   const estimates = useMemo(() => d.exp?.first.levels.map((l) => ({ c: l.c, mean: l.mean })) ?? null, [d.exp])
+  const limitTicks = useMemo(() => (ui.showLimits && d.limits ? { lod: d.limits.lod?.c ?? null, loq: d.limits.loq?.c ?? null } : null), [ui.showLimits, d.limits])
   const spec = useMemo(
-    () => buildCalibration({ series, model, dots, listed, flip: ui.flip, shading: ui.shading, jitter: ui.jitter, measure, live, range, focus, viewRev, reading, probe: null, onCurve: ui.marginal, estimates, ghost, ladderTicks: d.resolvable, pal }),
-    [series, model, dots, listed, ui.flip, ui.shading, ui.jitter, measure, live, range, focus, viewRev, reading, ui.marginal, estimates, ghost, d.resolvable, pal],
+    () => buildCalibration({ series, model, dots, listed, flip: ui.flip, shading: ui.shading, jitter: ui.jitter, measure, live, range, focus, viewRev, reading, probe: null, onCurve: ui.marginal, estimates, ghost, ladderTicks: d.resolvable, whatIf: ui.whatIf, limitTicks, pal }),
+    [series, model, dots, listed, ui.flip, ui.shading, ui.jitter, measure, live, range, focus, viewRev, reading, ui.marginal, estimates, ghost, d.resolvable, ui.whatIf, limitTicks, pal],
   )
   const ref = usePlot(spec)
   const down = useRef<{ x: number; y: number } | null>(null)
   /** ruler state before the latest single click, so a double-click (view reset) can take that click back */
   const beforeClick = useRef<Measure | null>(null)
   const mover = useLevelMover(d)
-  const editable = series.mode === 'equations' && !lad?.list
+  // while the what-if handles are out, levels are not draggable (the handles sit on the first and last level)
+  const editable = series.mode === 'equations' && !lad?.list && !ui.whatIf
+  /** the series and model when a what-if drag began: every move is measured from there */
+  const dragStart = useRef<Derived | null>(null)
   useDrag(ref, {
     enabled: true,
     axis: ui.flip ? 'ns' : 'ew',
@@ -209,25 +220,47 @@ export function CalibrationChart({ d }: { d: Derived }) {
       const fl = (ref.current as any)?._fullLayout
       if (!fl?.xaxis) return []
       const { xaxis: xa, yaxis: ya } = fl
-      return dragTargets(d, editable, measure, (c) => {
-        const mu = model.mean(c)
-        const px = xa._offset + xa.d2p(ui.flip ? mu : c)
-        const py = ya._offset + ya.d2p(ui.flip ? c : mu)
-        return Number.isFinite(px) && Number.isFinite(py) ? [px, py] : null
+      const px = (c: number, S: number): [number, number] => [xa._offset + xa.d2p(ui.flip ? S : c), ya._offset + ya.d2p(ui.flip ? c : S)]
+      const out = dragTargets(d, editable, measure, (c) => {
+        const p = px(c, model.mean(c))
+        return Number.isFinite(p[0]) && Number.isFinite(p[1]) ? p : null
       })
+      if (ui.whatIf)
+        handles(model).forEach((h, k) => {
+          const p = px(h.c, h.s)
+          const along = h.axis === 'conc' ? (ui.flip ? 'ns' : 'ew') : ui.flip ? 'ew' : 'ns'
+          if (Number.isFinite(p[0]) && Number.isFinite(p[1])) out.push({ i: WHATIF + k, x: p[0], y: p[1], axis: along })
+        })
+      return out
     },
     onStart: (i) => {
       down.current = null
-      if (i > 0) {
+      if (i >= WHATIF) {
+        breakCoalescing()
+        dragStart.current = d
+        useStore.getState().setHold(d.range)
+      } else if (i > 0) {
         breakCoalescing()
         setLadder(null)
       } else useStore.getState().selectMeasure(-i - 1)
     },
     onMove: (i, x, y) => {
       const fl = (ref.current as any)._fullLayout
+      if (i >= WHATIF) {
+        const cur = dragStart.current ?? d
+        const c = (ui.flip ? fl.yaxis : fl.xaxis).p2d((ui.flip ? y : x) - (ui.flip ? fl.yaxis : fl.xaxis)._offset)
+        const S = (ui.flip ? fl.xaxis : fl.yaxis).p2d((ui.flip ? x : y) - (ui.flip ? fl.xaxis : fl.yaxis)._offset)
+        const next = dragHandle(cur.series.adjust, cur.model, handles(cur.model)[i - WHATIF].key, c, S)
+        if (next !== undefined) useStore.getState().patch({ adjust: next })
+        return
+      }
       mover.move(i, ui.flip ? fl.yaxis.p2d(y - fl.yaxis._offset) : fl.xaxis.p2d(x - fl.xaxis._offset))
     },
-    onEnd: () => mover.flush(),
+    onEnd: (i) => {
+      if (i < WHATIF) return mover.flush()
+      dragStart.current = null
+      useStore.getState().setHold(null)
+    },
   })
   // the recovery line: grab it anywhere within 6px and drag along the signal axis
   const rd = useRef({ reading, flip: ui.flip })

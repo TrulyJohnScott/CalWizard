@@ -26,6 +26,7 @@ export interface Palette {
   accent: string
   bad: string
   warm: string
+  good: string
   font: string
 }
 
@@ -42,6 +43,7 @@ function read(): Palette {
     accent: v('--accent'),
     bad: v('--bad'),
     warm: v('--warm'),
+    good: v('--good'),
     font: v('--font'),
   }
 }

@@ -7,6 +7,7 @@ import { heatImage, type HeatImage } from '../math/heat'
 import type { Model } from '../math/model'
 import { hashUnit, type LevelDots } from '../math/sim'
 import type { Series } from '../math/types'
+import { handles } from '../math/whatif'
 import { rulerPoints, type Measure } from '../state/store'
 import { levelColor, withAlpha, type Palette } from '../theme'
 import { axisStyle, baseLayout, concRange, linspace, MARGIN, nn } from './common'
@@ -39,6 +40,10 @@ export interface CalibrationIn {
   ladderTicks: number[]
   /** hovered fit drawn dashed: a mean curve, or ±2σ edges of the current mean with a new sd(S) */
   ghost: { mean?: (c: number) => number; sd?: (S: number) => number } | null
+  /** what-if handles drawn on the curve (diamonds) */
+  whatIf: boolean
+  /** LoD / LoQ marked on the concentration axis, or null */
+  limitTicks: { lod: number | null; loq: number | null } | null
   /** simulated experiment: this run's estimated mean per concentration (short dashes), or null */
   estimates: { c: number; mean: number }[] | null
   pal: Palette
@@ -235,6 +240,25 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
     shapes.push(flip ? { type: 'line', xref: 'paper', yref: 'y', x0: 0, x1: 0.018, y0: c, y1: c, line: tick } : { type: 'line', xref: 'x', yref: 'paper', x0: c, x1: c, y0: 0, y1: 0.03, line: tick })
   }
 
+  // LoD / LoQ on the concentration axis: a short labelled tick each (spec §15)
+  if (x.limitTicks) {
+    const marks: [number | null, string, string][] = [[x.limitTicks.lod, 'LoD', pal.muted], [x.limitTicks.loq, 'LoQ', pal.good]]
+    marks.forEach(([c, text, color], k) => {
+      if (c === null || c > cr[1]) return
+      const line = { color, width: 1.2, dash: 'dot' as const }
+      shapes.push(flip ? { type: 'line', xref: 'paper', yref: 'y', x0: 0, x1: 0.06, y0: c, y1: c, line } : { type: 'line', xref: 'x', yref: 'paper', x0: c, x1: c, y0: 0, y1: 0.1 + 0.05 * k, line })
+      notes.push(
+        (flip
+          ? { xref: 'paper', yref: 'y', x: 0.065, y: c, xanchor: 'left', yanchor: 'middle' }
+          : { xref: 'x', yref: 'paper', x: c, y: 0.1 + 0.05 * k, xanchor: 'left', yanchor: 'bottom', xshift: 2 }) as Partial<Layout['annotations'][number]>,
+      )
+      Object.assign(notes[notes.length - 1], { text, showarrow: false, font: { size: 10, color } })
+    })
+  }
+
+  // what-if: today's curve stays in view as a dashed line under the adjusted one
+  if (m.base) traces.push({ type: 'scatter', mode: 'lines', ...xy(grid, grid.map((c) => nn(m.base!.mean(c)))), line: { color: pal.muted, width: 1.4, dash: 'dash' }, hoverinfo: 'skip' } as Data)
+
   // hovered fit (ghost): dashed preview before applying
   if (x.ghost) {
     const g = x.ghost
@@ -313,6 +337,21 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
         hoverinfo: 'skip',
       } as Data)
     }
+  }
+
+  // what-if handles: diamonds you drag (background and top up/down, midpoint sideways, noise at the band edge)
+  if (x.whatIf) {
+    const hs = handles(m).filter((h) => Number.isFinite(h.s))
+    traces.push({
+      type: 'scatter',
+      mode: 'markers+text',
+      ...xy(hs.map((h) => h.c), hs.map((h) => h.s)),
+      marker: { symbol: 'diamond', size: 13, color: pal.accent, line: { width: 2, color: pal.panel } },
+      text: hs.map((h) => h.label),
+      textposition: hs.map((h) => (h.key === 'top' ? 'middle left' : h.key === 'bottom' ? 'middle right' : 'top center')),
+      textfont: { size: 11, color: pal.accent },
+      hovertemplate: hs.map((h) => `drag to change the ${h.label}<extra></extra>`),
+    } as unknown as Data)
   }
 
   // recovery: signal line, read-back point, and the consistent concentration range shaded on the c axis

@@ -112,6 +112,9 @@ interface State {
   /** zoomed concentration window (null = whole range); both charts refit the signal axis to it */
   focus: [number, number] | null
   setFocus: (f: [number, number] | null) => void
+  /** signal range held still while a what-if handle is dragged (the charts must not rescale under the cursor) */
+  hold: [number, number] | null
+  setHold: (r: [number, number] | null) => void
   /** bumps on "reset view" so both charts re-apply the ranges computed from the current data */
   viewRev: number
   resetView: () => void
@@ -298,6 +301,8 @@ export const useStore = create<State>((set) => ({
   setReading: (reading) => set({ reading: reading !== null && Number.isFinite(reading) ? reading : null }),
   focus: null,
   setFocus: (focus) => set({ focus: focus && focus[1] > focus[0] ? focus : null }),
+  hold: null,
+  setHold: (hold) => set({ hold }),
   viewRev: 0,
   resetView: () => set((s) => ({ focus: null, viewRev: s.viewRev + 1 })),
   patch: (p) =>

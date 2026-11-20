@@ -3,7 +3,8 @@
  * equations get new expressions, tables get transformed concentrations / readings. bake(s) evaluates like s.
  */
 import { parseExpr, type Ast } from './expr'
-import { compileModel } from './model'
+import { inverse } from './analysis'
+import { compileModel, type Model } from './model'
 import { adjustActive, NO_ADJUST, type Adjust, type Series } from './types'
 
 /** Fully parenthesised expression text with the variable replaced by `v`. */
@@ -65,4 +66,59 @@ export function adjustText(p: { b0: number; t0: number; b1: number; t1: number; 
   if (p.cScale !== 1) parts.push(`midpoint ×${f(p.cScale)}`)
   if (p.sdScale !== 1) parts.push(`noise ×${f(p.sdScale)}`)
   return parts.join(' · ')
+}
+
+export type HandleKey = 'bottom' | 'top' | 'mid' | 'noise'
+
+/** A drag handle on the curve: where it sits and along which axis it moves. */
+export interface Handle {
+  key: HandleKey
+  c: number
+  s: number
+  axis: 'signal' | 'conc'
+  label: string
+}
+
+const NOISE_AT = 0.72
+
+/** The four what-if handles for the curve as it is now (spec §14). */
+export function handles(m: Model): Handle[] {
+  const b = m.mean(0)
+  const t = m.mean(m.cMax)
+  const half = inverse(m, 0.5 * (b + t)) ?? m.cMax / 2
+  const cn = NOISE_AT * m.cMax
+  return [
+    { key: 'bottom', c: 0, s: b, axis: 'signal', label: 'background' },
+    { key: 'top', c: m.cMax, s: t, axis: 'signal', label: 'top' },
+    { key: 'mid', c: half, s: m.mean(half), axis: 'conc', label: 'midpoint' },
+    { key: 'noise', c: cn, s: m.mean(cn) + 2 * m.sd(cn), axis: 'signal', label: 'noise' },
+  ]
+}
+
+const r4 = (x: number) => +x.toPrecision(4)
+
+/** The adjust after dragging handle `key` to concentration c / signal S. Null when the drag makes no sense there. */
+export function dragHandle(cur: Adjust | null, m: Model, key: HandleKey, c: number, S: number): Adjust | null | undefined {
+  const a = { ...NO_ADJUST, ...(cur ?? {}) }
+  const f = m.base?.mean ?? m.mean
+  const b0 = m.adjust?.b0 ?? m.mean(0)
+  const t0 = m.adjust?.t0 ?? m.mean(m.cMax)
+  if (!Number.isFinite(c) || !Number.isFinite(S)) return undefined
+  if (key === 'bottom') return withAdjust(cur, { bottom: r4(S) })
+  if (key === 'top') {
+    const b1 = a.bottom ?? b0
+    const denom = f(m.cMax / a.cScale) - b0
+    if (!(Math.abs(denom) > 0)) return undefined
+    return withAdjust(cur, { top: r4(b1 + ((S - b1) * (t0 - b0)) / denom) })
+  }
+  if (key === 'mid') {
+    const at = handles(m)[2].c
+    if (!(at > 0 && c > 0)) return undefined
+    return withAdjust(cur, { cScale: r4(Math.min(20, Math.max(0.05, (a.cScale * c) / at))) })
+  }
+  const cn = NOISE_AT * m.cMax
+  const sd = m.sd(cn)
+  if (!(sd > 0)) return undefined
+  const ratio = (S - m.mean(cn)) / (2 * sd)
+  return withAdjust(cur, { sdScale: r4(Math.min(10, Math.max(0.02, a.sdScale * ratio))) })
 }

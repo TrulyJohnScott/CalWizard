@@ -56,6 +56,9 @@ export function LevelsSidebar({ d }: { d: Derived }) {
   const popMeasure = useStore((s) => s.popMeasure)
   const probe = useStore((s) => (isPending(s.measure) ? s.probe : null))
   const [add, setAdd] = useState('')
+  const [addAnchor, setAddAnchor] = useState('')
+  const setMeasurePts = useStore((s) => s.setMeasurePts)
+  const selectMeasure = useStore((s) => s.selectMeasure)
   const { series: s, model: m, listed } = d
   const editable = s.mode === 'equations' && !lad?.list
   const metricName = METRIC_LABEL[s.metric]
@@ -151,7 +154,45 @@ export function LevelsSidebar({ d }: { d: Derived }) {
                 </button>
               </span>
             </div>
-            <div className="mb-1 text-[10.5px] text-faint">click: add · press a point: select, drag to move · Delete: selected (or last) · Esc: deselect, then clear</div>
+            {/* anchors as editable numbers: type an exact value, remove one, or add one without touching the chart */}
+            <div className="mb-1.5 flex flex-wrap items-center gap-1">
+              <span className="anchor-chip text-faint" title="The blank is always the first anchor">
+                0
+              </span>
+              {[...measure.pts]
+                .map((c, i) => ({ c, i }))
+                .sort((x, y) => x.c - y.c)
+                .map(({ c, i }) => (
+                  <span key={i} className="anchor-chip" data-on={measure.sel === i} onMouseDown={() => selectMeasure(i)} title="Type an exact concentration; press the × to remove">
+                    <LevelInput
+                      value={c}
+                      onCommit={(v) => {
+                        const pts = measure.pts.filter((_, k) => k !== i)
+                        setMeasurePts(v === null ? pts : [...pts, v])
+                      }}
+                    />
+                    <button className="btn ghost text-faint" style={{ height: 16, padding: '0 2px' }} onClick={() => setMeasurePts(measure.pts.filter((_, k) => k !== i))} aria-label={`Remove anchor ${fmt(c)}`}>
+                      <IconX />
+                    </button>
+                  </span>
+                ))}
+              <input
+                type="text"
+                inputMode="decimal"
+                className="bare"
+                style={{ width: 58, height: 22 }}
+                placeholder="add…"
+                value={addAnchor}
+                onChange={(e) => setAddAnchor(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key !== 'Enter') return
+                  const v = parseNum(addAnchor)
+                  if (v !== null && v >= 0) setMeasurePts([...measure.pts, v])
+                  setAddAnchor('')
+                }}
+              />
+            </div>
+            <div className="mb-1 text-[10.5px] text-faint">click the chart to add · drag a point to move it · Delete removes the selected one · Esc clears</div>
             {rulerRows.length > 0 && (
               <>
                 <div className="grid text-[10.5px] text-muted" style={{ gridTemplateColumns: '1fr 52px 44px 44px 30px' }}>
@@ -171,9 +212,9 @@ export function LevelsSidebar({ d }: { d: Derived }) {
                     className="grid items-center text-[11.5px]"
                     style={{ gridTemplateColumns: '1fr 52px 44px 44px 30px', height: 20, color: committed ? undefined : 'var(--muted)' }}
                   >
-                    <span className="truncate">
+                    <button className="link truncate text-left text-[11.5px]" style={{ color: 'inherit' }} title="Look at this pair in depth" onClick={() => setUi({ workspace: 'separate', sep: { a: r.c1, b: r.c2 } })}>
                       {fmt(r.c1, 3)} → {fmt(r.c2, 3)}
-                    </span>
+                    </button>
                     <span className="text-right" style={{ color: r.pass ? 'var(--accent)' : 'var(--bad)' }}>
                       {fmt(r[s.metric])}
                     </span>
@@ -258,7 +299,11 @@ export function LevelsSidebar({ d }: { d: Derived }) {
                     {' '}
                     · or {fmt(r!.c1, 3)} → {fmt(why.moveTo, 3)}
                   </>
-                )}
+                )}{' '}
+                ·{' '}
+                <button className="link text-[10.5px]" onClick={() => setUi({ workspace: 'separate', sep: { a: r!.c1, b: r!.c2 } })}>
+                  look closer
+                </button>
               </div>
             )}
             </div>
