@@ -5,7 +5,7 @@ import { adjustActive, type Adjust, type MetricKey, type Mode, type Requirement,
 
 export type Theme = 'system' | 'light' | 'dark'
 /** One workspace per job (spec §21): each shows only what that job needs. */
-export type Workspace = 'curve' | 'separate' | 'limits' | 'read' | 'requirements' | 'strips'
+export type Workspace = 'curve' | 'separate' | 'limits' | 'read' | 'requirements' | 'variability' | 'strips'
 export type Dialog = null | 'start' | 'import'
 
 export interface Ui {

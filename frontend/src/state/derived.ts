@@ -59,34 +59,34 @@ export function useDerived(): Derived {
   const range = hold ?? fitted
   const listed = lad?.list ?? model.levels
   // independent of the levels list, so dragging/editing levels does not recompute it
-  const { mode, meanExpr, sdExpr, cMax, replicates, summary, metric, kTarget, adjust } = series
+  const { mode, meanExpr, sdExpr, cMax, replicates, summary, metric, kTarget, adjust, layers } = series
   const resolvable = useMemo(
     () => ladder(model, metric, kTarget, 4),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mode, meanExpr, sdExpr, cMax, replicates, summary, metric, kTarget, adjust],
+    [mode, meanExpr, sdExpr, cMax, replicates, summary, metric, kTarget, adjust, layers],
   )
   const lim = series.limits
   const limits = useMemo(
     () => safe(() => computeLimits(model, lim)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mode, meanExpr, sdExpr, cMax, replicates, summary, adjust, lim],
+    [mode, meanExpr, sdExpr, cMax, replicates, summary, adjust, layers, lim],
   )
   const limitsData = useMemo(
     () => safe(() => computeLimitsData(series, model, lim.alpha, lim.beta)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mode, replicates, summary, adjust, lim],
+    [mode, replicates, summary, adjust, layers, lim],
   )
   const requirements = useMemo(
     () => safe(() => checkRequirements(series, model)) ?? { results: [], met: 0, total: 0 },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mode, meanExpr, sdExpr, cMax, replicates, summary, metric, kTarget, adjust, lim, series.requirements],
+    [mode, meanExpr, sdExpr, cMax, replicates, summary, metric, kTarget, adjust, layers, lim, series.requirements],
   )
   const baseline = useMemo<Baseline | null>(() => {
     if (!model.adjusted) return null
     const bm = compileModel({ ...series, adjust: null })
     return { model: bm, resolvable: ladder(bm, metric, kTarget, 4).length, limits: safe(() => computeLimits(bm, { ...lim, profile: false })) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [model.adjusted, mode, meanExpr, sdExpr, cMax, replicates, summary, metric, kTarget, lim])
+  }, [model.adjusted, mode, meanExpr, sdExpr, cMax, replicates, summary, metric, kTarget, layers, lim])
   const es = useStore((s) => s.exp)
   const { exp, expError } = useMemo(() => {
     if (!es.open) return { exp: null, expError: null }

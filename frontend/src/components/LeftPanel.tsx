@@ -7,7 +7,6 @@ import type { Derived } from '../state/derived'
 import { useStore } from '../state/store'
 import { EquationsEditor, ExprField } from './EquationsEditor'
 import { FitList, useAutoFit } from './FitPanel'
-import { LayersEditor } from './LayersEditor'
 import { QuickEntry, TableEditor } from './TableEditor'
 import { IconChevron, Seg } from './ui'
 
@@ -162,9 +161,11 @@ export function LeftPanel({ d }: { d: Derived }) {
             )}
           </div>
         )}
-        <div className="mt-4">
-          <LayersEditor d={d} />
-        </div>
+        {(series.layers ?? []).some((l) => l.on) && (
+          <button className="link mt-4 self-start text-[11.5px]" onClick={() => setUi({ workspace: 'variability' })} title="The spread shown includes these layers; open the Variability workspace to change them">
+            + {(series.layers ?? []).filter((l) => l.on).map((l) => l.name).join(', ')} variability included
+          </button>
+        )}
       </div>
     </aside>
   )

@@ -122,6 +122,7 @@ export function Report({ d, opt = {} }: { d: Derived; opt?: ReportOptions }) {
       sep = null
     }
   }
+  const layersOn = (s.layers ?? []).filter((l) => l.on)
   const dot = (ok: boolean) => <span className="rp-dot" style={{ background: ok ? 'var(--good)' : 'var(--bad)' }} />
   const source =
     s.mode === 'equations' ? (
@@ -316,7 +317,7 @@ export function Report({ d, opt = {} }: { d: Derived; opt?: ReportOptions }) {
           <p className="rp-foot">
             Curve: {source}. Two neighbouring levels count as resolved when {ruleText(s.metric, s.kTarget).replace('·', '(about')} for equal spreads). Limit of blank: blank mean + z·SD with{' '}
             {fmt(s.limits.alpha * 100, 3)}% false positives; limit of detection: {fmt(s.limits.beta * 100, 3)}% false negatives; limit of quantitation: result CV within {fmt(s.limits.cv * 100, 3)}%
-            {s.limits.reads > 1 ? `, ${s.limits.reads} strips averaged per result` : ''}. Readings are assumed normally distributed around the curve. Made with Cal Wizard.
+            {s.limits.reads > 1 ? `, ${s.limits.reads} strips averaged per result` : ''}.{layersOn.length ? ` The spread includes variability between ${layersOn.map((l) => `${l.name.toLowerCase()}s`).join(', ')}, not just within one run.` : ''} Readings are assumed normally distributed around the curve. Made with Cal Wizard.
           </p>
         </section>
       </div>

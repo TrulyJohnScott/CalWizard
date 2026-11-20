@@ -635,11 +635,12 @@ using §11's paste). `calwizard import FILE [--conc COL --signal COL --name N]` 
 | Validation scientist | "What are LoB / LoD / LoQ, and how many strips prove it?" | **Limits** (3) | three numbers, two pictures, estimate from data, planner |
 | Analyst running samples | "Here is a column of signals" | **Read** (4) | a sheet: signal in, concentration, range, CV, flag; Excel out |
 | Project lead with a client spec | "Does it meet the spec, and what closes the gap?" | **Requirements** (5) | sentences with numbers, met / not met, the gap |
+| Transfer / robustness scientist | "What do lots, readers and days cost, and what did the study show?" | **Variability** (6) | the chain of resolvable levels as layers are added, the layers, the planned study, the budget and dial-in (§22) |
 | Anyone, in a meeting | "Show it" | **Present** (P) | the report, nothing editable |
 
 - **Top bar:** `Cal Wizard` (opens Start) · name / analyte / units / signal label (one popover; they label every axis,
-  sentence and export) · workspace tabs (keys 1–6) · `N resolvable levels` and the pass rule · `What if` (W) · undo / redo ·
-  `Share` · `Present` (P) · gear. `Strips` (6) is a kept place for the separate strip simulator: `stripSpec(d)` is its
+  sentence and export) · workspace tabs (keys 1–7) · `N resolvable levels` and the pass rule · `What if` (W) · undo / redo ·
+  `Share` · `Present` (P) · gear. `Strips` (7) is a kept place for the separate strip simulator: `stripSpec(d)` is its
   hand-over (levels with mean and SD, blank and top signal, labels).
 - **Start:** an example gallery (sandwich, competitive, reader data, low-end, semi-quantitative bins, high-dose hook;
   `frontend/src/examples`) and "bring your own data": paste, drop or choose a file. Pasting or dropping anywhere in the
@@ -651,6 +652,9 @@ using §11's paste). `calwizard import FILE [--conc COL --signal COL --name N]` 
   (blank against a sample at the LoD, α and β tails shaded) and the precision profile (`Low end | Whole range`; linear
   axes), the classical estimate when the table allows it, and the planner.
 - **Read:** spreadsheet behaviour (type, Enter / arrows, paste a block at the focused cell, text header skipped).
+- **Variability:** the layers editor, the design block and the budget / dial-in of §22 live here, not in the Curve
+  workspace; the Curve's input panel only says which layers are included. With a layer on, every workspace (limits,
+  separation, requirements, read-back, report) uses the combined spread; the what-if layer (§14) applies first.
 - **Requirements:** each requirement is a sentence whose numbers are edited in place; a client-wording field per row.
 - **Share:** `Copy link` (`#s=` + deflated Series JSON, base64url; nothing is uploaded), `Save report as HTML` (one
   self-contained file with SVG figures and the series embedded, so dropping it back onto the app reopens it), `Print or

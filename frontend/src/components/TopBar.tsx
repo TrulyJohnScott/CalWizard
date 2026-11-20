@@ -19,7 +19,8 @@ export const WORKSPACES: { id: Workspace; label: string; tip: string; soon?: boo
   { id: 'limits', label: 'Limits', tip: 'LoB, LoD, LoQ and the experiment that confirms them (3)' },
   { id: 'read', label: 'Read', tip: 'A sheet that turns signals into concentrations (4)' },
   { id: 'requirements', label: 'Requirements', tip: 'What the assay must do, checked against the curve (5)' },
-  { id: 'strips', label: 'Strips', tip: 'Simulated strips: a place kept for the strip viewer (6)', soon: true },
+  { id: 'variability', label: 'Variability', tip: 'Lots, readers, days: what each source costs, the experiment across them, and dial-in from real results (6)' },
+  { id: 'strips', label: 'Strips', tip: 'Simulated strips: a place kept for the strip viewer (7)', soon: true },
 ]
 
 function Settings() {

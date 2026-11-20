@@ -9,6 +9,7 @@ import { RequirementsWorkspace } from './components/RequirementsWorkspace'
 import { SeparateWorkspace } from './components/SeparateWorkspace'
 import { ImportDialog, StartDialog } from './components/StartDialog'
 import { StripsWorkspace } from './components/StripsWorkspace'
+import { VariabilityWorkspace } from './components/VariabilityWorkspace'
 import { Toast } from './components/Toast'
 import { TopBar, WORKSPACES } from './components/TopBar'
 import { WhatIfBar } from './components/WhatIfBar'
@@ -66,7 +67,7 @@ export default function App() {
         return st.popMeasure()
       }
       if (!busy && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        const i = '123456'.indexOf(e.key)
+        const i = '1234567'.indexOf(e.key)
         if (i >= 0 && e.key.length === 1) return st.setUi({ workspace: WORKSPACES[i].id })
         if (e.key === 'p' || e.key === 'P') return st.setPresent(true)
         if (e.key === 'w' || e.key === 'W') return st.setUi({ whatIf: !st.ui.whatIf })
@@ -133,6 +134,7 @@ export default function App() {
           {ws === 'limits' && <LimitsWorkspace d={d} />}
           {ws === 'read' && <ReadWorkspace d={d} />}
           {ws === 'requirements' && <RequirementsWorkspace d={d} />}
+          {ws === 'variability' && <VariabilityWorkspace d={d} />}
           {ws === 'strips' && <StripsWorkspace d={d} />}
         </div>
         <Toast />

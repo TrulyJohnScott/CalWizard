@@ -443,3 +443,11 @@ select option {
   border: 0 !important;
   font-size: 11.5px;
 }
+
+/* panels written for the sidebar, shown inside a workspace page: no extra borders or side padding */
+.vw-embed > div {
+  border-top: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  padding-top: 0 !important;
+}
