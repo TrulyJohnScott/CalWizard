@@ -1,4 +1,7 @@
-# Cal Wizard — Spec v2 (the contract)
+# Cal Wizard — Spec v3 (the contract)
+
+> §1–§13 are v2 (curve, levels, ladder, experiments). §14–§21 are v3: what-if, limits, separation, requirements,
+> read-back, reader import, report and the workspaces. Where §21 and §11 disagree about the top bar or layout, §21 wins.
 
 **Purpose:** help lateral flow assay developers see how mean signal and its variability together
 determine their ability to resolve concentrations, and judge how good an assay is.
@@ -493,3 +496,165 @@ run's value, a horizontal 90% range bar with the truth tick and this run's dot, 
 would differ significantly (p < 0.05) in X–Y% of experiments." (≥ 80% power shown in the accent colour.)
 The scatter shows this run's readings as dots (replacing the simulated dots) and each level's estimated mean as a
 short dash. Experiment state (n, runs, seed, open) is UI state, not undo history; it is never saved into the Series.
+
+---
+
+# v3: the scientist's modes (§14–§21)
+
+v3 keeps everything above and adds what an assay developer asks next: *what if*, *how low*, *can it tell these two apart*,
+*what is this sample*, *does it meet the client's spec*, and *how do I show it*. Every capability is a pure function of
+a Series in `backend/app/`, exposed by the CLI and the HTTP API, ported to `frontend/src/math/` and parity-tested through
+`spec/fixtures/model_vectors.json`. Series gains five fields (all optional on the wire, defaults shown):
+
+```json
+{
+  "analyte": "",
+  "adjust": null,
+  "limits": { "alpha": 0.05, "beta": 0.05, "cv": 0.2, "reads": 1 },
+  "requirements": [],
+  "samples": []
+}
+```
+
+## 14. What-if layer (`adjust`)
+
+A layer on top of the curve, whatever its source (equations or table): four levers that match bench work.
+`adjust = { bottom, top, cScale, sdScale }` (`null`/`null`/`1`/`1` = unchanged; `adjust: null` = no layer).
+
+With `f`, `g` the unadjusted mean and SD, `B = f(0)`, `T = f(cMax)`, `B' = bottom ?? B`, `T' = top ?? T`,
+`gain = (T' − B')/(T − B)` (1 when `T = B`), `xs = cScale`:
+
+- `mean'(c) = B' + (f(c/xs) − B)·gain` — background and top move the two ends, `cScale` stretches the concentration axis
+  (`< 1`: the curve responds at lower concentrations);
+- equations: `sd'(c) = sdScale · sdExpr(mean'(c))` (the noise model follows the new signal);
+  tables: `sd'(c) = sdScale · g(c/xs)`.
+
+`cMax` and the levels do not change. Everything downstream (rows, ladder, limits, read-back, export) uses the adjusted
+curve. Validation: `cScale > 0`, `sdScale ≥ 0`, both finite.
+
+**Bake.** `bake(series)` returns the same curve with the layer folded into the source and `adjust: null`: equations get
+`(B') + (f(c/(xs)) − (B))·(gain)` and `(sdScale)·(sdExpr)` as fully parenthesised expression text; tables get
+`c → c·xs`, each reading `y → y(mean) + (y − mean)·sdScale` with `y(v) = B' + (v − B)·gain`, typed rows likewise. It is exact
+(PCHIP is affine-equivariant). Excel export bakes first. Headless: `calwizard bake SERIES`, `POST /api/bake`.
+
+**GUI.** `What if` in the top bar (key `W`) shows a bar with four scrub fields (type, arrow keys, or drag the label;
+no slider track) and, while a layer is active, the change in the headline claims (`levels 8 → 22 · LoD 4.62 → 1.56`),
+`Reset` and `Keep as the curve` (bake, one undo step). On the Curve chart four diamonds are draggable: background and
+top (along the signal axis), midpoint (along the concentration axis), noise (the +2σ band edge at 0.72·cMax). During a drag
+the signal range is held still and every move is measured from the drag's starting state, so the chart never rescales
+under the cursor. The unadjusted curve stays visible as a dashed line. Levels are not draggable while the diamonds are out.
+
+## 15. Limits: LoB, LoD, LoQ (CLSI EP17 style)
+
+`limits(model, alpha = 0.05, beta = 0.05, cv = 0.2, reads = 1)`; `sd_r(c) = sd(c)/√reads`;
+direction `d = +1` if `mean(cMax) ≥ mean(0)` else `−1` (competitive assays); `z_a = Φ⁻¹(1 − alpha)`, `z_b = Φ⁻¹(1 − beta)`.
+
+- **LoB** (signal) `= mean(0) + d·z_a·sd_r(0)`; as a concentration: the smallest c with `d·(mean(c) − LoB) ≥ 0`.
+- **LoD** = smallest c in [0, cMax] with `d·(mean(c) − LoB) − z_b·sd_r(c) ≥ 0`.
+- **Concentration CV** `cv(c) = sd_r(c) / (|slope(c)|·c)`, `slope` by a central difference with step `1e-4·cMax`
+  (one-sided at 0); ∞ at c = 0 or where the curve is flat.
+- **LoQ** = smallest c in [LoD, cMax] with `cv(c) ≤ cv`; **upper LoQ** = largest c in [LoQ, cMax] with `cv(c) ≤ cv`.
+- "Smallest / largest c": 2001-point scan `lo + (hi − lo)·j/2000`, then 60 bisections between the last failing and the
+  first passing point. `null` when nothing passes.
+- `profile`: 201 points over [0, cMax]: `c`, `cv`, `cvSignal = sd_r/|mean|`.
+
+Output: `{alpha, beta, cv, reads, direction, blank: {mean, sd}, lob: {signal, c}, lod, loq, uloq: {c, signal, cv} | null, profile}`.
+
+**From replicates (`data`).** For a replicates series with a blank column and at least one c > 0 column of ≥ 2 readings:
+LoB `= mean_b + d·z_a/(1 − 1/(4(n_b − 1)))·sd_b`, plus the nonparametric rank percentile (rank `0.5 + n·p`, linear
+between ranks); LoD signal `= LoB + d·z_b/(1 − 1/(4·df))·SD_L` with `SD_L` the pooled SD of the low columns (default:
+the two lowest), `df = Σ(n_i − 1)`; both read back to concentration with §6. `null` otherwise, and while a what-if layer
+is active.
+
+**Planner.** `plan(model, nBlank = 20, nLow = 20, low = [LoD, 2·LoD] to 3 s.f., runs = 500, seed, alpha, beta, conf = 0.9)`
+simulates that experiment `runs` times with the §13 random stream (per run: blanks, then each low level) and applies the
+classical estimate to each: `{design: {rows, strips}, truth, lobSignal: Q, lodSignal: Q, lod: Q, lodFound, detect:
+[{c, truth, mean}], first}`. It answers "with this many strips, how close would my LoD estimate land?".
+
+Headless: `calwizard limits SERIES [--alpha --beta --cv --reads --low C... --no-profile]`, `calwizard plan SERIES
+[--n-blank --n-low --low C... --runs --seed --conf]`; `POST /api/limits`, `POST /api/plan`.
+
+## 16. Separation of two concentrations
+
+`separate(model, c1, c2, metric, k, n = 3, runs = 1000, seed = 1, conf = 0.95, alpha = 0.05)` = the §5 row plus:
+`threshold` (PDF crossing between the means; midpoint for equal SDs), `sensitivity = P(X_hi > t)`,
+`specificity = P(X_lo < t)`, `auc = Φ(|Δμ|/√(σ₁² + σ₂²))`, `dprime = |Δμ|/√((σ₁² + σ₂²)/2)`, `cv1`, `cv2`, `fold = c2/c1`,
+`closeness` q (§12), `nNeeded = ⌈1/q²⌉` (readings to average per sample for the pair to pass; null if unreachable),
+`stepsBetween`, `whyNot`, `readback` (§12 recover of each mean) and `power` (§13 simulate on the two concentrations with
+`n` each: `pSig`, `pPass`). Headless: `calwizard separate SERIES C1 C2 [...]`, `POST /api/separate`.
+
+## 17. Requirements
+
+`requirements: [{kind, c?, c2?, cv?, n?, label?}]`, checked by `check(model)` → `{results, met, total}`:
+
+| kind | sentence | met when | value |
+|---|---|---|---|
+| `detect` | Detect c | LoD ≤ c | LoD |
+| `distinguish` | Tell c from c2 | the pair passes the series' rule | metric value |
+| `precision` | Measure c within cv | `cv(c) ≤ cv` | `cv(c)` |
+| `range` | Quantify from c to c2 within cv | LoQ ≤ c and upper LoQ ≥ c2 (cv defaults to `limits.cv`) | LoQ |
+| `levels` | Resolve at least n levels | resolvable levels ≥ n | the count |
+
+Each result also has `sdScale`: 1 when met; otherwise the largest factor in [0.01, 1) on every SD that makes it met
+(40 bisections; null if even ×0.01 does not) — "met if the noise were 0.4× of today". Invalid rows come back with
+`error`, never an exception. Headless: `calwizard requirements SERIES`, `POST /api/requirements`.
+
+## 18. Read-back sheet
+
+`samples: [{id, signal, dilution}]`. `readback(model, samples?, conf = 0.95)` → per row `c`, `lo`, `hi` (§12 recover),
+`result = c·dilution` (and its range), `cv` (§15) and `flag`: `invalid` (no signal), `below` (beyond the blank),
+`above` (beyond the top), `belowLod`, `belowLoq`, `aboveLoq`, `ok`. `calwizard read SERIES [S...] [--conf] [-o file.xlsx]`
+(signals given on the command line replace the series' samples); `POST /api/readback`, `POST /api/readback/export` (xlsx:
+`Results` and `About` sheets).
+
+## 19. Reader import
+
+`parse_reader(text, conc?, signal?)` turns a delimited reader export into a replicate table: delimiter = tab, else `;`,
+else `,`; the header is the first row with ≥ 2 cells that are not all numbers and whose next row has ≥ 2 concentration-like
+cells (so preamble lines are skipped). Concentration column = first header matching
+`conc|dose|standard|^std$|level|calibrator|ng/|pg/|ug/|mg/|iu/|mol`, else the first non-bookkeeping column that is all
+concentrations. Concentration cells accept numbers, numbers with a unit suffix, and blank words (`blank`, `neg`, `zero`,
+`buffer`… → 0). Signal: all replicate-named columns (`Rep 1`, `2`…) when there are several, else the first column
+matching `T/C|ratio`, else `test|signal|intensity|peak|area…`, else the first numeric column. Units come from
+`(…)`/`[…]` in the concentration header. Returns `null` for anything else (concentrations-across-the-top tables keep
+using §11's paste). `calwizard import FILE [--conc COL --signal COL --name N]` → `{series, columns, …}`; `POST /api/import`.
+
+## 20. Report (claim sheet)
+
+`report(model)` = `{series, resolvable, rule, levels, rows, limits, limitsData, requirements, readback}` in one object:
+`calwizard report SERIES`, `POST /api/report`. The browser renders the same content as the report page (§21).
+
+## 21. Workspaces (GUI v3)
+
+**User stories.** Each workspace serves one person at one moment and shows nothing they do not need then.
+
+| Who, when | Wants | Workspace | Sees |
+|---|---|---|---|
+| Bench scientist, strips just read | "Get my data in and see the curve" | **Curve** (1) | inputs, the two linked charts, levels (§11) |
+| Assay developer, a claim in doubt | "Can it tell 5 from 10?" | **Separate** (2) | two concentrations, their two spreads, the cut-off, what would change the answer |
+| Validation scientist | "What are LoB / LoD / LoQ, and how many strips prove it?" | **Limits** (3) | three numbers, two pictures, estimate from data, planner |
+| Analyst running samples | "Here is a column of signals" | **Read** (4) | a sheet: signal in, concentration, range, CV, flag; Excel out |
+| Project lead with a client spec | "Does it meet the spec, and what closes the gap?" | **Requirements** (5) | sentences with numbers, met / not met, the gap |
+| Anyone, in a meeting | "Show it" | **Present** (P) | the report, nothing editable |
+
+- **Top bar:** `Cal Wizard` (opens Start) · name / analyte / units / signal label (one popover; they label every axis,
+  sentence and export) · workspace tabs (keys 1–6) · `N resolvable levels` and the pass rule · `What if` (W) · undo / redo ·
+  `Share` · `Present` (P) · gear. `Strips` (6) is a kept place for the separate strip simulator: `stripSpec(d)` is its
+  hand-over (levels with mean and SD, blank and top signal, labels).
+- **Start:** an example gallery (sandwich, competitive, reader data, low-end, semi-quantitative bins, high-dose hook;
+  `frontend/src/examples`) and "bring your own data": paste, drop or choose a file. Pasting or dropping anywhere in the
+  app does the same. A reader export with more than one possible signal column opens a column chooser with a preview;
+  a saved `.calwizard.json` or an exported report loads the series it carries.
+- **Separate:** A and B are scrub fields and two handles on a small curve; chips offer the neighbouring level pairs.
+  One sentence gives the verdict; the hero picture is the two signal densities with the overlap and cut-off.
+- **Limits:** verdict sentence, LoB / LoD / LoQ / quantifiable range, the four settings inline, the detection picture
+  (blank against a sample at the LoD, α and β tails shaded) and the precision profile (`Low end | Whole range`; linear
+  axes), the classical estimate when the table allows it, and the planner.
+- **Read:** spreadsheet behaviour (type, Enter / arrows, paste a block at the focused cell, text header skipped).
+- **Requirements:** each requirement is a sentence whose numbers are edited in place; a client-wording field per row.
+- **Share:** `Copy link` (`#s=` + deflated Series JSON, base64url; nothing is uploaded), `Save report as HTML` (one
+  self-contained file with SVG figures and the series embedded, so dropping it back onto the app reopens it), `Print or
+  save as PDF`, `Excel workbook`, `Save as JSON`, `Open…`.
+- **Present:** the report full-screen; ← → step through sections; Esc leaves; printing shows only the report.
+- Figures outside the Curve workspace are plain SVG (`frontend/src/charts/svg.tsx`), styled by CSS variables, so the
+  same components draw on screen, in print and in the exported file. Still no log axes and no sliders.

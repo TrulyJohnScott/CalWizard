@@ -37,6 +37,12 @@ Python: always `uv` (`uv add`, `uv run`), never bare `python`/`pip`.
 - Update `spec/SPEC.md` in the same change as any behaviour change.
 - Ladder, measure and closeness exist in both languages (`backend/app/analysis.py`, `frontend/src/math/`),
   parity-tested through the fixtures. New capabilities must be added to the CLI as well as the API.
+- The GUI is organised as workspaces, one per job (spec §21: Curve, Separate, Limits, Read, Requirements, Present). A new
+  capability gets a place in the workspace of the person who needs it, not a new control on every screen.
+- Figures outside the Curve workspace are plain SVG (`frontend/src/charts/svg.tsx`) so they also print and export; the
+  report (`components/Report.tsx`) uses only its own `rp-` classes.
+- Keep tests lean: essential, independent truths only (closed forms, hand-computed values, parity, one wiring check per
+  surface). No tests that restate the code.
 - Backend pytest treats warnings as errors. The default run is the essential suite (independent truths only: closed
   forms, known values, bug regressions, parity, one wiring check per CLI/API surface; no tests that restate the code).
   Slow exhaustive checks are marked `deep` and run with `-m ""`; hypothesis property tests are deterministic.
@@ -57,4 +63,12 @@ JSON on stderr, exit 1 (invalid expression/model) or 2 (bad input).
 | `calwizard fit INPUT` | ranked mean/sd fits from `{points}`/`{summary}` JSON or a table Series |
 | `calwizard simulate SERIES [--concs C...] [--n N \| --n-per N...] [--runs R] [--seed S] [--metric M --k K --conf P] [--measured-n]` | simulated experiments (spec §13): per-run readings, ranges, `pPass`, `pAllPass` |
 | `calwizard export SERIES -o file.xlsx` | Excel workbook |
+| `calwizard limits SERIES [--alpha A --beta B --cv CV --reads N --low C... --no-profile]` | LoB / LoD / LoQ, precision profile; `data` = classical estimate from blank + low replicates (spec §15) |
+| `calwizard plan SERIES [--n-blank N --n-low N --low C... --runs R --seed S --conf P]` | simulated LoB / LoD verification experiment: design and how widely the estimates scatter |
+| `calwizard separate SERIES C1 C2 [--metric M --k K --n N --runs R --seed S]` | two concentrations in depth: cut-off, sensitivity, AUC, replicates needed, power (§16) |
+| `calwizard requirements SERIES` | the series' requirements: met or not, measured value, SD factor needed (§17) |
+| `calwizard read SERIES [S...] [--conf P] [-o file.xlsx]` | signals → concentrations with range, CV and flag; optional Excel sheet (§18) |
+| `calwizard import FILE [--conc COL --signal COL --name N]` | reader export (CSV / TSV) → Series (§19) |
+| `calwizard bake SERIES` | fold the what-if layer into the equations / table (§14) |
+| `calwizard report SERIES` | the claim sheet: levels, limits, requirements, read-back in one object (§20) |
 | `calwizard parse EXPR --var c\|S` | validate an expression, print its Excel form |
