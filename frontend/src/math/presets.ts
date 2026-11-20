@@ -1,4 +1,4 @@
-import type { Series } from './types'
+import { DEFAULT_LIMITS, type Series } from './types'
 
 export interface Preset {
   label: string
@@ -27,6 +27,7 @@ export const DEFAULT_LEVELS = [0, 1, 5, 25, 100, 500]
 export function defaultSeries(): Series {
   return {
     name: 'Example',
+    analyte: '',
     units: 'ng/mL',
     signalLabel: 'Signal',
     mode: 'equations',
@@ -50,5 +51,9 @@ export function defaultSeries(): Series {
     metric: 'ssmd',
     kTarget: 3,
     sim: { n: 5, seed: 42 },
+    adjust: null,
+    limits: { ...DEFAULT_LIMITS },
+    requirements: [],
+    samples: [],
   }
 }

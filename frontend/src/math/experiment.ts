@@ -80,7 +80,7 @@ export function quantile(values: number[], p: number): number | null {
   return i + 1 < v.length ? v[i] + (v[i + 1] - v[i]) * f : v[i]
 }
 
-function summarise(values: number[], conf: number): Q {
+export function summarise(values: number[], conf: number): Q {
   const a = (1 - conf) / 2
   const v = values.filter((x) => !Number.isNaN(x))
   return {

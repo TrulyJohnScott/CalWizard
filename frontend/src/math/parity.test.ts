@@ -12,6 +12,12 @@ import { compileModel } from './model'
 import { defaultSeries } from './presets'
 import { kForError, ruleError } from './rule'
 import { simulate } from './experiment'
+import { concCv, limits, limitsData, plan } from './limits'
+import { readback } from './readback'
+import { parseReader } from './reader'
+import { checkRequirements } from './requirements'
+import { separate } from './separate'
+import { bake } from './whatif'
 import type { Series } from './types'
 
 const FIXTURE = resolve(process.cwd(), '../spec/fixtures/model_vectors.json')
@@ -83,6 +89,66 @@ suite(`parity with backend fixtures${fx ? '' : ` (${why})`}`, () => {
         }
         expect([got.loOpen, got.hiOpen], `recover[${i}] open ends`).toEqual([w.loOpen, w.hiOpen])
       }
+      const lp = (got: Json, want: Json, label: string) => {
+        if (want === null) return expect(got, label).toBeNull()
+        expect(got, `${label}: expected a value`).not.toBeNull()
+        for (const k of Object.keys(want)) close(got[k], want[k], `${label}.${k}`, 1e-6, 1e-9)
+      }
+      for (const [i, w] of (cs.limits ?? []).entries()) {
+        const got = limits(m, { alpha: w.alpha, beta: w.beta, cv: w.cv, reads: w.reads, profile: false })
+        expect(got.direction, `limits[${i}].direction`).toBe(w.direction)
+        close(got.blank.mean, w.blank.mean, `limits[${i}].blank.mean`)
+        close(got.blank.sd, w.blank.sd, `limits[${i}].blank.sd`)
+        close(got.lob.signal, w.lob.signal, `limits[${i}].lob.signal`)
+        if (w.lob.c === null) expect(got.lob.c).toBeNull()
+        else close(got.lob.c as number, w.lob.c, `limits[${i}].lob.c`)
+        for (const k of ['lod', 'loq', 'uloq'] as const) lp(got[k], w[k], `limits[${i}].${k}`)
+      }
+      if (cs.cvAt) cs.cvAt.c.forEach((c: number, i: number) => close(concCv(m, c), cs.cvAt.cv[i], `cvAt[${i}]`))
+      if (cs.limitsData !== undefined) {
+        const got = limitsData(s, m)
+        const w = cs.limitsData
+        if (w === null) expect(got, 'limitsData').toBeNull()
+        else {
+          expect(got, 'limitsData').not.toBeNull()
+          expect(got!.blank.n).toBe(w.blank.n)
+          for (const [g, x, label] of [
+            [got!.blank.mean, w.blank.mean, 'blank.mean'], [got!.blank.sd, w.blank.sd, 'blank.sd'], [got!.lob.signal, w.lob.signal, 'lob.signal'],
+            [got!.lob.signalNonparametric, w.lob.signalNonparametric, 'lob.np'], [got!.lob.c, w.lob.c, 'lob.c'], [got!.sdLow, w.sdLow, 'sdLow'],
+            [got!.lod.signal, w.lod.signal, 'lod.signal'], [got!.lod.c, w.lod.c, 'lod.c'],
+          ] as [number | null, number | null, string][]) close(g as number, x, `limitsData.${label}`)
+          expect(got!.low.map((x) => [x.c, x.n])).toEqual(w.low.map((x: Json) => [x.c, x.n]))
+          expect(got!.df).toBe(w.df)
+        }
+      }
+      for (const [i, w] of (cs.separate ?? []).entries()) {
+        const got = separate(m, w.c1, w.c2, w.metric, w.k, { n: w.power.n, runs: w.power.runs, seed: w.power.seed, alpha: w.power.alpha })
+        for (const k of ['threshold', 'sensitivity', 'specificity', 'auc', 'dprime', 'cv1', 'cv2', 'fold', 'closeness'] as const)
+          close(got[k] as number, w[k], `separate[${i}].${k}`, 1e-6, 1e-12)
+        expect(got.nNeeded, `separate[${i}].nNeeded`).toBe(w.nNeeded)
+        expect(got.stepsBetween, `separate[${i}].stepsBetween`).toBe(w.stepsBetween)
+        expect([got.power.pSig, got.power.pPass], `separate[${i}].power`).toEqual([w.power.pSig, w.power.pPass])
+        w.readback.forEach((r: Json, j: number) => {
+          for (const k of ['c', 'lo', 'hi'] as const) close(got.readback[j][k] as number, r[k], `separate[${i}].readback[${j}].${k}`)
+        })
+      }
+      if (cs.readback) {
+        const got = readback(m, cs.readback.samples, s.limits, cs.readback.result.conf)
+        for (const k of ['lod', 'loq', 'uloq'] as const) close(got[k] as number, cs.readback.result[k], `readback.${k}`)
+        cs.readback.result.rows.forEach((w: Json, i: number) => {
+          expect(got.rows[i].flag, `readback[${i}].flag`).toBe(w.flag)
+          for (const k of ['c', 'lo', 'hi', 'result', 'resultLo', 'resultHi', 'cv'] as const) close(got.rows[i][k] as number, w[k], `readback[${i}].${k}`)
+        })
+      }
+      if (s.adjust) {
+        // the baked series (what-if folded into the source) is the same curve
+        const mb = compileModel(bake(s))
+        expect(mb.adjusted).toBe(false)
+        cs.grid.forEach((c: number, i: number) => {
+          close(mb.mean(c), cs.mean[i], `baked mean[${i}]`, 1e-6, 1e-9)
+          close(mb.sd(c), cs.sd[i], `baked sd[${i}]`, 1e-6, 1e-9)
+        })
+      }
       if (cs.inverse) {
         cs.inverse.signals.forEach((S: number, i: number) => {
           const got = inverse(m, S)
@@ -114,6 +180,43 @@ suite(`parity with backend fixtures${fx ? '' : ` (${why})`}`, () => {
       })
       want.first.rows.forEach((r: Json, j: number) => close(got.first.rows[j].p, r.p, `first.rows[${j}].p`, 1e-8, 1e-12))
       expect(got.resolvedPairs.hist).toEqual(want.resolvedPairs.hist)
+    })
+  }
+  for (const [i, rq] of (fx?.requirements ?? []).entries()) {
+    it(`requirements ${i}`, () => {
+      const s = { ...defaultSeries(), ...(rq.series as Partial<Series>) } as Series
+      const got = checkRequirements(s, compileModel(s))
+      expect([got.met, got.total]).toEqual([rq.result.met, rq.result.total])
+      rq.result.results.forEach((w: Json, j: number) => {
+        const g = got.results[j]
+        expect(g.ok, `results[${j}].ok`).toBe(w.ok)
+        expect(g.error === null, `results[${j}].error`).toBe(w.error === null)
+        close(g.value as number, w.value, `results[${j}].value`)
+        close(g.sdScale as number, w.sdScale, `results[${j}].sdScale`, 1e-6)
+      })
+    })
+  }
+  for (const [i, pc] of (fx?.plan ?? []).entries()) {
+    it(`plan ${i}`, () => {
+      const m = compileModel({ ...defaultSeries(), ...(pc.series as Partial<Series>) } as Series)
+      const a = pc.args
+      const got = plan(m, { nBlank: a.nBlank, nLow: a.nLow, low: a.low, runs: a.runs, seed: a.seed, conf: a.conf })
+      const w = pc.result
+      expect(got.design).toEqual(w.design)
+      expect(got.lodFound).toBe(w.lodFound)
+      for (const key of ['lobSignal', 'lodSignal', 'lod'] as const)
+        for (const q of ['lo', 'med', 'hi', 'min', 'max'] as const) close(got[key][q] as number, w[key][q], `${key}.${q}`, 1e-6)
+      w.detect.forEach((dw: Json, j: number) => {
+        close(got.detect[j].truth as number, dw.truth, `detect[${j}].truth`)
+        close(got.detect[j].mean, dw.mean, `detect[${j}].mean`, 1e-9)
+      })
+      close(got.first.lobSignal, w.first.lobSignal, 'first.lobSignal', 1e-9)
+      close(got.first.lod as number, w.first.lod, 'first.lod')
+    })
+  }
+  for (const [i, ic] of (fx?.importCases ?? []).entries()) {
+    it(`import ${i}`, () => {
+      expect(parseReader(ic.text, ic.conc, ic.signal)).toEqual(ic.result)
     })
   }
   for (const [i, rc] of (fx?.ruleCases ?? []).entries()) {

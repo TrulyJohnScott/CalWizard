@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { defaultSeries } from '../math/presets'
 import { normLevels } from '../math/tables'
-import type { MetricKey, Mode, Series } from '../math/types'
+import { adjustActive, type Adjust, type MetricKey, type Mode, type Requirement, type RequirementKind, type Sample, type Series } from '../math/types'
 
 export type Theme = 'system' | 'light' | 'dark'
 
@@ -160,8 +160,24 @@ export function sanitizeSeries(raw: unknown): Series {
     : d.summary
   if (!summary.length || summary[0].c !== 0) summary.unshift({ c: 0, mean: null, sd: null })
   const sim = r.sim as { n?: unknown; seed?: unknown } | undefined
+  const ar = r.adjust as Record<string, unknown> | null | undefined
+  const adjRaw: Adjust | null = ar && typeof ar === 'object'
+    ? { bottom: numOrNull(ar.bottom), top: numOrNull(ar.top), cScale: isNum(ar.cScale) && ar.cScale > 0 ? ar.cScale : 1, sdScale: isNum(ar.sdScale) && ar.sdScale >= 0 ? ar.sdScale : 1 }
+    : null
+  const lr = (r.limits ?? {}) as Record<string, unknown>
+  const rate = (v: unknown, f: number) => (isNum(v) && v > 0 && v < 0.5 ? v : f)
+  const KINDS: RequirementKind[] = ['detect', 'distinguish', 'precision', 'range', 'levels']
+  const requirements: Requirement[] = Array.isArray(r.requirements)
+    ? (r.requirements as Record<string, unknown>[])
+        .filter((x) => x && KINDS.includes(x.kind as RequirementKind))
+        .map((x) => ({ kind: x.kind as RequirementKind, c: numOrNull(x.c), c2: numOrNull(x.c2), cv: numOrNull(x.cv), n: isNum(x.n) ? Math.round(x.n) : null, label: str(x.label, '') }))
+    : []
+  const samples: Sample[] = Array.isArray(r.samples)
+    ? (r.samples as Record<string, unknown>[]).filter((x) => x && typeof x === 'object').map((x) => ({ id: str(x.id, ''), signal: numOrNull(x.signal), dilution: isNum(x.dilution) && x.dilution > 0 ? x.dilution : 1 }))
+    : []
   return {
     name: str(r.name, d.name),
+    analyte: str(r.analyte, ''),
     units: str(r.units, d.units),
     signalLabel: str(r.signalLabel, d.signalLabel),
     mode,
@@ -175,6 +191,15 @@ export function sanitizeSeries(raw: unknown): Series {
     metric,
     kTarget: isNum(r.kTarget) ? r.kTarget : metric === 'zprime' ? 0.5 : 3,
     sim: { n: isNum(sim?.n) ? Math.max(0, Math.floor(sim!.n as number)) : 5, seed: isNum(sim?.seed) ? Math.floor(sim!.seed as number) : 42 },
+    adjust: adjustActive(adjRaw) ? adjRaw : null,
+    limits: {
+      alpha: rate(lr.alpha, d.limits.alpha),
+      beta: rate(lr.beta, d.limits.beta),
+      cv: isNum(lr.cv) && lr.cv > 0 ? lr.cv : d.limits.cv,
+      reads: isNum(lr.reads) && lr.reads >= 1 && lr.reads <= 1000 ? Math.round(lr.reads) : d.limits.reads,
+    },
+    requirements,
+    samples,
   }
 }
 
