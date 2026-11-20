@@ -16,6 +16,8 @@ from . import experiment as EX
 from . import metrics as K
 from .series import Model, Series, compile_series, layer_terms
 
+SEPARABLE_CORR = 0.995  # above this, gain and proportional CV are reported together
+
 
 def _mu0(model: Model) -> float:
     return float(np.asarray(model.mean(0.0)))
@@ -197,19 +199,37 @@ def dial_in(model: Model, rows: list[dict]) -> dict:
         raise ValueError("no concentration has a complete crossed design to estimate from")
     mu0 = per[0]["mean"] if per[0]["c"] == 0 else _mu0(model)
     mus = np.array([p["mean"] for p in per])
-    Amat = np.column_stack([np.ones_like(mus), mus ** 2, (mus - mu0) ** 2])
+    x_cv, x_gain = mus ** 2, (mus - mu0) ** 2
+    # gain and proportional CV are both ∝ signal² when the blank is small: merge them when they cannot be separated
+    separable = len(per) >= 3 and float(np.corrcoef(x_cv, x_gain)[0, 1]) < SEPARABLE_CORR
+    if len(per) >= 3 and not separable:
+        notes.append("gain and proportional CV cannot be told apart on this curve (blank signal is small): "
+                     "reported together as CV")
+    if len(per) < 3:
+        notes.append("fewer than 3 concentrations: each layer's size is reported as an offset SD only")
     out_layers = []
     for lay in lays:
         b = np.array([p["layers"][lay.name] for p in per])
-        if len(per) >= 3:
-            x, _ = nnls(Amat, b)
-        elif len(per) >= 1:
-            x = np.array([float(b.mean()), 0.0, 0.0])  # too few concentrations: attribute all to the offset
+        if separable:
+            x, _ = nnls(np.column_stack([np.ones_like(mus), x_cv, x_gain]), b)
+        elif len(per) >= 3:
+            x2, _ = nnls(np.column_stack([np.ones_like(mus), x_cv]), b)
+            x = np.array([x2[0], x2[1], 0.0])
+        else:
+            x = np.array([float(b.mean()), 0.0, 0.0])
+        units = max(len({str(r.get(lay.name, "")) for r in rs}) for rs in by_c.values())
+        # rough 90% range of an SD estimated from `units` units (chi-square with units - 1 df), as a ± factor
+        rough = None
+        if units >= 2:
+            from scipy.stats import chi2
+            df = units - 1
+            rough = [float(math.sqrt(df / chi2.ppf(0.95, df))), float(math.sqrt(df / chi2.ppf(0.05, df)))]
         measured = {"offsetSd": float(math.sqrt(x[0])), "cv": float(math.sqrt(x[1])), "gainCv": float(math.sqrt(x[2]))}
-        out_layers.append({"name": lay.name, "measured": measured,
+        out_layers.append({"name": lay.name, "units": units, "rough": rough, "measured": measured,
                            "predicted": {"offsetSd": lay.offset_sd, "cv": lay.cv, "gainCv": lay.gain_cv}})
-    if len(per) < 3:
-        notes.append("fewer than 3 concentrations: each layer's size is reported as an offset SD only")
+        if units < 5:
+            notes.append(f"{lay.name}: {units} units give a rough estimate (true SD could be "
+                         f"{rough[0]:.2f}–{rough[1]:.1f}× the estimate)" if rough else f"{lay.name}: too few units")
     within = [{"c": p["c"], "measured": p["within"], "predicted": float(np.asarray(model.sd_within(p["c"]))) ** 2}
               for p in per]
     return {"perConc": per, "layers": out_layers, "within": within, "notes": notes}

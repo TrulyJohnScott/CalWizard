@@ -540,7 +540,10 @@ Per concentration, a **crossed main-effects ANOVA** (method of moments, unweight
 formulas): for each layer L with u_L units, `MS_L` from its unit means; residual `MS_e` from the remainder;
 `σ²_L(c) = max(0, (MS_L − MS_e)/(N_c/u_L))`, `σ²_e(c) = MS_e`. Then per layer a non-negative least-squares fit over
 concentrations of `σ²_L(c) = offsetSd² + μ(c)²·cv² + (μ(c) − μ0)²·gainCv²` gives the **measured** offsetSd, cv,
-gainCv; `σ²_e(c)` is compared with the predicted within term. Output: `{perConc: [{c, n, within, layers: {name: var}}],
+gainCv — when the cv and gain columns are nearly collinear across the data (correlation ≥ 0.995, e.g. a small
+blank signal) they cannot be told apart: a two-term fit [offset, cv] is used and a note says so. Each layer also
+reports `units` and `rough` = the 90% range factor [√(df/χ²₀.₉₅), √(df/χ²₀.₀₅)] (df = units − 1) of an SD estimated
+from that many units, with a note below 5 units; `σ²_e(c)` is compared with the predicted within term. Output: `{perConc: [{c, n, within, layers: {name: var}}],
 layers: [{name, measured: {offsetSd, cv, gainCv}, predicted: {…}}], notes}`; notes flag unbalanced cells and layers
 with < 2 units. **Adopt** copies measured values into the layers (one undo step).
 

@@ -6,6 +6,7 @@ import { METRIC_LABEL } from '../math/metrics'
 import { normLevels, parseNum } from '../math/tables'
 import type { Derived } from '../state/derived'
 import { isPending, rulerPoints, useStore } from '../state/store'
+import { BudgetPanel } from './BudgetPanel'
 import { ExperimentPanel } from './ExperimentPanel'
 import { IconChevron, IconX, Seg } from './ui'
 
@@ -50,6 +51,7 @@ export function LevelsSidebar({ d }: { d: Derived }) {
   const notify = useStore((s) => s.notify)
   const measure = useStore((s) => s.measure)
   const expOpen = useStore((s) => s.exp.open)
+  const budgetOpen = useStore((s) => !!s.exp.budget)
   const setExp = useStore((s) => s.setExp)
   const clearMeasure = useStore((s) => s.clearMeasure)
   const keepMeasure = useStore((s) => s.keepMeasure)
@@ -115,13 +117,14 @@ export function LevelsSidebar({ d }: { d: Derived }) {
           <button className="btn ghost" style={{ padding: '0 4px' }} onClick={() => setUi({ sidebar: false })} title="Hide levels">
             <IconChevron dir="right" />
           </button>
-          <Seg<'levels' | 'exp'>
-            value={expOpen ? 'exp' : 'levels'}
+          <Seg<'levels' | 'exp' | 'budget'>
+            value={budgetOpen ? 'budget' : expOpen ? 'exp' : 'levels'}
             options={[
               ['levels', 'Levels', 'Separation of the levels from the curves on the left (the truth)'],
               ['exp', 'Experiment', 'Simulate experiments of n readings per level: what could a real run show?'],
+              ['budget', 'Budget', 'Where the variability comes from (lots, readers, days…), and dial in real numbers'],
             ]}
-            onChange={(v) => setExp({ open: v === 'exp' })}
+            onChange={(v) => setExp({ open: v === 'exp', budget: v === 'budget' })}
           />
         </div>
         {measure && (
@@ -188,7 +191,9 @@ export function LevelsSidebar({ d }: { d: Derived }) {
         )}
       </div>
 
-      {expOpen ? (
+      {budgetOpen ? (
+        <BudgetPanel d={d} />
+      ) : expOpen ? (
         <ExperimentPanel d={d} />
       ) : (
       <>

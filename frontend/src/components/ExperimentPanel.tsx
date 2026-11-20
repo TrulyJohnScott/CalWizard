@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'
+import { designRun, type DesignResult } from '../api'
 import { fmt } from '../format'
 import { closenessColor, closenessQ, rgbaCss } from '../math/closeness'
 import { METRIC_LABEL } from '../math/metrics'
@@ -137,6 +139,80 @@ export function ExperimentPanel({ d }: { d: Derived }) {
             })
           })()}
           <div className="text-[11px] text-faint">bar: {Math.round(100 * exp.conf)}% of runs · line: truth · dot: this run · thin mark: target</div>
+          <DesignBlock d={d} />
+        </>
+      )}
+    </div>
+  )
+}
+
+/** Spec §16.3 in the Experiment tab: the same question with real units drawn (lots × readers × days × n). */
+export function DesignBlock({ d }: { d: Derived }) {
+  const es = useStore((s) => s.exp)
+  const s = d.series
+  const on = (s.layers ?? []).filter((l) => l.on)
+  const [res, setRes] = useState<DesignResult | null>(null)
+  const [err, setErr] = useState('')
+  useEffect(() => {
+    if (!on.length) return
+    let live = true
+    const t = setTimeout(() => {
+      designRun(s, d.listed, Math.max(2, es.n), Math.min(500, Math.max(20, es.runs)), es.seed)
+        .then((r) => live && (setRes(r), setErr('')))
+        .catch((e) => live && setErr(String(e instanceof Error ? e.message : e)))
+    }, 300)
+    return () => {
+      live = false
+      clearTimeout(t)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s, d.listed, es.n, es.runs, es.seed, on.length])
+  if (!on.length) return null
+  const design = on.map((l) => `${l.units} ${l.name.toLowerCase()}${l.units === 1 ? '' : 's'}`).join(' × ')
+  return (
+    <div className="flex flex-col gap-1.5 border-t border-line pt-2">
+      <div className="label">with your layers</div>
+      <div className="rounded-md bg-hover px-2 py-1.5 leading-snug">
+        Spread over <b>{design}</b> × n = {Math.max(2, es.n)}
+        {res ? <> ({res.readingsPerConc} readings per level)</> : null}, neighbours would differ significantly in{' '}
+        {res ? (
+          <>
+            <b>{pct(Math.min(...res.pairs.map((p) => p.pSig)))}</b>–<b>{pct(Math.max(...res.pairs.map((p) => p.pSig)))}</b> of experiments.
+          </>
+        ) : (
+          '…'
+        )}
+      </div>
+      {err && <div className="text-[11px] text-bad">{err}</div>}
+      {res && (
+        <>
+          {res.pairs.map((p, i) => (
+            <div key={i} className="grid items-center text-[11.5px]" style={{ gridTemplateColumns: '1fr 52px 52px' }}>
+              <span className="text-muted">
+                {fmt(p.c1, 3)}→{fmt(p.c2, 3)}
+              </span>
+              <span className="text-right" style={{ color: p.pSig >= 0.8 ? 'var(--accent)' : undefined }} title="significant (Welch t-test)">
+                {pct(p.pSig)}
+              </span>
+              <span className="text-right text-muted" title="meets your separation target">
+                {pct(p.pPass)}
+              </span>
+            </div>
+          ))}
+          <div className="label mt-1" title={`at c = ${fmt(res.componentsAt)}: how precisely this design would measure each source (SD, ${Math.round(90)}% of experiments)`}>
+            how well this design measures each source
+          </div>
+          {res.components.map((c) => (
+            <div key={c.name} className="grid items-center text-[11.5px]" style={{ gridTemplateColumns: '1fr 70px 70px' }}>
+              <span className="text-muted">{c.name}</span>
+              <span className="text-right" title="true SD (from your prediction)">
+                SD {fmt(Math.sqrt(c.true), 3)}
+              </span>
+              <span className="text-right text-muted" title="90% of experiments would estimate it within this range">
+                {c.lo === null || c.hi === null ? '—' : `${fmt(Math.sqrt(c.lo), 2)}–${fmt(Math.sqrt(c.hi), 2)}`}
+              </span>
+            </div>
+          ))}
         </>
       )}
     </div>

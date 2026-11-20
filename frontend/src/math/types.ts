@@ -31,4 +31,17 @@ export interface Series {
   metric: MetricKey
   kTarget: number
   sim: { n: number; seed: number }
+  /** variability layers on top of the within-run curve (spec §16) */
+  layers: Layer[]
+}
+
+/** A source of variability (spec §16): per-unit offset SD, proportional CV, gain CV ("performance"), noise CV. */
+export interface Layer {
+  name: string
+  units: number
+  on: boolean
+  offsetSd: number
+  cv: number
+  gainCv: number
+  noiseCv: number
 }

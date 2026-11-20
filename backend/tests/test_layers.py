@@ -96,7 +96,10 @@ def test_dial_in_recovers_sizes_from_synthetic_data():
     assert got["Lot"]["offsetSd"] == pytest.approx(np.std(lots, ddof=1), rel=0.35)
     assert got["Reader"]["cv"] == pytest.approx(np.std(readers, ddof=1), rel=0.35)
     assert all(w["measured"] == pytest.approx(25, rel=0.3) for w in out["within"])
-    assert out["layers"][0]["predicted"]["offsetSd"] == 6 and not out["notes"]
+    assert out["layers"][0]["predicted"]["offsetSd"] == 6 and out["layers"][0]["units"] == 8
+    assert out["notes"] == ["gain and proportional CV cannot be told apart on this curve (blank signal is small): reported together as CV"]
+    lo, hi = out["layers"][0]["rough"]
+    assert 0.5 < lo < 1 < hi < 2.5
 
 
 def test_dial_in_notes_and_errors():
@@ -168,3 +171,17 @@ def test_cli_and_api(capsys, tmp_path):
     assert c.post("/api/design", json={"series": LIN}).status_code == 422
     assert c.post("/api/dialin", json={"series": s, "csv": d.read_text()}).status_code == 200
     assert c.post("/api/dialin", json={"series": s, "rows": []}).status_code == 422
+
+
+def test_dial_in_separates_gain_from_cv_when_the_blank_is_large():
+    rng = np.random.default_rng(2)
+    m = model(meanExpr="1000 + 10*c", sdExpr="3", cMax=100, levels=[0, 25, 50, 100],
+              layers=[lay(name="Lot", units=10, gainCv=0.1)])
+    gains = rng.normal(1, 0.1, 10)
+    rows = [{"c": c, "Lot": f"L{i}", "y": 1000 + gains[i] * 10 * c + rng.normal(0, 3)}
+            for c, i, _ in itertools.product([0, 25, 50, 100], range(10), range(3))]
+    out = LY.dial_in(m, rows)
+    got = out["layers"][0]["measured"]
+    assert not any("cannot be told apart" in n for n in out["notes"])
+    assert got["gainCv"] == pytest.approx(np.std(gains, ddof=1), rel=0.3)
+    assert got["cv"] < 0.02

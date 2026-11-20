@@ -50,5 +50,6 @@ export function defaultSeries(): Series {
     metric: 'ssmd',
     kTarget: 3,
     sim: { n: 5, seed: 42 },
+    layers: [],
   }
 }

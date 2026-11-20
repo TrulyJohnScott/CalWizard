@@ -52,3 +52,40 @@ export async function exportExcel(series: Series): Promise<void> {
 export function saveJson(series: Series) {
   download(new Blob([JSON.stringify(toWire(series), null, 2)], { type: 'application/json' }), `${safeName(series.name)}.calwizard.json`)
 }
+
+export interface DialInResult {
+  perConc: { c: number; n: number; mean: number; within: number; layers: Record<string, number> }[]
+  layers: { name: string; units: number; rough: [number, number] | null; measured: { offsetSd: number; cv: number; gainCv: number }; predicted: { offsetSd: number; cv: number; gainCv: number } }[]
+  within: { c: number; measured: number; predicted: number }[]
+  notes: string[]
+}
+
+async function post<T>(path: string, body: unknown): Promise<T> {
+  let r: Response
+  try {
+    r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  } catch {
+    throw new Error('needs the API server (port 8000)')
+  }
+  const j = await r.json().catch(() => null)
+  if (!r.ok) throw new Error(j?.detail?.error ?? `HTTP ${r.status}`)
+  return j as T
+}
+
+/** Spec §16.4: measured layer sizes from pasted CSV (c,<layer names>,y). */
+export const dialIn = (series: Series, csv: string) => post<DialInResult>('/api/dialin', { series: toWire(series), csv })
+
+export interface DesignResult {
+  concs: number[]
+  n: number
+  units: number[]
+  readingsPerConc: number
+  runs: number
+  componentsAt: number
+  pairs: { c1: number; c2: number; pPass: number; pSig: number; lo: number | null; med: number | null; hi: number | null }[]
+  components: { name: string; true: number; lo: number | null; med: number | null; hi: number | null }[]
+}
+
+/** Spec §16.3: experiments drawing actual units of every layer. */
+export const designRun = (series: Series, concs: number[], n: number, runs: number, seed: number) =>
+  post<DesignResult>('/api/design', { series: toWire(series), concs, n, runs, seed })
