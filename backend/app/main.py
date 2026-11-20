@@ -124,6 +124,56 @@ def recover(req: RecoverRequest):
         raise HTTPException(422, detail={"error": str(e), "pos": None})
 
 
+class BudgetRequest(SeriesRequest):
+    concs: list[float] | None = None
+
+
+@router.post("/budget")
+def budget_route(req: BudgetRequest):
+    from . import layers as LY
+
+    m = _compile(req.series)
+    return ok({"rows": LY.budget(m, req.concs), "cumulative": LY.cumulative(m)})
+
+
+class DesignRequest(SeriesRequest):
+    concs: list[float] | None = None
+    n: int = 2
+    runs: int = 200
+    seed: int = 1
+    metric: Literal["dsum", "ssmd", "zprime"] | None = None
+    k: float | None = None
+    alpha: float = 0.05
+
+
+@router.post("/design")
+def design_route(req: DesignRequest):
+    from . import layers as LY
+
+    m = _compile(req.series)
+    try:
+        return ok(LY.simulate_design(m, req.concs, req.n, req.runs, req.seed, req.metric, req.k, req.alpha))
+    except ValueError as e:
+        raise HTTPException(422, detail={"error": str(e), "pos": None})
+
+
+class DialInRequest(SeriesRequest):
+    rows: list[dict] | None = None
+    csv: str | None = None
+
+
+@router.post("/dialin")
+def dialin_route(req: DialInRequest):
+    from . import layers as LY
+
+    m = _compile(req.series)
+    rows = req.rows if req.rows is not None else LY.read_csv_rows(req.csv or "")
+    try:
+        return ok(LY.dial_in(m, rows))
+    except ValueError as e:
+        raise HTTPException(422, detail={"error": str(e), "pos": None})
+
+
 class RuleRequest(Camel):
     metric: Literal["dsum", "ssmd", "zprime"]
     k: float | None = None

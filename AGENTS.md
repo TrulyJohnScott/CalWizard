@@ -58,3 +58,25 @@ JSON on stderr, exit 1 (invalid expression/model) or 2 (bad input).
 | `calwizard simulate SERIES [--concs C...] [--n N \| --n-per N...] [--runs R] [--seed S] [--metric M --k K --conf P] [--measured-n]` | simulated experiments (spec §13): per-run readings, ranges, `pPass`, `pAllPass` |
 | `calwizard export SERIES -o file.xlsx` | Excel workbook |
 | `calwizard parse EXPR --var c\|S` | validate an expression, print its Excel form |
+
+# Worktree Charter — `variability-layers` (../calwizard-layers)
+
+**Purpose.** Let assay developers reason about *layered* variability — lots with slightly different performance,
+readers with bias / variability, days, runs — and how each source eats the ability to resolve concentrations:
+predict it, plan an experiment for it, then dial in real numbers after the experiment.
+
+**Scope.**
+1. *Predict:* `layers` on a Series (offset SD, proportional CV, gain CV = lot/reader performance, noise CV, units, on/off);
+   effective SD used everywhere; a variance **budget** per concentration; cumulative "within-run → + day → + reader →
+   + lot" resolvable-level counts; aggregate / disaggregate by switching layers.
+2. *Plan:* design-aware experiments that draw actual units (e.g. 3 lots × 4 readers × 3 days × n) — separation,
+   significance, and how precisely each source would be estimated.
+3. *Dial in:* paste real nested results (lot, reader, day, conc, reading) → estimated size of each source (variance
+   components) → predicted vs measured side by side → adopt measured.
+Every capability headless first (Python + `calwizard` CLI + API), mirrored in the browser with parity fixtures.
+Not in scope here: the what-if adjustment and detection limits being built in the main folder by another session.
+
+**Done when.** All three steps work in the app with a clear story flow (beautiful, uncluttered, intuitive), every
+step is reachable from the CLI/API, spec §16 documents it, the essential test suites pass (backend coverage ≥ 95%,
+frontend all green, parity green), and the branch is committed ready to merge into `master` after the other
+session's work lands. Spec numbering: this branch uses **§16** (§14/§15 are taken by the other session).

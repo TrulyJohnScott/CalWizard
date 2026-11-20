@@ -13,6 +13,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app import analysis as A  # noqa: E402
+from app import layers as LY  # noqa: E402
 from app import experiment as EX  # noqa: E402
 from app import expr as E  # noqa: E402
 from app import metrics as K  # noqa: E402
@@ -69,6 +70,7 @@ def case(name: str, **kw) -> dict:
         "inverse": {"signals": signals, "c": inv},
         "ladder": ladders,
         "measure": measure,
+        **({"budget": LY.budget(m), "cumulative": LY.cumulative(m)} if series.layers else {}),
     })
 
 
@@ -92,6 +94,14 @@ def build_cases() -> list[dict]:
         "concs": [0, 1, 5, 25, 100],
         "cells": [[48.1, 52.0, 47.3, None], [55.0, 58.2, 53.9], [90.1, 101.3, 95.5, 99.0],
                   [402.0], [1200.0, 1250.5, 1180.2, 1233.0, None]]}))
+    cases.append(case("eq-4pl-layers", mode="equations", meanExpr=MEANS["4pl"], sdExpr=SDS["floor_cv"], levels=LEVELS,
+                      cMax=500, layers=[
+                          {"name": "Lot", "units": 3, "cv": 0.02, "gainCv": 0.04, "noiseCv": 0.1},
+                          {"name": "Reader", "units": 4, "offsetSd": 12, "cv": 0.01},
+                          {"name": "Day", "units": 3, "offsetSd": 5, "on": False}]))
+    cases.append(case("summary-layers", mode="summary", summary=[
+        {"c": 0, "mean": 50, "sd": 15}, {"c": 5, "mean": 95, "sd": 16}, {"c": 25, "mean": 400, "sd": 30},
+        {"c": 100, "mean": 1500, "sd": 90}], layers=[{"name": "Lot", "units": 2, "gainCv": 0.05, "noiseCv": 0.2}]))
     cases.append(case("summary", mode="summary", summary=[
         {"c": 0, "mean": 50, "sd": 15}, {"c": 5, "mean": 95, "sd": 16}, {"c": 25, "mean": 400, "sd": 30},
         {"c": 100, "mean": 1500, "sd": 90}, {"c": 500, "mean": 3500, "sd": 210}]))
