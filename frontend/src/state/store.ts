@@ -4,6 +4,9 @@ import { normLevels } from '../math/tables'
 import { adjustActive, type Adjust, type MetricKey, type Mode, type Requirement, type RequirementKind, type Sample, type Series } from '../math/types'
 
 export type Theme = 'system' | 'light' | 'dark'
+/** One workspace per job (spec §21): each shows only what that job needs. */
+export type Workspace = 'curve' | 'separate' | 'limits' | 'read' | 'requirements' | 'strips'
+export type Dialog = null | 'start' | 'import'
 
 export interface Ui {
   left: boolean
@@ -20,6 +23,18 @@ export interface Ui {
   /** distribution panel shows the levels or the anchors (flips to anchors when anchors are placed) */
   distView: 'levels' | 'anchors'
   theme: Theme
+  workspace: Workspace
+  /** what-if bar and the drag handles on the curve */
+  whatIf: boolean
+  /** LoD / LoQ ticks on the curve's concentration axis */
+  showLimits: boolean
+  /** Separate workspace: the two concentrations compared (null = first two positive levels) and n per side */
+  sep: { a: number; b: number } | null
+  sepN: number
+  /** Limits planner: blank and low-level readings, low concentrations (null = LoD and 2 x LoD) */
+  plan: { nBlank: number; nLow: number; low: number[] | null; seed: number }
+  /** Read workspace: coverage of the range */
+  readConf: number
 }
 
 export type Stored = Series & { id: string }
@@ -49,8 +64,8 @@ export interface ExpState {
 export interface Toast {
   id: number
   text: string
-  /** what the toast's Undo does (default: undo the last series change) */
-  undo?: () => void
+  /** what the toast's Undo does (default: undo the last series change); false = a plain message, no Undo */
+  undo?: (() => void) | false
 }
 
 export const HISTORY_LIMIT = 100
@@ -112,9 +127,16 @@ interface State {
   future: Snap[]
   undo: () => void
   redo: () => void
+  /** full-screen read-only report (presentation mode); not persisted */
+  present: boolean
+  setPresent: (on: boolean) => void
+  dialog: Dialog
+  /** text waiting in the import dialog (a reader export whose columns need choosing) */
+  importText: string | null
+  openDialog: (d: Dialog, importText?: string | null) => void
   toast: Toast | null
   /** show "<text> · Undo" for a few seconds; `undo` overrides what Undo does (for changes outside the history) */
-  notify: (text: string, undo?: () => void) => void
+  notify: (text: string, undo?: (() => void) | false) => void
   dismissToast: () => void
   /** a click on the scatter at concentration c: adds a ruler point, or removes it if it is already there */
   clickMeasure: (c: number) => void
@@ -135,7 +157,26 @@ interface State {
 
 const KEY = 'calwizard.v2'
 
-const defaultUi = (): Ui => ({ left: true, sidebar: true, flip: false, shading: 'band', stepR: 2, jitter: 30, histBars: false, marginal: true, inputView: 'equations', distView: 'levels', theme: 'system' })
+const defaultUi = (): Ui => ({
+  left: true,
+  sidebar: true,
+  flip: false,
+  shading: 'band',
+  stepR: 2,
+  jitter: 30,
+  histBars: false,
+  marginal: true,
+  inputView: 'equations',
+  distView: 'levels',
+  theme: 'system',
+  workspace: 'curve',
+  whatIf: false,
+  showLimits: true,
+  sep: null,
+  sepN: 3,
+  plan: { nBlank: 20, nLow: 20, low: null, seed: 1 },
+  readConf: 0.95,
+})
 const uid = () => Math.random().toString(36).slice(2, 9)
 
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
@@ -312,6 +353,11 @@ export const useStore = create<State>((set) => ({
         toast: null,
       }
     }),
+  present: false,
+  setPresent: (present) => set({ present }),
+  dialog: null,
+  importText: null,
+  openDialog: (dialog, importText = null) => set({ dialog, importText }),
   toast: null,
   notify: (text, undo) => set({ toast: { id: ++toastId, text, undo } }),
   dismissToast: () => set({ toast: null }),

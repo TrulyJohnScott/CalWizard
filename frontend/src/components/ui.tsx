@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 export function Seg<T extends string>({ value, options, onChange, title }: { value: T; options: ([T, string] | [T, string, string])[]; onChange: (v: T) => void; title?: string }) {
   return (
-    <div className="inline-flex rounded-md border border-line p-px" role="tablist" title={title}>
+    <div className="inline-flex shrink-0 rounded-md border border-line p-px" role="tablist" title={title}>
       {options.map(([k, label, tip]) => (
         <button
           key={k}
@@ -10,7 +10,7 @@ export function Seg<T extends string>({ value, options, onChange, title }: { val
           role="tab"
           aria-selected={value === k}
           onClick={() => onChange(k)}
-          className={`h-[22px] cursor-pointer rounded-[5px] border-0 px-2 text-[12px] ${value === k ? 'bg-hover text-fg' : 'bg-transparent text-muted hover:text-fg'}`}
+          className={`h-[22px] cursor-pointer whitespace-nowrap rounded-[5px] border-0 px-2 text-[12px] ${value === k ? 'bg-hover text-fg' : 'bg-transparent text-muted hover:text-fg'}`}
           style={value === k ? { boxShadow: 'inset 0 0 0 1px var(--line)' } : undefined}
         >
           {label}

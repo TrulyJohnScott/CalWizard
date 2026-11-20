@@ -1,3 +1,23 @@
+/** Axis / column title for concentration: "CRP (ng/mL)", "Concentration (ng/mL)", "CRP". */
+export function concLabel(s: { analyte?: string; units: string }): string {
+  const name = s.analyte?.trim() || 'Concentration'
+  return s.units ? `${name} (${s.units})` : name
+}
+
+/** "5 ng/mL" (units optional). */
+export const withUnits = (x: number | null | undefined, units: string, d = 3): string => `${fmt(x, d)}${units ? ` ${units}` : ''}`
+
+/** A fraction as a percentage with sensible digits: 0.2 -> "20%", 0.1234 -> "12%", 0.0123 -> "1.2%". */
+export function pct2(x: number | null | undefined): string {
+  if (x === null || x === undefined || !Number.isFinite(x)) return '–'
+  const v = x * 100
+  if (v === 0) return '0%'
+  if (v > 0 && v < 0.001) return '< 0.001%'
+  if (v > 99.99 && v <= 100) return v === 100 ? '100%' : '> 99.99%'
+  if (v >= 99.9) return `${v.toFixed(2)}%`
+  return `${+v.toPrecision(v >= 10 ? 3 : 2)}%`
+}
+
 /** Compact number formatting with `d` significant digits. */
 export function fmt(x: number | null | undefined, d = 3): string {
   if (x === null || x === undefined || Number.isNaN(x)) return '–'

@@ -1,5 +1,5 @@
 import type { Data, Layout } from 'plotly.js'
-import { fmt, recoveryText } from '../format'
+import { concLabel, fmt, recoveryText } from '../format'
 import { pairRow, recover, resolutionProfile } from '../math/analysis'
 import { closenessColor, closenessQ, closenessRgbSmooth, rgbaCss } from '../math/closeness'
 import { METRIC_LABEL } from '../math/metrics'
@@ -337,7 +337,7 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
     )
   }
 
-  const cAxis = { ...axisStyle(pal, `Concentration${s.units ? ` (${s.units})` : ''}`), range: cr, autorange: false }
+  const cAxis = { ...axisStyle(pal, concLabel(s)), range: cr, autorange: false }
   const sAxis = { ...axisStyle(pal, s.signalLabel || 'Signal'), range: [sLo, sHi], autorange: false }
   const layout: Partial<Layout> = {
     ...baseLayout(pal),
