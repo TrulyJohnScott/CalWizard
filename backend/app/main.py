@@ -255,6 +255,7 @@ class PlanRequest(SeriesRequest):
     conf: float = 0.9
     alpha: float | None = None
     beta: float | None = None
+    cv: float | None = None
 
 
 @router.post("/plan")
@@ -263,7 +264,8 @@ def plan(req: PlanRequest):
     lim = req.series.limits
     return _guard(lambda: L.plan(m, req.n_blank, req.n_low, req.low, req.runs, req.seed,
                                  lim.alpha if req.alpha is None else req.alpha,
-                                 lim.beta if req.beta is None else req.beta, req.conf))
+                                 lim.beta if req.beta is None else req.beta, req.conf,
+                                 lim.cv if req.cv is None else req.cv))
 
 
 class SeparateRequest(SeriesRequest):

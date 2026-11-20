@@ -1,0 +1,71 @@
+{
+  "name": "Hook effect",
+  "analyte": "Ferritin",
+  "units": "ng/mL",
+  "signalLabel": "Test line (a.u.)",
+  "mode": "equations",
+  "meanExpr": "50 + 4000*(c/60)^1.2/(1 + (c/60)^1.2)/(1 + (c/4000)^1.6)",
+  "sdExpr": "sqrt(15^2 + (0.08*S)^2)",
+  "levels": [
+    0,
+    10,
+    50,
+    250,
+    1000,
+    5000
+  ],
+  "cMax": 5000,
+  "replicates": {
+    "concs": [
+      0,
+      1,
+      5
+    ],
+    "cells": [
+      [
+        48.1,
+        52,
+        47.3
+      ],
+      [
+        55,
+        58.2,
+        53.9
+      ],
+      [
+        90.1,
+        101.3,
+        95.5
+      ]
+    ]
+  },
+  "extraLevels": [],
+  "summary": [
+    {
+      "c": 0,
+      "mean": 50,
+      "sd": 15
+    },
+    {
+      "c": 5,
+      "mean": 95,
+      "sd": 16
+    }
+  ],
+  "metric": "ssmd",
+  "kTarget": 3,
+  "layers": [],
+  "sim": {
+    "n": 5,
+    "seed": 42
+  },
+  "adjust": null,
+  "limits": {
+    "alpha": 0.05,
+    "beta": 0.05,
+    "cv": 0.2,
+    "reads": 1
+  },
+  "requirements": [],
+  "samples": []
+}

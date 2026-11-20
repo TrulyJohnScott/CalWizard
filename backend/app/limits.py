@@ -201,17 +201,19 @@ def _sig3(x: float) -> float:
 
 
 def plan(model: Model, n_blank: int = 20, n_low: int = 20, low_concs: list[float] | None = None, runs: int = 500,
-         seed: int = 1, alpha: float = 0.05, beta: float = 0.05, conf: float = 0.9) -> dict:
+         seed: int = 1, alpha: float = 0.05, beta: float = 0.05, conf: float = 0.9, cv: float = 0.2) -> dict:
     """Simulate the EP17 LoB / LoD experiment `runs` times: n_blank blank readings and n_low readings at each low
-    concentration per run, the classical estimate from each, and how widely the estimates scatter."""
-    _check(alpha, beta, 0.2, 1)
+    concentration per run, the classical estimate from each, and how widely the estimates scatter. When the curve
+    has a LoQ (at `cv`), a sample there is read n_low times too: its measured result CV is the signal SD over
+    |slope| * c (delta method), and `loq` reports how that scatters and how often it confirms the claim."""
+    _check(alpha, beta, cv, 1)
     n_blank = EX._int(n_blank, "nBlank", 2, EX.MAX_N)
     n_low = EX._int(n_low, "nLow", 2, EX.MAX_N)
     runs = EX._int(runs, "runs", 1, EX.MAX_RUNS)
     seed = EX._int(seed, "seed", -(2**53), 2**53)
     if not 0 < conf < 1:
         raise ValueError(f"conf must be between 0 and 1 (exclusive), got {conf!r}")
-    truth = limits(model, alpha, beta, profile=False)
+    truth = limits(model, alpha, beta, cv, profile=False)
     if low_concs is None:
         if truth["lod"] is None:
             raise ValueError("no detection limit within the range: give the low concentrations to test")
@@ -223,7 +225,8 @@ def plan(model: Model, n_blank: int = 20, n_low: int = 20, low_concs: list[float
     d = truth["direction"]
     za, zb = float(ndtri(1 - alpha)), float(ndtri(1 - beta))
     k = len(low)
-    per = n_blank + k * n_low
+    cq = None if truth["loq"] is None else _sig3(truth["loq"]["c"])
+    per = n_blank + (k + (0 if cq is None else 1)) * n_low
     z = EX.normals_array(seed, runs * per, 0).reshape(runs, per)
     mu0, sd0 = float(model.mean(0.0)), float(model.sd(0.0))
     mu_l = [float(model.mean(c)) for c in low]
@@ -239,11 +242,18 @@ def plan(model: Model, n_blank: int = 20, n_low: int = 20, low_concs: list[float
             detect.append((d * (ys - lob_s[:, None]) > 0).mean(axis=1))
         df = k * (n_low - 1)
         lod_s = lob_s + d * zb / (1 - 1 / (4 * df)) * np.sqrt(var / k)
+        loq = None
+        if cq is not None:
+            ys = float(model.mean(cq)) + float(model.sd(cq)) * z[:, n_blank + k * n_low:]
+            cvs = ys.std(axis=1, ddof=1) / (abs(float(slope(model, cq))) * cq)
+            loq = {"c": cq, "n": n_low, "cvTarget": cv, "cvTruth": conc_cv(model, cq), "cv": EX._q(cvs, conf),
+                   "pPass": float((cvs <= cv).mean())}
     lod_c = np.array([np.nan if c is None else c for c in model.inverse([float(v) for v in lod_s])], dtype=float)
     true_lob = truth["lob"]["signal"]
     return {
         "design": {"rows": [{"sample": "blank", "c": 0.0, "n": n_blank}] +
-                           [{"sample": f"low {j + 1}", "c": low[j], "n": n_low} for j in range(k)],
+                           [{"sample": f"low {j + 1}", "c": low[j], "n": n_low} for j in range(k)] +
+                           ([] if cq is None else [{"sample": "LoQ", "c": cq, "n": n_low}]),
                    "strips": per},
         "alpha": alpha, "beta": beta, "runs": runs, "seed": seed, "conf": conf,
         "truth": {"lobSignal": true_lob, "lod": None if truth["lod"] is None else truth["lod"]["c"]},
@@ -251,6 +261,7 @@ def plan(model: Model, n_blank: int = 20, n_low: int = 20, low_concs: list[float
         "lodFound": float((~np.isnan(lod_c)).mean()),
         "detect": [{"c": low[j], "truth": float(ndtr(d * (mu_l[j] - true_lob) / sd_l[j])) if sd_l[j] > 0 else None,
                     "mean": float(detect[j].mean())} for j in range(k)],
+        "loq": loq,
         "first": {"lobSignal": float(lob_s[0]), "lodSignal": float(lod_s[0]),
                   "lod": None if math.isnan(lod_c[0]) else float(lod_c[0])},
     }

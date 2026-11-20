@@ -71,10 +71,11 @@ export function useDerived(): Derived {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [mode, meanExpr, sdExpr, cMax, replicates, summary, adjust, layers, lim],
   )
+  const lowConcs = useStore((s) => s.ui.lowConcs)
   const limitsData = useMemo(
-    () => safe(() => computeLimitsData(series, model, lim.alpha, lim.beta)),
+    () => safe(() => computeLimitsData(series, model, lim.alpha, lim.beta, lowConcs)) ?? safe(() => computeLimitsData(series, model, lim.alpha, lim.beta)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mode, replicates, summary, adjust, layers, lim],
+    [mode, replicates, summary, adjust, layers, lim, lowConcs],
   )
   const requirements = useMemo(
     () => safe(() => checkRequirements(series, model)) ?? { results: [], met: 0, total: 0 },

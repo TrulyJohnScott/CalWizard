@@ -1,0 +1,88 @@
+{
+  "name": "Competitive",
+  "analyte": "Cortisol",
+  "units": "ng/mL",
+  "signalLabel": "Test line (a.u.)",
+  "mode": "equations",
+  "meanExpr": "150 + 3800/(1 + (c/30)^1.1)",
+  "sdExpr": "sqrt(20^2 + (0.06*S)^2)",
+  "levels": [
+    0,
+    3,
+    10,
+    30,
+    100,
+    300
+  ],
+  "cMax": 300,
+  "replicates": {
+    "concs": [
+      0,
+      1,
+      5
+    ],
+    "cells": [
+      [
+        48.1,
+        52,
+        47.3
+      ],
+      [
+        55,
+        58.2,
+        53.9
+      ],
+      [
+        90.1,
+        101.3,
+        95.5
+      ]
+    ]
+  },
+  "extraLevels": [],
+  "summary": [
+    {
+      "c": 0,
+      "mean": 50,
+      "sd": 15
+    },
+    {
+      "c": 5,
+      "mean": 95,
+      "sd": 16
+    }
+  ],
+  "metric": "ssmd",
+  "kTarget": 3,
+  "layers": [],
+  "sim": {
+    "n": 5,
+    "seed": 42
+  },
+  "adjust": null,
+  "limits": {
+    "alpha": 0.05,
+    "beta": 0.05,
+    "cv": 0.2,
+    "reads": 1
+  },
+  "requirements": [
+    {
+      "kind": "detect",
+      "c": 2,
+      "c2": null,
+      "cv": null,
+      "n": null,
+      "label": ""
+    },
+    {
+      "kind": "precision",
+      "c": 30,
+      "c2": null,
+      "cv": 0.2,
+      "n": null,
+      "label": ""
+    }
+  ],
+  "samples": []
+}

@@ -222,7 +222,7 @@ def build_requirement_cases() -> list[dict]:
 
 
 PLAN_CASES = [({}, {"nBlank": 20, "nLow": 20, "runs": 30, "seed": 3}),
-              ({}, {"nBlank": 6, "nLow": 4, "low": [1, 2, 4], "runs": 25, "seed": 9, "conf": 0.8}),
+              ({}, {"nBlank": 6, "nLow": 4, "low": [1, 2, 4], "runs": 25, "seed": 9, "conf": 0.8, "cv": 0.1}),
               (SIM_SUMMARY, {"nBlank": 10, "nLow": 10, "runs": 20, "seed": 2}),
               ({"mode": "equations", "meanExpr": "3000/(1 + c/50) + 100", "sdExpr": "0.05*S + 10",
                 "levels": [0, 10, 50, 200, 800], "cMax": 800}, {"nBlank": 12, "nLow": 8, "runs": 20, "seed": 4})]
@@ -232,7 +232,8 @@ def build_plan_cases() -> list[dict]:
     out = []
     for body, a in PLAN_CASES:
         series = Series.model_validate(body)
-        res = L.plan(compile_series(series), a["nBlank"], a["nLow"], a.get("low"), a["runs"], a["seed"], conf=a.get("conf", 0.9))
+        res = L.plan(compile_series(series), a["nBlank"], a["nLow"], a.get("low"), a["runs"], a["seed"], conf=a.get("conf", 0.9),
+                     cv=a.get("cv", 0.2))
         out.append(clean({"series": series.model_dump(by_alias=True), "args": a, "result": res}))
     return out
 

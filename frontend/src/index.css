@@ -451,3 +451,22 @@ select option {
   padding-right: 0 !important;
   padding-top: 0 !important;
 }
+@media (max-width: 1100px) {
+  .lv-extra {
+    display: none;
+  }
+  .topbar .tab {
+    padding: 0 6px;
+    font-size: 12px;
+  }
+}
+html,
+body {
+  overflow: hidden;
+}
+@media print {
+  html,
+  body {
+    overflow: visible !important;
+  }
+}

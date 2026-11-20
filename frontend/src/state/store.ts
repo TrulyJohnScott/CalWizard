@@ -33,6 +33,8 @@ export interface Ui {
   sepN: number
   /** Limits planner: blank and low-level readings, low concentrations (null = LoD and 2 x LoD) */
   plan: { nBlank: number; nLow: number; low: number[] | null; seed: number }
+  /** Limits from replicates: the low-level columns used (null = the two lowest) */
+  lowConcs: number[] | null
   /** Read workspace: coverage of the range */
   readConf: number
 }
@@ -180,6 +182,7 @@ const defaultUi = (): Ui => ({
   sep: null,
   sepN: 3,
   plan: { nBlank: 20, nLow: 20, low: null, seed: 1 },
+  lowConcs: null,
   readConf: 0.95,
 })
 const uid = () => Math.random().toString(36).slice(2, 9)
@@ -257,6 +260,15 @@ export function sanitizeSeries(raw: unknown): Series {
     },
     requirements,
     samples,
+  }
+}
+
+/** Nothing saved in this browser yet and no shared link in the address: a first visit. */
+const firstVisit = (): boolean => {
+  try {
+    return typeof localStorage !== 'undefined' && typeof location !== 'undefined' && !localStorage.getItem(KEY) && !location.hash.includes('s=')
+  } catch {
+    return false
   }
 }
 
@@ -373,7 +385,8 @@ export const useStore = create<State>((set) => ({
     }),
   present: false,
   setPresent: (present) => set({ present }),
-  dialog: null,
+  // a first visit (nothing saved, no shared link) opens on the example gallery
+  dialog: firstVisit() ? 'start' : null,
   importText: null,
   openDialog: (dialog, importText = null) => set({ dialog, importText }),
   toast: null,

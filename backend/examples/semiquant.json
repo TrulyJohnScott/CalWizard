@@ -1,0 +1,111 @@
+{
+  "name": "hCG bins",
+  "analyte": "hCG",
+  "units": "mIU/mL",
+  "signalLabel": "Test line (a.u.)",
+  "mode": "equations",
+  "meanExpr": "3200 + (40 - 3200)/(1 + (c/400)^0.95)",
+  "sdExpr": "sqrt(12^2 + (0.1*S)^2)",
+  "levels": [
+    0,
+    25,
+    100,
+    500,
+    2000
+  ],
+  "cMax": 2000,
+  "replicates": {
+    "concs": [
+      0,
+      1,
+      5
+    ],
+    "cells": [
+      [
+        48.1,
+        52,
+        47.3
+      ],
+      [
+        55,
+        58.2,
+        53.9
+      ],
+      [
+        90.1,
+        101.3,
+        95.5
+      ]
+    ]
+  },
+  "extraLevels": [],
+  "summary": [
+    {
+      "c": 0,
+      "mean": 50,
+      "sd": 15
+    },
+    {
+      "c": 5,
+      "mean": 95,
+      "sd": 16
+    }
+  ],
+  "metric": "ssmd",
+  "kTarget": 3,
+  "layers": [],
+  "sim": {
+    "n": 5,
+    "seed": 42
+  },
+  "adjust": null,
+  "limits": {
+    "alpha": 0.05,
+    "beta": 0.05,
+    "cv": 0.2,
+    "reads": 1
+  },
+  "requirements": [
+    {
+      "kind": "detect",
+      "c": 10,
+      "c2": null,
+      "cv": null,
+      "n": null,
+      "label": "Negative below 10"
+    },
+    {
+      "kind": "distinguish",
+      "c": 25,
+      "c2": 100,
+      "cv": null,
+      "n": null,
+      "label": "Low vs medium"
+    },
+    {
+      "kind": "distinguish",
+      "c": 100,
+      "c2": 500,
+      "cv": null,
+      "n": null,
+      "label": "Medium vs high"
+    },
+    {
+      "kind": "distinguish",
+      "c": 500,
+      "c2": 2000,
+      "cv": null,
+      "n": null,
+      "label": "High vs very high"
+    },
+    {
+      "kind": "levels",
+      "c": null,
+      "c2": null,
+      "cv": null,
+      "n": 8,
+      "label": ""
+    }
+  ],
+  "samples": []
+}

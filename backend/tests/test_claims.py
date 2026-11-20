@@ -153,7 +153,10 @@ def test_plan_centres_on_the_truth_and_is_reproducible():
     m = model(**LINE)
     p = L.plan(m, n_blank=30, n_low=30, runs=300, seed=4)
     lod = 2 * Z * 10 / 20
-    assert p["design"]["strips"] == 90 and [r["c"] for r in p["design"]["rows"]] == [0, 1.64, 3.29]
+    assert p["design"]["strips"] == 120 and [r["c"] for r in p["design"]["rows"]] == [0, 1.64, 3.29, 2.5]
+    q = p["loq"]  # a sample at the LoQ (cv = sd / (slope c) = 20% at c = 2.5): its measured CV scatters around the truth
+    assert q["c"] == 2.5 and q["cvTruth"] == pytest.approx(0.2) and q["cv"]["lo"] < 0.2 < q["cv"]["hi"]
+    assert q["cv"]["med"] == pytest.approx(0.2, rel=0.05) and 0.3 < q["pPass"] < 0.7
     assert p["truth"]["lod"] == pytest.approx(lod, rel=1e-6)
     assert p["lod"]["lo"] < lod < p["lod"]["hi"] and p["lod"]["med"] == pytest.approx(lod, rel=0.1)
     assert p["detect"][0]["truth"] == pytest.approx(0.95, abs=0.01) and p["detect"][0]["mean"] == pytest.approx(0.95, abs=0.03)
@@ -316,7 +319,7 @@ def test_cli_limits_plan_separate(capsys, line):
     code, _, err = run(capsys, "limits", line, "--cv", "0")
     assert code == 2 and "cv" in err["error"]
     code, out, _ = run(capsys, "plan", line, "--n-blank", "5", "--n-low", "5", "--low", "2", "4", "--runs", "10")
-    assert code == 0 and out["design"]["strips"] == 15 and out["runs"] == 10
+    assert code == 0 and out["design"]["strips"] == 20 and out["runs"] == 10 and out["loq"]["n"] == 5
     code, _, err = run(capsys, "plan", line, "--runs", "0")
     assert code == 2
     code, out, _ = run(capsys, "separate", line, "1", "2", "--runs", "10", "--metric", "dsum", "--k", "1")
@@ -369,7 +372,7 @@ def test_api_surfaces():
     assert r["lod"]["c"] == pytest.approx(lod, rel=1e-6) and r["data"] is None and "profile" not in r
     assert c.post("/api/limits", json={"series": series, "cv": 0}).status_code == 422
     assert c.post("/api/limits", json={"series": TABLE}).json()["data"]["blank"]["n"] == 3
-    assert c.post("/api/plan", json={"series": series, "nBlank": 5, "nLow": 5, "runs": 10}).json()["design"]["strips"] == 15
+    assert c.post("/api/plan", json={"series": series, "nBlank": 5, "nLow": 5, "runs": 10, "cv": 0.001}).json()["design"]["strips"] == 15
     assert c.post("/api/plan", json={"series": series, "runs": 0}).status_code == 422
     assert c.post("/api/separate", json={"series": series, "c1": 0, "c2": 50, "runs": 10}).json()["pass"] is True
     assert c.post("/api/separate", json={"series": series, "c1": 1, "c2": 1}).status_code == 422

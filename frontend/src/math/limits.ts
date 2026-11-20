@@ -239,6 +239,8 @@ export interface PlanArgs {
   alpha?: number
   beta?: number
   conf?: number
+  /** CV allowed at the LoQ (fraction); the plan adds a sample at the LoQ to confirm it */
+  cv?: number
 }
 
 export interface Plan {
@@ -254,6 +256,8 @@ export interface Plan {
   lod: Q
   lodFound: number
   detect: { c: number; truth: number | null; mean: number }[]
+  /** the LoQ sample: how the measured CV of the result would scatter (null when the curve has no LoQ) */
+  loq: { c: number; n: number; cvTarget: number; cvTruth: number; cv: Q; pPass: number } | null
   first: { lobSignal: number; lodSignal: number; lod: number | null }
 }
 
@@ -274,7 +278,8 @@ export function plan(m: Curve, a: PlanArgs = {}): Plan {
   const seed = Math.floor(a.seed ?? 1)
   const conf = a.conf ?? 0.9
   if (!(conf > 0 && conf < 1)) throw new Error('conf must be between 0 and 1 (exclusive)')
-  const truth = limits(m, { alpha, beta, profile: false })
+  const cv = a.cv ?? 0.2
+  const truth = limits(m, { alpha, beta, cv, profile: false })
   let low = a.low ?? null
   if (!low) {
     if (!truth.lod) throw new Error('no detection limit within the range: give the low concentrations to test')
@@ -290,6 +295,12 @@ export function plan(m: Curve, a: PlanArgs = {}): Plan {
   const sd0 = m.sd(0)
   const muL = low.map((c) => m.mean(c))
   const sdL = low.map((c) => m.sd(c))
+  // a sample at the LoQ, read nLow times: its measured result CV is the signal SD over |slope|·c (delta method)
+  const cq = truth.loq ? +truth.loq.c.toPrecision(3) : null
+  const muQ = cq === null ? 0 : m.mean(cq)
+  const sdQ = cq === null ? 0 : m.sd(cq)
+  const perCv = cq === null ? 0 : Math.abs(slope(m, cq)) * cq
+  const cvs: number[] = []
   const lobs: number[] = []
   const lodsS: number[] = []
   const lodsC: number[] = []
@@ -309,6 +320,11 @@ export function plan(m: Curve, a: PlanArgs = {}): Plan {
       detect[j] += ys.filter((y) => d * (y - lobS) > 0).length / nLow
     }
     const lodS = lobS + ((d * zb) / (1 - 1 / (4 * df))) * Math.sqrt(v / k)
+    if (cq !== null) {
+      const ys: number[] = []
+      for (let i = 0; i < nLow; i++) ys.push(muQ + sdQ * z())
+      cvs.push(meanSd(ys)[1] / perCv)
+    }
     const c = inverse(m, lodS)
     lobs.push(lobS)
     lodsS.push(lodS)
@@ -316,7 +332,10 @@ export function plan(m: Curve, a: PlanArgs = {}): Plan {
   }
   const trueLob = truth.lob.signal
   return {
-    design: { rows: [{ sample: 'blank', c: 0, n: nBlank }, ...low.map((c, j) => ({ sample: `low ${j + 1}`, c, n: nLow }))], strips: nBlank + k * nLow },
+    design: {
+      rows: [{ sample: 'blank', c: 0, n: nBlank }, ...low.map((c, j) => ({ sample: `low ${j + 1}`, c, n: nLow })), ...(cq === null ? [] : [{ sample: 'LoQ', c: cq, n: nLow }])],
+      strips: nBlank + (k + (cq === null ? 0 : 1)) * nLow,
+    },
     alpha,
     beta,
     runs,
@@ -328,6 +347,7 @@ export function plan(m: Curve, a: PlanArgs = {}): Plan {
     lod: summarise(lodsC, conf),
     lodFound: lodsC.filter((c) => !Number.isNaN(c)).length / runs,
     detect: low.map((c, j) => ({ c, truth: sdL[j] > 0 ? normCdf((d * (muL[j] - trueLob)) / sdL[j]) : null, mean: detect[j] / runs })),
+    loq: cq === null ? null : { c: cq, n: nLow, cvTarget: cv, cvTruth: concCv(m, cq), cv: summarise(cvs, conf), pPass: cvs.filter((x) => x <= cv).length / runs },
     first: { lobSignal: lobs[0], lodSignal: lodsS[0], lod: Number.isNaN(lodsC[0]) ? null : lodsC[0] },
   }
 }

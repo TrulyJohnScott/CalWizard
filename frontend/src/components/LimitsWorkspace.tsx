@@ -142,14 +142,14 @@ function Planner({ d }: { d: Derived }) {
   const [lowText, setLowText] = useState<string | null>(null)
   const res = useMemo<{ plan: Plan | null; error: string | null }>(() => {
     try {
-      return { plan: runPlan(m, { nBlank: p.nBlank, nLow: p.nLow, low: p.low, runs: 400, seed: p.seed, alpha: s.limits.alpha, beta: s.limits.beta }), error: null }
+      return { plan: runPlan(m, { nBlank: p.nBlank, nLow: p.nLow, low: p.low, runs: 400, seed: p.seed, alpha: s.limits.alpha, beta: s.limits.beta, cv: s.limits.cv }), error: null }
     } catch (e) {
       return { plan: null, error: e instanceof Error ? e.message : String(e) }
     }
-  }, [m, p, s.limits.alpha, s.limits.beta])
+  }, [m, p, s.limits.alpha, s.limits.beta, s.limits.cv])
   const pl = res.plan
   const u = s.units
-  const low = pl ? pl.design.rows.slice(1).map((r) => r.c) : p.low ?? []
+  const low = pl ? pl.design.rows.filter((r) => r.sample.startsWith('low')).map((r) => r.c) : p.low ?? []
   const rel = pl && pl.lod.lo !== null && pl.lod.hi !== null && pl.truth.lod ? (pl.lod.hi - pl.lod.lo) / 2 / pl.truth.lod : null
   const copy = () => {
     if (!pl) return
@@ -245,6 +245,16 @@ function Planner({ d }: { d: Derived }) {
               <div className="label mb-0.5">LoB signal: {qRange(pl.lobSignal, 4)}</div>
               <RangeBar q={pl.lobSignal} truth={pl.truth.lobSignal} />
             </div>
+            {pl.loq && (
+              <p className="m-0 leading-relaxed">
+                The {pl.loq.n} strips at the LoQ ({withUnits(pl.loq.c, u)}) would show a result CV between{' '}
+                <b>
+                  {pct2(pl.loq.cv.lo)} and {pct2(pl.loq.cv.hi)}
+                </b>
+                ; it is truly {pct2(pl.loq.cvTruth)}, so the {fmt(pl.loq.cvTarget * 100, 3)}% claim is confirmed in {pct2(pl.loq.pPass)} of experiments.
+                {pl.loq.pPass < 0.8 && ' To confirm it reliably, claim a LoQ a little higher or run more strips there.'}
+              </p>
+            )}
             <div className="label">
               Detected above the LoB: {pl.detect.map((x) => `${withUnits(x.c, u)} in ${pct2(x.mean)} of strips`).join(' · ')}
               {pl.lodFound < 1 && ` · no LoD could be read off the curve in ${pct2(1 - pl.lodFound)} of experiments`}
@@ -264,8 +274,19 @@ export function limitsSentence(lim: Limits, s: Pick<Series, 'units'>): string {
   return `Detects down to ${lod} and quantifies from ${fmt(lim.loq.c)} to ${withUnits(lim.uloq ? lim.uloq.c : null, s.units)}.`
 }
 
+/** The positive concentrations of the table that have at least two readings: candidates for the low-level columns. */
+function lowCandidates(s: Series): number[] {
+  if (s.mode !== 'replicates') return []
+  const out: number[] = []
+  s.replicates.concs.forEach((c, j) => {
+    if (typeof c === 'number' && c > 0 && (s.replicates.cells[j] ?? []).filter((y) => typeof y === 'number' && Number.isFinite(y)).length >= 2) out.push(c)
+  })
+  return [...new Set(out)].sort((a, b) => a - b)
+}
+
 export function LimitsWorkspace({ d }: { d: Derived }) {
   const patch = useStore((s) => s.patch)
+  const setUi = useStore((s) => s.setUi)
   const { series: s, model: m, limits: lim, limitsData: data } = d
   const [whole, setWhole] = useState(false)
   const set = (p: Partial<LimitSettings>) => patch({ limits: { ...s.limits, ...p } })
@@ -315,7 +336,34 @@ export function LimitsWorkspace({ d }: { d: Derived }) {
       </div>
 
       {data ? (
-        <Section title="From your replicates" hint="CLSI EP17 classical estimate from the blank column and the lowest columns of the table">
+        <Section
+          title="From your replicates"
+          hint="CLSI EP17 classical estimate from the blank column and the low-level columns of the table"
+          right={
+            <span className="flex flex-wrap items-center gap-1">
+              <span className="label mr-1">low-level columns</span>
+              {lowCandidates(s).slice(0, 8).map((c) => {
+                const used = data.low.some((x) => x.c === c)
+                return (
+                  <button
+                    key={c}
+                    className="btn"
+                    data-on={used}
+                    style={{ height: 22 }}
+                    title={used ? 'Used for the pooled low-level SD: click to leave it out' : 'Click to include this column'}
+                    onClick={() => {
+                      const cur = data.low.map((x) => x.c)
+                      const next = used ? cur.filter((x) => x !== c) : [...cur, c].sort((a, b) => a - b)
+                      if (next.length) setUi({ lowConcs: next })
+                    }}
+                  >
+                    {fmt(c)}
+                  </button>
+                )
+              })}
+            </span>
+          }
+        >
           <div className="grid grid-cols-2 gap-x-6 gap-y-4 md:grid-cols-4">
             <Stat label={`LoB · ${data.blank.n} blanks`} value={fmt(data.lob.signal, 4)} sub={`rank-based ${fmt(data.lob.signalNonparametric, 4)} · as c ${withUnits(data.lob.c, u)}`} title="Blank mean + c_p·SD (parametric), and the rank percentile of the blank readings" />
             <Stat label="LoD" value={withUnits(data.lod.c, u)} tone="accent" sub={`signal ${fmt(data.lod.signal, 4)}`} title="LoB + c_p · pooled SD of the low-level columns, read back on the curve" />

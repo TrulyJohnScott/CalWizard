@@ -49,7 +49,7 @@ Python: always `uv` (`uv add`, `uv run`), never bare `python`/`pip`.
 
 ## CLI (`uv run calwizard ...`, from `backend/`)
 
-SERIES = Series JSON file path or `-` (stdin); try `examples/example.json`. Output: JSON on stdout. Errors:
+SERIES = Series JSON file path or `-` (stdin); try `examples/example.json`, or any gallery example: `examples/{sandwich,competitive,reader,lowend,semiquant,hook}.json`. Output: JSON on stdout. Errors:
 JSON on stderr, exit 1 (invalid expression/model) or 2 (bad input).
 
 | Command | Purpose |

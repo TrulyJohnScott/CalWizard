@@ -1,0 +1,89 @@
+{
+  "name": "Low range",
+  "analyte": "PSA",
+  "units": "pg/mL",
+  "signalLabel": "T/C ratio",
+  "mode": "equations",
+  "meanExpr": "0.02 + 0.011*c",
+  "sdExpr": "sqrt(0.004^2 + (0.06*S)^2)",
+  "levels": [
+    0,
+    1,
+    2,
+    5,
+    10,
+    25,
+    50
+  ],
+  "cMax": 50,
+  "replicates": {
+    "concs": [
+      0,
+      1,
+      5
+    ],
+    "cells": [
+      [
+        48.1,
+        52,
+        47.3
+      ],
+      [
+        55,
+        58.2,
+        53.9
+      ],
+      [
+        90.1,
+        101.3,
+        95.5
+      ]
+    ]
+  },
+  "extraLevels": [],
+  "summary": [
+    {
+      "c": 0,
+      "mean": 50,
+      "sd": 15
+    },
+    {
+      "c": 5,
+      "mean": 95,
+      "sd": 16
+    }
+  ],
+  "metric": "ssmd",
+  "kTarget": 3,
+  "layers": [],
+  "sim": {
+    "n": 5,
+    "seed": 42
+  },
+  "adjust": null,
+  "limits": {
+    "alpha": 0.05,
+    "beta": 0.05,
+    "cv": 0.2,
+    "reads": 1
+  },
+  "requirements": [
+    {
+      "kind": "detect",
+      "c": 1,
+      "c2": null,
+      "cv": null,
+      "n": null,
+      "label": ""
+    },
+    {
+      "kind": "range",
+      "c": 3,
+      "c2": 50,
+      "cv": null,
+      "n": null,
+      "label": ""
+    }
+  ],
+  "samples": []
+}

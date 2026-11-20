@@ -125,7 +125,10 @@ function Headline({ d }: { d: Derived }) {
         <span className="font-semibold tabular-nums" data-testid="resolvable-count">
           {n}
         </span>
-        <span className="text-muted">resolvable {n === 1 ? 'level' : 'levels'}</span>
+        <span className="text-muted">
+          <span className="lv-extra">resolvable </span>
+          {n === 1 ? 'level' : 'levels'}
+        </span>
       </button>
       <Popover
         align="right"

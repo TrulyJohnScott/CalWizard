@@ -220,7 +220,8 @@ def cmd_plan(args) -> None:
     m = _compile(s)
     ab = _lim(args, s)
     try:
-        _out(L.plan(m, args.n_blank, args.n_low, args.low, args.runs, args.seed, ab["alpha"], ab["beta"], args.conf))
+        _out(L.plan(m, args.n_blank, args.n_low, args.low, args.runs, args.seed, ab["alpha"], ab["beta"], args.conf,
+                    s.limits.cv if args.cv is None else args.cv))
     except ValueError as e:
         raise CliError(str(e)) from e
 
@@ -382,6 +383,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--conf", type=float, default=0.9, help="range coverage (default 0.9)")
     sp.add_argument("--alpha", type=float)
     sp.add_argument("--beta", type=float)
+    sp.add_argument("--cv", type=float, help="CV allowed at the LoQ (default: the series', 0.2); a LoQ sample is added")
     sp = add("separate", cmd_separate, "two concentrations in depth: metrics, threshold, sensitivity, AUC, replicates needed, power")
     sp.add_argument("c1", type=float, metavar="C1")
     sp.add_argument("c2", type=float, metavar="C2")

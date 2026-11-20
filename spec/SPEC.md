@@ -567,12 +567,15 @@ the two lowest), `df = Σ(n_i − 1)`; both read back to concentration with §6.
 is active.
 
 **Planner.** `plan(model, nBlank = 20, nLow = 20, low = [LoD, 2·LoD] to 3 s.f., runs = 500, seed, alpha, beta, conf = 0.9)`
-simulates that experiment `runs` times with the §13 random stream (per run: blanks, then each low level) and applies the
-classical estimate to each: `{design: {rows, strips}, truth, lobSignal: Q, lodSignal: Q, lod: Q, lodFound, detect:
-[{c, truth, mean}], first}`. It answers "with this many strips, how close would my LoD estimate land?".
+simulates that experiment `runs` times with the §13 random stream (per run: blanks, then each low level, then the LoQ
+sample) and applies the classical estimate to each: `{design: {rows, strips}, truth, lobSignal: Q, lodSignal: Q, lod: Q, lodFound, detect:
+[{c, truth, mean}], first}`. It answers "with this many strips, how close would my LoD estimate land?". When the curve has a LoQ at `cv`
+(default `limits.cv`), a sample at the LoQ (3 s.f.) is read `nLow` times as well: `loq = {c, n, cvTarget, cvTruth,
+cv: Q, pPass}`, where a run's measured result CV is its signal SD over `|slope|·c` and `pPass` is the share of runs
+with that CV within the target (near 50% for a sample exactly at the LoQ: claim a little higher to confirm reliably).
 
 Headless: `calwizard limits SERIES [--alpha --beta --cv --reads --low C... --no-profile]`, `calwizard plan SERIES
-[--n-blank --n-low --low C... --runs --seed --conf]`; `POST /api/limits`, `POST /api/plan`.
+[--n-blank --n-low --low C... --runs --seed --conf --cv]`; `POST /api/limits`, `POST /api/plan`.
 
 ## 16. Separation of two concentrations
 

@@ -210,7 +210,7 @@ suite(`parity with backend fixtures${fx ? '' : ` (${why})`}`, () => {
     it(`plan ${i}`, () => {
       const m = compileModel({ ...defaultSeries(), ...(pc.series as Partial<Series>) } as Series)
       const a = pc.args
-      const got = plan(m, { nBlank: a.nBlank, nLow: a.nLow, low: a.low, runs: a.runs, seed: a.seed, conf: a.conf })
+      const got = plan(m, { nBlank: a.nBlank, nLow: a.nLow, low: a.low, runs: a.runs, seed: a.seed, conf: a.conf, cv: a.cv })
       const w = pc.result
       expect(got.design).toEqual(w.design)
       expect(got.lodFound).toBe(w.lodFound)
@@ -220,6 +220,12 @@ suite(`parity with backend fixtures${fx ? '' : ` (${why})`}`, () => {
         close(got.detect[j].truth as number, dw.truth, `detect[${j}].truth`)
         close(got.detect[j].mean, dw.mean, `detect[${j}].mean`, 1e-9)
       })
+      if (w.loq === null) expect(got.loq).toBeNull()
+      else {
+        expect(got.loq!.pPass).toBe(w.loq.pPass)
+        close(got.loq!.cvTruth, w.loq.cvTruth, 'loq.cvTruth')
+        for (const q of ['lo', 'med', 'hi'] as const) close(got.loq!.cv[q] as number, w.loq.cv[q], `loq.cv.${q}`, 1e-6)
+      }
       close(got.first.lobSignal, w.first.lobSignal, 'first.lobSignal', 1e-9)
       close(got.first.lod as number, w.first.lod, 'first.lod')
     })
