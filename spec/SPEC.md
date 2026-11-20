@@ -551,7 +551,7 @@ with < 2 units. **Adopt** copies measured values into the layers (one undo step)
 --seed S --alpha A]` → 16.3; `calwizard dialin SERIES DATA.csv` → 16.4 (CSV header: `c,<layer names>,y`).
 `POST /api/budget`, `/api/design`, `/api/dialin` the same.
 
-**GUI (story flow).** Left panel gets a third step under the curve: **Layers** (Predict) — one compact row per layer
+**GUI (story flow).** The Budget tab opens with a three-step guide: `1 Predict · 2 Plan · 3 Dial in`. Left panel gets a third step under the curve: **Layers** (Predict) — one compact row per layer
 with on/off, name, units and the four sizes as %/SD, add/remove; a one-line summary ("4 resolvable levels within a run
 → 2 with all layers"). Right sidebar gets **Budget** next to Levels | Experiment: stacked bar per level showing each
 source's share, the cumulative counts, and a **Dial in** drop zone (paste CSV) showing predicted vs measured with

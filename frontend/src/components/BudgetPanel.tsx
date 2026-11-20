@@ -55,6 +55,18 @@ export function BudgetPanel({ d }: { d: Derived }) {
 
   return (
     <div className="flex flex-col gap-3 px-3 pt-2 pb-3 text-[12px]">
+      {/* the story in three steps */}
+      <ol className="flex gap-1 text-[10.5px] text-muted">
+        {[
+          ['1 Predict', 'set the layers on the left: what you expect lots, readers, days to add'],
+          ['2 Plan', 'Experiment tab: what an experiment spread over those units would show'],
+          ['3 Dial in', 'paste the real results below: measured vs predicted, then adopt'],
+        ].map(([t, tip], i) => (
+          <li key={t} className="flex-1 rounded px-1.5 py-1" style={{ background: 'var(--hover)', borderTop: `2px solid ${['var(--muted)', 'var(--accent)', layerColor(2)][i]}` }} title={tip}>
+            {t}
+          </li>
+        ))}
+      </ol>
       {/* the story: resolvable levels as layers are added */}
       <div>
         <div className="label mb-1">resolvable levels</div>
