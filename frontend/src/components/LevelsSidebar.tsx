@@ -54,17 +54,6 @@ export function LevelsSidebar({ d }: { d: Derived }) {
   const clearMeasure = useStore((s) => s.clearMeasure)
   const keepMeasure = useStore((s) => s.keepMeasure)
   const popMeasure = useStore((s) => s.popMeasure)
-  const setMeasurePts = useStore((s) => s.setMeasurePts)
-  /** anchors one target unit apart: from the selected anchor (else 0) up to cMax; anchors below the start are kept */
-  const autoSpace = () => {
-    const sel = measure?.sel
-    const start = measure && sel !== null && sel !== undefined ? measure.pts[sel] : 0
-    const steps = makeLadder({ mean: m.mean, sd: m.sd, cMax: m.cMax }, s.metric, s.kTarget, 4, 200, start)
-    const keep = (measure?.pts ?? []).filter((p) => p < start)
-    const before = measure
-    setMeasurePts([...keep, ...steps.filter((c) => c > 0)])
-    notify(`Placed ${steps.length - 1} anchors one ${metricName} target apart from ${fmt(start)}`, () => useStore.setState({ measure: before }))
-  }
   const probe = useStore((s) => (isPending(s.measure) ? s.probe : null))
   const [add, setAdd] = useState('')
   const { series: s, model: m, listed } = d
@@ -154,9 +143,6 @@ export function LevelsSidebar({ d }: { d: Derived }) {
                     Keep as levels
                   </button>
                 )}
-                <button className="link text-[11px]" onClick={autoSpace} title="Fill anchors one target unit apart, from the selected anchor (or 0) to the end of the range">
-                  Auto-space
-                </button>
                 <button className="btn ghost text-[11px]" style={{ height: 18, padding: '0 4px' }} onClick={popMeasure} title="Remove the selected point, or the last one placed (Delete)">
                   ↶
                 </button>
@@ -303,14 +289,7 @@ export function LevelsSidebar({ d }: { d: Derived }) {
             </button>
           )}
         </div>
-        {!measure && (
-          <span className="text-[11px] text-faint">
-            click the chart to place anchors, or{' '}
-            <button className="link" onClick={autoSpace} title="Anchors one target unit apart from 0 (your levels are not changed)">
-              auto-space them
-            </button>
-          </span>
-        )}
+        {!measure && <span className="text-[11px] text-faint">click the chart to place anchors</span>}
       </div>
       </>
       )}

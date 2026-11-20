@@ -15,6 +15,8 @@ export interface Ui {
   histBars: boolean
   /** sideways Gaussians at the right of the scatter (not when flipped) */
   marginal: boolean
+  /** distribution panel shows the levels or the anchors (flips to anchors when anchors are placed) */
+  distView: 'levels' | 'anchors'
   theme: Theme
 }
 
@@ -131,7 +133,7 @@ interface State {
 
 const KEY = 'calwizard.v2'
 
-const defaultUi = (): Ui => ({ left: true, sidebar: true, flip: false, shading: 'band', stepR: 2, jitter: 30, histBars: false, marginal: true, theme: 'system' })
+const defaultUi = (): Ui => ({ left: true, sidebar: true, flip: false, shading: 'band', stepR: 2, jitter: 30, histBars: false, marginal: true, distView: 'levels', theme: 'system' })
 const uid = () => Math.random().toString(36).slice(2, 9)
 
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)

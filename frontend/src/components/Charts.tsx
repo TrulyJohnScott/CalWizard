@@ -9,6 +9,7 @@ import { compileExpr } from '../math/expr'
 import type { Derived } from '../state/derived'
 import { breakCoalescing, isPending, rulerPoints, useStore, type Measure } from '../state/store'
 import { usePalette } from '../theme'
+import { autoSpace } from '../state/autospace'
 import { HistHover, ScatterHover, StepRulers } from './HoverOverlay'
 import { Seg } from './ui'
 
@@ -142,7 +143,7 @@ function useLevelMover(d: Derived) {
 }
 
 /** Levels editable by dragging (equations mode, no display-only ladder) + the committed ruler's two handles (last). */
-function dragTargets(d: Derived, editable: boolean, measure: { pts: number[] } | null, at: (c: number) => [number, number] | null): Target[] {
+function dragTargets(d: Derived, editable: boolean, measure: { pts: number[] } | null, at: (c: number) => [number, number] | null, atAnchor = at): Target[] {
   const out: Target[] = []
   if (editable)
     d.listed.forEach((c, i) => {
@@ -152,7 +153,7 @@ function dragTargets(d: Derived, editable: boolean, measure: { pts: number[] } |
     })
   if (measure)
     measure.pts.forEach((c, j) => {
-      const p = at(c)
+      const p = atAnchor(c)
       if (p) out.push({ i: rulerId(j), x: p[0], y: p[1] })
     })
   return out
@@ -324,6 +325,19 @@ export function CalibrationChart({ d }: { d: Derived }) {
           ]}
           onChange={(v) => setUi({ flip: v === 's2c' })}
         />
+        <button
+          className="btn"
+          style={{ height: 24, fontSize: 11.5 }}
+          title={`Place anchors one ${series.metric === 'dsum' ? 'Δμ/Σσ' : series.metric === 'ssmd' ? 'SSMD' : 'Z′'} target apart, from the selected anchor (or 0) to the end of the range`}
+          onClick={() => autoSpace(d)}
+        >
+          Auto-space
+        </button>
+        {measure && (
+          <button className="btn" style={{ height: 24, fontSize: 11.5 }} title="Remove all anchors (Esc)" onClick={() => useStore.getState().clearMeasure()}>
+            Clear
+          </button>
+        )}
         {reading === null ? (
           <button
             className="btn"
@@ -407,9 +421,14 @@ export function CalibrationChart({ d }: { d: Derived }) {
 }
 
 export function HistogramChart({ d }: { d: Derived }) {
-  const histBars = useStore((s) => s.ui.histBars)
+  const distView = useStore((s) => s.ui.distView)
+  const setUi = useStore((s) => s.setUi)
   const flip = useStore((s) => s.ui.flip)
   const measure = useStore((s) => s.measure)
+  const hasAnchors = !!measure
+  // placing anchors flips the panel to them; clearing them flips back
+  useEffect(() => setUi({ distView: hasAnchors ? 'anchors' : 'levels' }), [hasAnchors, setUi])
+  const showAnchors = hasAnchors && distView === 'anchors'
   const probe = useStore((s) => (isPending(s.measure) ? s.probe : null))
   const lad = useStore((s) => s.ladder)
   const setLadder = useStore((s) => s.setLadder)
@@ -421,8 +440,8 @@ export function HistogramChart({ d }: { d: Derived }) {
   const xRange = useMemo<[number, number]>(() => (flip ? range : concRange(model.cMax, focus)), [flip, range, model.cMax, focus])
   const pair = useMemo(() => (measure ? rulerPoints(measure, isPending(measure) ? probe : null) : null), [measure, probe])
   const spec = useMemo(
-    () => buildHistogram({ series, model, listed, dots, histBars, pair, probe: null, space, xRange, viewRev, pal }),
-    [series, model, listed, dots, histBars, pair, space, xRange, viewRev, pal],
+    () => buildHistogram({ series, model, listed, dots, histBars: false, pair, probe: null, space, xRange, viewRev, show: { levels: !showAnchors, anchors: showAnchors }, pal }),
+    [series, model, listed, dots, pair, space, xRange, viewRev, showAnchors, pal],
   )
   const ref = usePlot(spec)
   const mover = useLevelMover(d)
@@ -433,15 +452,19 @@ export function HistogramChart({ d }: { d: Derived }) {
     targets: () => {
       const fl = (ref.current as any)?._fullLayout
       if (!fl?.xaxis) return []
-      const { xaxis: xa, yaxis: ya } = fl
-      const peak = new Map(spec.targets.map((t) => [t.c, t]))
-      return dragTargets(d, editable, measure, (c) => {
-        const t = peak.get(c)
-        if (!t) return null
-        const px = xa._offset + xa.d2p(t.x)
-        const py = ya._offset + ya.d2p(t.y)
-        return Number.isFinite(px) && Number.isFinite(py) ? [px, py] : null
-      })
+      const xa = fl.xaxis
+      const pos = (lane: 'levels' | 'anchors') => {
+        const peak = new Map(spec.targets.filter((t) => t.lane === lane).map((t) => [t.c, t]))
+        return (c: number): [number, number] | null => {
+          const t = peak.get(c)
+          const ya = t && fl[t.yaxis]
+          if (!t || !ya) return null
+          const px = xa._offset + xa.d2p(t.x)
+          const py = ya._offset + ya.d2p(t.y)
+          return Number.isFinite(px) && Number.isFinite(py) ? [px, py] : null
+        }
+      }
+      return dragTargets(d, editable, measure, pos('levels'), pos('anchors'))
     },
     onStart: (i) => {
       if (i > 0) {
@@ -459,6 +482,18 @@ export function HistogramChart({ d }: { d: Derived }) {
   })
   return (
     <>
+    {hasAnchors && (
+      <div className="absolute z-10" style={{ left: 66, top: 2 }}>
+        <Seg
+          value={showAnchors ? 'anchors' : 'levels'}
+          options={[
+            ['levels', 'Levels', 'Distributions of your levels'],
+            ['anchors', 'Anchors', 'Distributions of the anchors you placed (blank included)'],
+          ]}
+          onChange={(v) => setUi({ distView: v })}
+        />
+      </div>
+    )}
     <HistHover plot={ref} model={model} space={space} xRange={xRange} top={spec.top} skip={[...listed, ...(pair ?? [])]} />
     <div
       ref={ref}

@@ -252,9 +252,10 @@ the input drawer) · Flip axes button (`c → S` / `S → c`) · small Settings 
   level is tall and narrow and a noisy one low and wide; the tallest drawn level peaks at the top. Overlap
   fills are the min of the two densities. Overlap % labels float above the overlap in a small boxed label
   with a hairline leader, never on the curve lines.
-- **Readings below** (gear, was "Dot histogram"): each replicate reading drawn as a short tick (rug) along the
-  histogram's baseline in its level colour, read back to concentration in c → S. Replaces binned bars, which are
-  noise at small n.
+- **Distribution view (v2.8):** the panel under the scatter shows one set at a time: **Levels** (tested / table levels,
+  overlaps) or **Anchors** (placed or auto-spaced points, blank first, overlaps with % labels). A
+  `Levels | Anchors` switch (top left) appears while anchors exist; placing anchors flips to Anchors, clearing flips
+  back. **Auto-space** and **Clear** sit on the chart toolbar (next to Read signal), not in the sidebar.
 - **Colour (v2.7).** Two layers, one red→blue ramp. **Background** (Heat haze, Band wash/ribbon, Lines): the *local
   resolution* at each concentration c, i.e. the smallest Δc > 0 with closeness q(c, c + Δc) = 1 under the series
   metric and k (searched up to 3·max(cEnd, cMax); none → red), as r = Δc / max(c, c_ref) (c_ref = first positive

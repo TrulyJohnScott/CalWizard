@@ -41,9 +41,6 @@ function Settings() {
       <Row label="Gaussians on curve" title="each level's signal spread drawn sideways on the curve">
         <Seg value={ui.marginal ? 'on' : 'off'} options={[['off', 'Off'], ['on', 'On']]} onChange={(v) => setUi({ marginal: v === 'on' })} />
       </Row>
-      <Row label="Readings below" title="each replicate reading as a tick under its distribution (read back to concentration in c → S)">
-        <Seg value={ui.histBars ? 'on' : 'off'} options={[['off', 'Off'], ['on', 'On']]} onChange={(v) => setUi({ histBars: v === 'on' })} />
-      </Row>
       <Row label="Signal label">
         <input type="text" className="w-[110px]" value={s.signalLabel} onChange={(e) => patch({ signalLabel: e.target.value })} />
       </Row>
