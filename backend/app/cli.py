@@ -156,7 +156,7 @@ def cmd_simulate(args) -> None:
     m = _compile(s)
     n = args.n_per if args.n_per else args.n
     try:
-        _out(EX.simulate(m, args.concs, n, args.runs, args.seed, args.metric, args.k, args.conf, args.measured_n))
+        _out(EX.simulate(m, args.concs, n, args.runs, args.seed, args.metric, args.k, args.conf, args.measured_n, args.alpha))
     except ValueError as e:
         raise CliError(str(e)) from e
 
@@ -227,6 +227,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--seed", type=int, default=1)
     sp.add_argument("--conf", type=float, default=0.9, help="range coverage (default 0.9)")
     sp.add_argument("--measured-n", action="store_true", help="replicates tables: n = readings per column")
+    sp.add_argument("--alpha", type=float, default=0.05, help="significance level for the Welch t-test power (default 0.05)")
     metric_opts(sp)
     sp = add("parse", cmd_parse, "check an expression and print its Excel form", False)
     sp.add_argument("expr", metavar="EXPR")

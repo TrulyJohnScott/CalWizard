@@ -57,6 +57,19 @@ export function ExperimentPanel({ d }: { d: Derived }) {
       {d.expError && <div className="text-bad">{d.expError}</div>}
       {exp && (
         <>
+          <div className="rounded-md bg-hover px-2 py-1.5 leading-snug" title="Welch t-test between neighbouring concentrations in each simulated experiment">
+            If you ran these {exp.concs.length} concentrations with n = {isTable && es.asMeasured ? 'as measured' : es.n} each, neighbours would differ{' '}
+            <b>significantly</b> (p &lt; {exp.alpha}) in{' '}
+            {exp.runs > 1 ? (
+              <>
+                <b>{pct(Math.min(...exp.pairs.map((p) => p.pSig)))}</b>–<b>{pct(Math.max(...exp.pairs.map((p) => p.pSig)))}</b> of experiments (per pair below).
+              </>
+            ) : (
+              <>
+                <b>{exp.first.rows.filter((r) => r.p < exp.alpha).length}</b> of {exp.first.rows.length} pairs in this run.
+              </>
+            )}
+          </div>
           <div className="border-t border-line pt-2 leading-snug">
             <div>
               <span className="text-muted">resolved pairs · truth </span>
@@ -72,11 +85,14 @@ export function ExperimentPanel({ d }: { d: Derived }) {
             )}
           </div>
 
-          <div className="grid items-center text-[11px] text-muted" style={{ gridTemplateColumns: '64px 1fr 40px' }}>
+          <div className="grid items-center text-[11px] text-muted" style={{ gridTemplateColumns: '64px 1fr 40px 40px' }}>
             <span>pair</span>
             <span title={`${metric}: truth tick, this run dot, ${Math.round(100 * exp.conf)}% of runs bar`}>{metric}</span>
-            <span className="text-right" title="share of runs in which the pair is resolved">
-              P(pass)
+            <span className="text-right" title="share of experiments where a t-test finds the pair significantly different">
+              signif.
+            </span>
+            <span className="text-right" title="share of experiments where the pair meets your separation target">
+              target
             </span>
           </div>
           {(() => {
@@ -91,7 +107,7 @@ export function ExperimentPanel({ d }: { d: Derived }) {
               const col = closenessColor(closenessQ({ dsum: run.dsum, ssmd: run.ssmd, zprime: run.zprime }, s.metric, s.kTarget))
               const solid = rgbaCss([col[0], col[1], col[2], 1])
               return (
-                <div key={i} className="grid items-center border-t border-line" style={{ gridTemplateColumns: '64px 1fr 40px', height: 26 }}>
+                <div key={i} className="grid items-center border-t border-line" style={{ gridTemplateColumns: '64px 1fr 40px 40px', height: 26 }}>
                   <span className="truncate" title={`${fmt(p.c1)} → ${fmt(p.c2)}`}>
                     {fmt(p.c1, 3)}→{fmt(p.c2, 3)}
                   </span>
@@ -112,6 +128,9 @@ export function ExperimentPanel({ d }: { d: Derived }) {
                       <div className="absolute top-[3px] h-[8px] w-[8px] -translate-x-1/2 rounded-full border border-bg" style={{ left: X(run.value), background: solid }} />
                     )}
                   </div>
+                  <span className="text-right" style={{ color: (exp.runs > 1 ? p.pSig >= 0.8 : run.p < exp.alpha) ? 'var(--accent)' : undefined }}>
+                    {exp.runs > 1 ? pct(p.pSig) : run.p < exp.alpha ? '✓' : '✗'}
+                  </span>
                   <span className="text-right">{exp.runs > 1 ? pct(p.pPass) : run.pass ? '✓' : '✗'}</span>
                 </div>
               )

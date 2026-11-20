@@ -209,3 +209,28 @@ def test_api_simulate_errors():
     assert r.status_code == 422
     r = client.post("/api/simulate", json={"series": EQ, "measuredN": True})
     assert r.status_code == 422 and "replicate" in r.json()["detail"]["error"]
+
+
+# ---------------------------------------------------------------- power (Welch t-test)
+def test_welch_p_matches_scipy_and_edges():
+    from scipy.stats import ttest_ind_from_stats
+
+    from app.experiment import welch_p
+
+    for m1, s1, n1, m2, s2, n2 in [(10, 2, 4, 13, 3, 5), (0, 1, 3, 0.5, 1, 3), (5, 0.1, 10, 5.01, 0.2, 8)]:
+        want = ttest_ind_from_stats(m1, s1, n1, m2, s2, n2, equal_var=False).pvalue
+        assert float(welch_p(np.array(m1), np.array(s1), n1, np.array(m2), np.array(s2), n2)) == pytest.approx(want, rel=1e-9)
+    assert float(welch_p(np.array(1.0), np.array(0.0), 3, np.array(2.0), np.array(0.0), 3)) == 0.0
+    assert float(welch_p(np.array(1.0), np.array(0.0), 3, np.array(1.0), np.array(0.0), 3)) == 1.0
+
+
+def test_power_rises_with_n_and_alpha_is_validated():
+    m = model(**EQ)
+    lo = EX.simulate(m, n=3, runs=400, seed=2)["pairs"][0]["pSig"]
+    hi = EX.simulate(m, n=12, runs=400, seed=2)["pairs"][0]["pSig"]
+    assert 0 <= lo < hi <= 1
+    r = EX.simulate(m, n=3, runs=5, seed=2, alpha=0.01)
+    assert r["alpha"] == 0.01 and all(0 <= row["p"] <= 1 for row in r["first"]["rows"])
+    for bad in (0, 1, True, "x"):
+        with pytest.raises(ValueError, match="alpha"):
+            EX.simulate(m, alpha=bad)

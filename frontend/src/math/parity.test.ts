@@ -11,6 +11,7 @@ import { compileExpr } from './expr'
 import { compileModel } from './model'
 import { defaultSeries } from './presets'
 import { kForError, ruleError } from './rule'
+import { simulate } from './experiment'
 import type { Series } from './types'
 
 const FIXTURE = resolve(process.cwd(), '../spec/fixtures/model_vectors.json')
@@ -90,6 +91,29 @@ suite(`parity with backend fixtures${fx ? '' : ` (${why})`}`, () => {
           else close(got as number, want, `inverse[${i}]`)
         })
       }
+    })
+  }
+  for (const [i, sc] of (fx?.simulate ?? []).entries()) {
+    it(`simulate ${i}`, () => {
+      const m = compileModel({ ...defaultSeries(), ...(sc.series as Partial<Series>) } as Series)
+      const a = sc.args
+      let concs = a.concs
+      let n = a.n
+      if (a.measuredN) {
+        concs = sc.result.concs
+        n = sc.result.n
+      }
+      const got = simulate(m, { concs, n, runs: a.runs, seed: a.seed, metric: a.metric ?? sc.result.metric, k: a.k ?? sc.result.k, conf: a.conf })
+      const want = sc.result
+      expect(got.concs).toEqual(want.concs)
+      want.first.levels.forEach((l: Json, j: number) => l.ys.forEach((y: number, q: number) => close(got.first.levels[j].ys[q], y, `first.levels[${j}].ys[${q}]`, 1e-9)))
+      want.pairs.forEach((pw: Json, j: number) => {
+        expect(got.pairs[j].pPass, `pairs[${j}].pPass`).toBe(pw.pPass)
+        expect(got.pairs[j].pSig, `pairs[${j}].pSig`).toBe(pw.pSig)
+        for (const key of ['lo', 'med', 'hi'] as const) close(got.pairs[j][key] as number, pw[key], `pairs[${j}].${key}`, 1e-9)
+      })
+      want.first.rows.forEach((r: Json, j: number) => close(got.first.rows[j].p, r.p, `first.rows[${j}].p`, 1e-8, 1e-12))
+      expect(got.resolvedPairs.hist).toEqual(want.resolvedPairs.hist)
     })
   }
   for (const [i, rc] of (fx?.ruleCases ?? []).entries()) {

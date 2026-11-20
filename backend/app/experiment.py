@@ -102,8 +102,21 @@ def _row(c1, c2, mu1, s1, mu2, s2, metric, k) -> dict:
     return {"c1": c1, "c2": c2, "dsum": d, "ssmd": s, "zprime": z, "value": value, "pass": K.passes(metric, value, k)}
 
 
+def welch_p(m1, s1, n1, m2, s2, n2):
+    """Two-sided Welch t-test p-value (vectorised). Both SDs 0: p = 0 if the means differ, else 1."""
+    from scipy.stats import t as student_t
+
+    with np.errstate(all="ignore"):
+        a, b = s1 ** 2 / n1, s2 ** 2 / n2
+        se = np.sqrt(a + b)
+        tt = np.abs(m2 - m1) / se
+        df = (a + b) ** 2 / (a ** 2 / (n1 - 1) + b ** 2 / (n2 - 1))
+        p = 2 * student_t.sf(tt, df)
+    return np.where(se > 0, p, np.where(m1 != m2, 0.0, 1.0))
+
+
 def simulate(model: Model, concs=None, n=4, runs: int = 200, seed: int = 1, metric: str | None = None,
-             k: float | None = None, conf: float = 0.9, measured_n: bool = False) -> dict:
+             k: float | None = None, conf: float = 0.9, measured_n: bool = False, alpha: float = 0.05) -> dict:
     s = model.series
     metric = A.check_metric(metric if metric is not None else s.metric)
     k = float(s.k_target if k is None else k)
@@ -114,6 +127,9 @@ def simulate(model: Model, concs=None, n=4, runs: int = 200, seed: int = 1, metr
     if isinstance(conf, bool) or not isinstance(conf, Real) or not 0 < conf < 1:
         raise ValueError(f"conf must be between 0 and 1 (exclusive), got {conf!r}")
     conf = float(conf)
+    if isinstance(alpha, bool) or not isinstance(alpha, Real) or not 0 < alpha < 1:
+        raise ValueError(f"alpha must be between 0 and 1 (exclusive), got {alpha!r}")
+    alpha = float(alpha)
     if concs is not None:
         concs = [float(c) for c in concs]
     if measured_n:
@@ -165,12 +181,14 @@ def simulate(model: Model, concs=None, n=4, runs: int = 200, seed: int = 1, metr
         passed[:, i] = A._passes_array(metric, vals, k)
         t = _row(c1, c2, mu[i], sd[i], mu[i + 1], sd[i + 1], metric, k)
         truth_rows.append({"c1": c1, "c2": c2, "value": t["value"], "pass": t["pass"]})
-        first_rows.append(_row(c1, c2, run_mean[0, i], run_sd[0, i], run_mean[0, i + 1], run_sd[0, i + 1], metric, k))
+        pv = welch_p(run_mean[:, i], run_sd[:, i], ns[i], run_mean[:, i + 1], run_sd[:, i + 1], ns[i + 1])
+        first_rows.append({**_row(c1, c2, run_mean[0, i], run_sd[0, i], run_mean[0, i + 1], run_sd[0, i + 1], metric, k),
+                           "p": float(pv[0])})
         pairs.append({"c1": c1, "c2": c2, "truth": t["value"], **_q(vals, conf),
-                      "pPass": float(passed[:, i].mean())})
+                      "pPass": float(passed[:, i].mean()), "pSig": float((pv < alpha).mean())})
     count = passed.sum(axis=1)
     return {
-        "concs": concs, "n": ns, "runs": runs, "seed": seed, "metric": metric, "k": k, "conf": conf,
+        "concs": concs, "n": ns, "runs": runs, "seed": seed, "metric": metric, "k": k, "conf": conf, "alpha": alpha,
         "truth": {"rows": truth_rows, "resolvedPairs": sum(r["pass"] for r in truth_rows)},
         "first": {"levels": [{"c": concs[j], "ys": first_ys[j], "mean": float(run_mean[0, j]),
                               "sd": float(run_sd[0, j])} for j in range(len(concs))],

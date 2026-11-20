@@ -147,13 +147,14 @@ class SimulateRequest(SeriesRequest):
     k: float | None = None
     conf: float = 0.9
     measured_n: bool = False
+    alpha: float = 0.05
 
 
 @router.post("/simulate")
 def simulate(req: SimulateRequest):
     m = _compile(req.series)
     try:
-        return ok(EX.simulate(m, req.concs, req.n, req.runs, req.seed, req.metric, req.k, req.conf, req.measured_n))
+        return ok(EX.simulate(m, req.concs, req.n, req.runs, req.seed, req.metric, req.k, req.conf, req.measured_n, req.alpha))
     except ValueError as e:
         raise HTTPException(422, detail={"error": str(e), "pos": None})
 

@@ -6,6 +6,7 @@
 import { passes } from './analysis'
 import type { Model } from './model'
 import { makeNormal, mulberry32 } from './sim'
+import { studentTwoSided } from './specials'
 import type { MetricKey } from './types'
 
 export interface Q {
@@ -25,6 +26,18 @@ export interface ExperimentArgs {
   metric: MetricKey
   k: number
   conf?: number
+  /** significance level for the Welch t-test power (default 0.05) */
+  alpha?: number
+}
+
+/** Two-sided Welch t-test p-value from summary stats; both SDs 0: p = 0 if the means differ, else 1. */
+export function welchP(m1: number, s1: number, n1: number, m2: number, s2: number, n2: number): number {
+  const a = (s1 * s1) / n1
+  const b = (s2 * s2) / n2
+  const se = Math.sqrt(a + b)
+  if (!(se > 0)) return m1 !== m2 ? 0 : 1
+  const df = (a + b) ** 2 / ((a * a) / (n1 - 1) + (b * b) / (n2 - 1))
+  return studentTwoSided(Math.abs(m2 - m1) / se, df)
 }
 
 export interface RunRow {
@@ -35,6 +48,8 @@ export interface RunRow {
   zprime: number
   value: number
   pass: boolean
+  /** Welch t-test p-value for this pair in this run */
+  p: number
 }
 
 export interface Experiment {
@@ -45,10 +60,12 @@ export interface Experiment {
   metric: MetricKey
   k: number
   conf: number
+  alpha: number
   truth: { rows: { c1: number; c2: number; value: number; pass: boolean }[]; resolvedPairs: number }
   first: { levels: { c: number; ys: number[]; mean: number; sd: number }[]; rows: RunRow[]; resolvedPairs: number }
   levels: { c: number; mean: Q; sd: Q }[]
-  pairs: ({ c1: number; c2: number; truth: number; pPass: number } & Q)[]
+  /** pPass: share of runs meeting the metric target; pSig: share of runs where a Welch t-test finds p < alpha */
+  pairs: ({ c1: number; c2: number; truth: number; pPass: number; pSig: number } & Q)[]
   resolvedPairs: Q & { hist: number[] }
   pAllPass: number
 }
@@ -92,11 +109,13 @@ function normalise(m: Pick<Model, 'levels'>, a: ExperimentArgs) {
   if (!(runs >= 1 && runs <= 5000)) throw new Error('runs must be between 1 and 5000')
   const conf = a.conf ?? 0.9
   if (!(conf > 0 && conf < 1)) throw new Error('conf must be between 0 and 1')
-  return { concs, n, runs, conf, seed: Math.floor(a.seed ?? 1) }
+  const alpha = a.alpha ?? 0.05
+  if (!(alpha > 0 && alpha < 1)) throw new Error('alpha must be between 0 and 1')
+  return { concs, n, runs, conf, alpha, seed: Math.floor(a.seed ?? 1) }
 }
 
 export function simulate(m: Pick<Model, 'mean' | 'sd' | 'levels'>, args: ExperimentArgs): Experiment {
-  const { concs, n, runs, conf, seed } = normalise(m, args)
+  const { concs, n, runs, conf, alpha, seed } = normalise(m, args)
   const { metric, k } = args
   const mu = concs.map((c) => m.mean(c))
   const sd = concs.map((c) => m.sd(c))
@@ -112,6 +131,7 @@ export function simulate(m: Pick<Model, 'mean' | 'sd' | 'levels'>, args: Experim
   const lvSd = concs.map(() => [] as number[])
   const pairVals = Array.from({ length: P }, () => [] as number[])
   const pairPass = new Array(P).fill(0)
+  const pairSig = new Array(P).fill(0)
   const resolved: number[] = []
   const hist = new Array(P + 1).fill(0)
   let allPass = 0
@@ -135,12 +155,14 @@ export function simulate(m: Pick<Model, 'mean' | 'sd' | 'levels'>, args: Experim
       const v = metricOf(est[i].mean, est[i].sd, est[i + 1].mean, est[i + 1].sd)
       const value = v[metric]
       const pass = passes(metric, value, k)
+      const p = welchP(est[i].mean, est[i].sd, n[i], est[i + 1].mean, est[i + 1].sd, n[i + 1])
+      if (p < alpha) pairSig[i]++
       pairVals[i].push(value)
       if (pass) {
         pairPass[i]++
         ok++
       }
-      rows.push({ c1: concs[i], c2: concs[i + 1], ...v, value, pass })
+      rows.push({ c1: concs[i], c2: concs[i + 1], ...v, value, pass, p })
     }
     resolved.push(ok)
     hist[ok]++
@@ -156,10 +178,11 @@ export function simulate(m: Pick<Model, 'mean' | 'sd' | 'levels'>, args: Experim
     metric,
     k,
     conf,
+    alpha,
     truth: { rows: truthRows, resolvedPairs: truthRows.filter((t) => t.pass).length },
     first: first!,
     levels: concs.map((c, j) => ({ c, mean: summarise(lvMean[j], conf), sd: summarise(lvSd[j], conf) })),
-    pairs: truthRows.map((t, i) => ({ c1: t.c1, c2: t.c2, truth: t.value, pPass: pairPass[i] / runs, ...summarise(pairVals[i], conf) })),
+    pairs: truthRows.map((t, i) => ({ c1: t.c1, c2: t.c2, truth: t.value, pPass: pairPass[i] / runs, pSig: pairSig[i] / runs, ...summarise(pairVals[i], conf) })),
     resolvedPairs: { ...summarise(resolved, conf), hist },
     pAllPass: allPass / runs,
   }

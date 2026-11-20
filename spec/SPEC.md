@@ -460,6 +460,10 @@ model levels (sorted unique, ≥ 0); `n` is one integer for all or one per conce
   the chosen metric and `pPass` = fraction of runs passing;
 - `resolvedPairs`: `{Q…, hist}` with `hist[j]` = runs with exactly `j` passing pairs (`j = 0…pairs`);
 - `pAllPass` = fraction of runs where every adjacent pair passes.
+- **Power (v2.8):** each run also tests each adjacent pair with a two-sided **Welch t-test** on its readings (means,
+  sample SDs, n per side; df by Welch–Satterthwaite; both SDs 0 → p = 0 if the means differ, else 1). `first.rows[i].p`
+  = run 0's p-value; `pairs[i].pSig` = fraction of runs with p < `alpha` (default 0.05; output `alpha`). In words: "run
+  these concentrations with n each and you see a statistically significant difference pSig of the time".
 
 `Q` quantiles use linear interpolation between order statistics (numpy `linear`, i.e. position `p·(R−1)`):
 `lo` at `(1 − conf)/2`, `med` at 0.5, `hi` at `1 − (1 − conf)/2`. NaN values (e.g. Z′ with Δμ = 0) count as not
@@ -473,6 +477,8 @@ Parity: `spec/fixtures/model_vectors.json` → `simulate` entries (a few cases, 
 **GUI.** Right sidebar header gets `Levels | Experiment`. Experiment shows: `n` per level (number field; in table
 modes a `as measured` toggle), **Re-roll** (seed + 1) and the run count (`1 · 200 · 1000`); a one-line headline
 `resolved pairs: truth 4 · this run 3 · 90% of runs 2–5 · all pass 41%`; per pair a row with the true value, this
-run's value, a horizontal 90% range bar with the truth tick and this run's dot, coloured by closeness, and `P(pass)`.
+run's value, a horizontal 90% range bar with the truth tick and this run's dot, coloured by closeness, `signif.`
+(pSig) and `target` (pPass). It opens with one sentence: "If you ran these N concentrations with n = … each, neighbours
+would differ significantly (p < 0.05) in X–Y% of experiments." (≥ 80% power shown in the accent colour.)
 The scatter shows this run's readings as dots (replacing the simulated dots) and each level's estimated mean as a
 short dash. Experiment state (n, runs, seed, open) is UI state, not undo history; it is never saved into the Series.

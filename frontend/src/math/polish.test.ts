@@ -128,3 +128,17 @@ describe('local resolution (background colour)', () => {
     expect(resolutionQ(1, 0, 4)).toBeCloseTo(2) // c → 0 uses cRef
   })
 })
+
+describe('Student t / Welch', () => {
+  it('matches known values', async () => {
+    const { studentTwoSided, betainc, lgamma } = await import('./specials')
+    const { welchP } = await import('./experiment')
+    expect(lgamma(5)).toBeCloseTo(Math.log(24), 12)
+    expect(betainc(0.5, 2, 2)).toBeCloseTo(0.5, 12)
+    expect(studentTwoSided(2.776445105, 4)).toBeCloseTo(0.05, 8) // t_{0.975, 4}
+    expect(studentTwoSided(1.959963985, 1e7)).toBeCloseTo(0.05, 6) // → normal
+    expect(studentTwoSided(0, 3)).toBeCloseTo(1, 12)
+    expect(welchP(1, 0, 3, 2, 0, 3)).toBe(0)
+    expect(welchP(1, 0, 3, 1, 0, 3)).toBe(1)
+  })
+})
