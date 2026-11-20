@@ -124,24 +124,21 @@ export function buildHistogram(h: HistogramIn): HistSpec {
   const top = Math.max(0, ...dists.map((d) => (d ? d.peak : 0))) || 1
   const traces: Data[] = []
 
-  // histogram bars of replicate dots (off by default), same density scale
+  // readings as a rug: one short tick per replicate reading along the baseline, in its level's colour
+  // (read back to concentration in c → S). Honest for small n, where binned bars are mostly noise.
   if (h.histBars) {
     for (const lv of h.dots) {
       const i = concs.indexOf(lv.c)
-      const d = i >= 0 ? dists[i] : null
       const vals = space === 'signal' ? lv.ys : lv.ys.map((y) => inverse(m, y)).filter((v): v is number => v !== null)
-      // bin width ≈ one SD in this space, wider for few readings (n = 3 → 1.15 SD) so bars stay on the curve's scale
-      const w = (d ? (d.hi - d.lo) / (2 * SPAN) : (h.xRange[1] - h.xRange[0]) / 40) * Math.max(0.5, 2 / Math.sqrt(vals.length))
-      if (!vals.length || !(w > 0)) continue
-      const bins = new Map<number, number>()
-      for (const v of vals) bins.set(Math.round(v / w), (bins.get(Math.round(v / w)) ?? 0) + 1)
+      if (!vals.length) continue
       traces.push({
-        type: 'bar',
-        x: [...bins.keys()].map((b) => b * w),
-        y: [...bins.values()].map((n) => n / (lv.ys.length * w) / top),
-        width: w * 0.9,
-        marker: { color: levelColor(Math.max(i, 0), concs.length, pal.dark, pair && !emph(lv.c) ? 0.12 : 0.35) },
+        type: 'scatter',
+        mode: 'markers',
+        x: vals,
+        y: vals.map(() => 0.035),
+        marker: { symbol: 'line-ns', size: 14, line: { width: 2, color: levelColor(Math.max(i, 0), concs.length, pal.dark, pair && !emph(lv.c) ? 0.25 : 0.9) } },
         hoverinfo: 'skip',
+        cliponaxis: false,
       } as Data)
     }
   }

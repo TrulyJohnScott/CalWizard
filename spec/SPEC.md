@@ -252,6 +252,9 @@ the input drawer) · Flip axes button (`c → S` / `S → c`) · small Settings 
   level is tall and narrow and a noisy one low and wide; the tallest drawn level peaks at the top. Overlap
   fills are the min of the two densities. Overlap % labels float above the overlap in a small boxed label
   with a hairline leader, never on the curve lines.
+- **Readings below** (gear, was "Dot histogram"): each replicate reading drawn as a short tick (rug) along the
+  histogram's baseline in its level colour, read back to concentration in c → S. Replaces binned bars, which are
+  noise at small n.
 - **SD band always on**: the neutral ±1σ/±2σ band covers the whole curve; closeness wash and glow sit on top
   between adjacent levels (no gap where a pair is comfortably resolved).
 - **Double-click resets the view** to the ranges computed from the current data (whole `[0, cMax]`, signal
