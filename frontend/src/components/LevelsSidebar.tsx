@@ -53,7 +53,7 @@ export function LevelsSidebar({ d }: { d: Derived }) {
   const setExp = useStore((s) => s.setExp)
   const clearMeasure = useStore((s) => s.clearMeasure)
   const keepMeasure = useStore((s) => s.keepMeasure)
-  const probe = useStore((s) => s.probe)
+  const probe = useStore((s) => (s.measure && s.measure.b === null ? s.probe : null))
   const [add, setAdd] = useState('')
   const { series: s, model: m, listed } = d
   const editable = s.mode === 'equations' && !lad?.list

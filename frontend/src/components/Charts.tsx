@@ -9,6 +9,7 @@ import { compileExpr } from '../math/expr'
 import type { Derived } from '../state/derived'
 import { breakCoalescing, measurePair, useStore } from '../state/store'
 import { usePalette } from '../theme'
+import { HistHover, ScatterHover } from './HoverOverlay'
 import { Seg } from './ui'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -167,7 +168,8 @@ export function CalibrationChart({ d }: { d: Derived }) {
   const clickMeasure = useStore((s) => s.clickMeasure)
   const setLadder = useStore((s) => s.setLadder)
   const lad = useStore((s) => s.ladder)
-  const probe = useStore((s) => s.probe)
+  // the hovered concentration only matters to the figure while a measurement waits for its second point
+  const probe = useStore((s) => (s.measure && s.measure.b === null ? s.probe : null))
   const setProbe = useStore((s) => s.setProbe)
   const viewRev = useStore((s) => s.viewRev)
   const resetView = useStore((s) => s.resetView)
@@ -189,8 +191,8 @@ export function CalibrationChart({ d }: { d: Derived }) {
   }, [ghostSrc])
   const estimates = useMemo(() => d.exp?.first.levels.map((l) => ({ c: l.c, mean: l.mean })) ?? null, [d.exp])
   const spec = useMemo(
-    () => buildCalibration({ series, model, dots, listed, flip: ui.flip, shading: ui.shading, stepR: ui.stepR, jitter: ui.jitter, measure, live, range, focus, viewRev, reading, probe, onCurve: ui.marginal, estimates, ghost, ladderTicks: d.resolvable, pal }),
-    [series, model, dots, listed, ui.flip, ui.shading, ui.stepR, ui.jitter, measure, live, range, focus, viewRev, reading, probe, ui.marginal, estimates, ghost, d.resolvable, pal],
+    () => buildCalibration({ series, model, dots, listed, flip: ui.flip, shading: ui.shading, stepR: ui.stepR, jitter: ui.jitter, measure, live, range, focus, viewRev, reading, probe: null, onCurve: ui.marginal, estimates, ghost, ladderTicks: d.resolvable, pal }),
+    [series, model, dots, listed, ui.flip, ui.shading, ui.stepR, ui.jitter, measure, live, range, focus, viewRev, reading, ui.marginal, estimates, ghost, d.resolvable, pal],
   )
   const ref = usePlot(spec)
   const down = useRef<{ x: number; y: number } | null>(null)
@@ -342,6 +344,7 @@ export function CalibrationChart({ d }: { d: Derived }) {
           {series.units ? ` ${series.units}` : ''} · Show all
         </button>
       )}
+      <ScatterHover plot={ref} model={model} listed={listed} flip={ui.flip} onCurve={ui.marginal} />
       <div
         ref={ref}
         data-plot="scatter"
@@ -405,7 +408,7 @@ export function HistogramChart({ d }: { d: Derived }) {
   const histBars = useStore((s) => s.ui.histBars)
   const flip = useStore((s) => s.ui.flip)
   const measure = useStore((s) => s.measure)
-  const probe = useStore((s) => s.probe)
+  const probe = useStore((s) => (s.measure && s.measure.b === null ? s.probe : null))
   const lad = useStore((s) => s.ladder)
   const setLadder = useStore((s) => s.setLadder)
   const viewRev = useStore((s) => s.viewRev)
@@ -416,8 +419,8 @@ export function HistogramChart({ d }: { d: Derived }) {
   const xRange = useMemo<[number, number]>(() => (flip ? range : concRange(model.cMax, focus)), [flip, range, model.cMax, focus])
   const pair = useMemo(() => measurePair(measure, measure && measure.b === null ? probe : null), [measure, probe])
   const spec = useMemo(
-    () => buildHistogram({ series, model, listed, dots, histBars, pair, probe, space, xRange, viewRev, pal }),
-    [series, model, listed, dots, histBars, pair, probe, space, xRange, viewRev, pal],
+    () => buildHistogram({ series, model, listed, dots, histBars, pair, probe: null, space, xRange, viewRev, pal }),
+    [series, model, listed, dots, histBars, pair, space, xRange, viewRev, pal],
   )
   const ref = usePlot(spec)
   const mover = useLevelMover(d)
@@ -453,6 +456,8 @@ export function HistogramChart({ d }: { d: Derived }) {
     onEnd: () => mover.flush(),
   })
   return (
+    <>
+    <HistHover plot={ref} model={model} space={space} xRange={xRange} top={spec.top} skip={[...listed, ...(pair ?? [])]} />
     <div
       ref={ref}
       data-plot="hist"
@@ -461,6 +466,7 @@ export function HistogramChart({ d }: { d: Derived }) {
         if (e.detail === 2 && !(e.target as Element).closest?.('.modebar')) resetView()
       }}
     />
+    </>
   )
 }
 

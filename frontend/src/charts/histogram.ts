@@ -39,6 +39,8 @@ export interface HistogramIn {
 export interface HistSpec extends PlotSpec {
   /** drag handles: each drawn concentration's peak in data coordinates */
   targets: { c: number; x: number; y: number }[]
+  /** density that maps to height 1 (the hover overlay draws on the same scale) */
+  top: number
 }
 
 export const SPAN = 4.5
@@ -128,7 +130,8 @@ export function buildHistogram(h: HistogramIn): HistSpec {
       const i = concs.indexOf(lv.c)
       const d = i >= 0 ? dists[i] : null
       const vals = space === 'signal' ? lv.ys : lv.ys.map((y) => inverse(m, y)).filter((v): v is number => v !== null)
-      const w = d ? (d.hi - d.lo) / (4 * SPAN) : (h.xRange[1] - h.xRange[0]) / 80
+      // bin width ≈ one SD in this space, wider for few readings (n = 3 → 1.15 SD) so bars stay on the curve's scale
+      const w = (d ? (d.hi - d.lo) / (2 * SPAN) : (h.xRange[1] - h.xRange[0]) / 40) * Math.max(0.5, 2 / Math.sqrt(vals.length))
       if (!vals.length || !(w > 0)) continue
       const bins = new Map<number, number>()
       for (const v of vals) bins.set(Math.round(v / w), (bins.get(Math.round(v / w)) ?? 0) + 1)
@@ -259,5 +262,5 @@ export function buildHistogram(h: HistogramIn): HistSpec {
     const d = dists[i]
     return d ? [{ c, x: d.mode, y: d.peak / top }] : []
   })
-  return { data: traces, layout, targets }
+  return { data: traces, layout, targets, top }
 }
