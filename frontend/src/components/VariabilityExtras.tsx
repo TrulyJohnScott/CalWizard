@@ -155,7 +155,8 @@ export function ErrorBudgetSection({ d }: { d: Derived }) {
   if (!tol) return null
   const set = (p: Partial<typeof s.tolerance>) => patch({ tolerance: { ...s.tolerance, ...p } })
   const rows = tol.rows.filter((r) => r.c > 0 && r.rel !== null)
-  const scale = Math.max(tol.tea * 1.6, ...rows.map((r) => r.rel as number)) || 1
+  // bars longer than three times the limit are clipped, so the levels near the limit stay readable
+  const scale = Math.min(tol.tea * 3, Math.max(tol.tea * 1.6, ...rows.map((r) => r.rel as number))) || 1
   const names = tol.rows[0]?.sources.map((x) => x.name) ?? []
   const color = (i: number) => (i === 0 ? 'var(--muted)' : layerColor(i - 1))
   return (
@@ -184,7 +185,7 @@ export function ErrorBudgetSection({ d }: { d: Derived }) {
         const lin = worst.reduce((a, x) => a + x.bias + x.sd, 0) || 1
         const f = (r.rel as number) / lin
         return (
-          <div key={r.c} className="mb-1.5 grid items-center gap-3 text-[12px]" style={{ gridTemplateColumns: '70px minmax(0, 1fr) 168px' }}>
+          <div key={r.c} className="mb-1.5 grid items-center gap-3 text-[12px]" style={{ gridTemplateColumns: '70px minmax(0, 1fr) 250px' }}>
             <span className="text-muted">{withUnits(r.c, s.units)}</span>
             <div className="relative h-[14px] rounded-sm" style={{ background: 'var(--hover)' }} title={r.sources.map((x) => `${x.name}: bias ${signed((x.biasC ?? 0) / r.c)}, SD ${pct2((x.sdC ?? 0) / r.c)}`).join('\n')}>
               <div className="flex h-full overflow-hidden rounded-sm">

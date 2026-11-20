@@ -1,7 +1,7 @@
 # Cal Wizard — Spec v3 (the contract)
 
 > §1–§13 are v2 (curve, levels, ladder, experiments). §14–§21 are v3: what-if, limits, separation, requirements,
-> read-back, reader import, report and the workspaces. §22 is the variability layers (lots, readers, days). Where §21 and §11 disagree about the top bar or layout, §21 wins.
+> read-back, reader import, report and the workspaces. §22 is the variability layers (lots, readers, days), §23 conditions, §24 fixed bias and the error budget. Where §21 and §11 disagree about the top bar or layout, §21 wins.
 
 **Purpose:** help lateral flow assay developers see how mean signal and its variability together
 determine their ability to resolve concentrations, and judge how good an assay is.
@@ -728,3 +728,47 @@ with on/off, name, units and the four sizes as %/SD, add/remove; a one-line summ
 → 2 with all layers"). Right sidebar gets **Budget** next to Levels | Experiment: stacked bar per level showing each
 source's share, the cumulative counts, and a **Dial in** drop zone (paste CSV) showing predicted vs measured with
 **Adopt**. The Experiment tab uses the design (units per layer × n) when layers exist.
+
+## 23. Conditions (several curves of the same assay)
+
+A condition is one Series: the same assay measured on another lot, reader, day or site, with its own curve. The
+browser keeps several (`series[]` in the store, one active); headless they are simply several Series files.
+
+`compare(models, concs?)` — the first is the reference; `concs` defaults to its levels:
+- `conditions[i] = {name, levels, lod, loq}` (headline ladder length and §15 limits, each with its own settings);
+- `rows[j] = {c, mean[i], bias[i], readsAs[i], concBias[i]}`: mean signal of each condition, its bias against the
+  reference as a fraction of the reference signal, the concentration the reference curve reports for that signal (§6),
+  and `(readsAs − c)/c` (null at c = 0 or when out of range);
+- `between` (≥ 2 conditions, else null) sizes the spread as one §22 layer: `offsetSd` = SD (n − 1) of the blank means;
+  `gainCv` = median over c > 0 of `SD(rise_i(c)) / |mean(rise_i(c))|` with `rise_i(c) = mean_i(c) − mean_i(0)`;
+  `units` = the number of conditions.
+
+Headless: `calwizard compare A.json B.json [...] [-c C...]`, `POST /api/compare {series: [...], concs?}`.
+
+GUI (Variability workspace, and the name menu in the top bar): `+ Add a condition` starts one as a copy of the active
+series; pasting or importing data then replaces that condition's table. The condition being edited is the reference.
+A table lists each condition's levels, LoD, LoQ and the range of `concBias` across the levels; a small chart overlays
+the curves; `Use as a layer` adds or updates a layer named `Condition` with the `between` sizes. Adding, switching
+and removing conditions are undo steps. Sharing and export act on the active condition.
+
+## 24. Fixed bias and the error budget (tolerance stack)
+
+A layer (§22) may carry a known fixed shift against the calibration: `biasOffset` (signal units) and `biasPct`
+(fraction of the signal), e.g. a reader that reads 5% high. Bias changes accuracy, not spread: the model's mean, the
+ladder and the limits are unchanged by it.
+
+`tolerance(model, concs?, k?, tea?)` with `Series.tolerance = {tea: 0.3, k: 2}` as defaults. Per concentration, the
+sources are the within-run spread and every layer that is on. In signal units each has `bias = biasOffset + biasPct·μ`
+(0 for within-run) and `sd = √(its §22.1 variance term)`; dividing by the slope (§15) gives `biasC = bias/slope` and
+`sdC = sd/|slope|`. Then
+- `bias = Σ biasC`, `sd = √Σ sdC²`;
+- `total = |bias| + k·sd` (the usual total-error budget) and `worst = Σ|biasC| + k·Σ sdC` (every source at its limit
+  at once: the linear tolerance stack);
+- for c > 0: `rel = total/c`, `worstRel = worst/c`, `ok = rel ≤ tea`. Where the curve is flat these are null.
+
+Output `{k, tea, rows, met, total}` (`met`/`total` count the levels with c > 0 that could be judged).
+Headless: `calwizard tolerance SERIES [-c C...] [--k K] [--tea T]`, `POST /api/tolerance`.
+
+GUI (Variability workspace): each layer row has a `known bias` line; the **Error budget** section has the allowed total
+error and coverage k as scrub fields, one stacked bar per level (bias solid, k·SD lighter, one colour per source, the
+limit as a line; bars past three times the limit are clipped) and the numbers `± total · bias · worst`.
