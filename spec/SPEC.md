@@ -268,7 +268,9 @@ the input drawer) · Flip axes button (`c → S` / `S → c`) · small Settings 
 - **Gaussians on the curve** (replaces the side strip, which would break the shared x axis): each level's signal
   distribution is drawn sideways at its concentration, on the curve's own signal axis, extending toward higher c:
   true density (the tightest drawn level spans 7% of the concentration axis, others narrower in proportion to
-  σ_ref/σ), level colours. Hovering draws a dashed one at the hovered concentration plus dotted guide lines
+  σ_ref/σ), level colours, drawn out to ±3.5σ with small dots marking ±1σ (hover: the ±1σ range and SD).
+  Numbered step rulers run from each level's Gaussian centre along its signal height: ticks 1, 2, 3… (up to 5) at
+  the ladder started from that level, each segment fainter. Hovering draws a dashed one at the hovered concentration plus dotted guide lines
   from the concentration axis up to the curve and from the signal axis across to it. Gear `Gaussians on curve
   On | Off` (default On); works in both orientations.
 - **Shared x axis.** The histogram below always shares the scatter's x axis (range, zoom, pan, plot edges): in

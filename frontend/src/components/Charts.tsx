@@ -9,7 +9,7 @@ import { compileExpr } from '../math/expr'
 import type { Derived } from '../state/derived'
 import { breakCoalescing, measurePair, useStore } from '../state/store'
 import { usePalette } from '../theme'
-import { HistHover, LadderGrid, ScatterHover } from './HoverOverlay'
+import { HistHover, ScatterHover, StepRulers } from './HoverOverlay'
 import { Seg } from './ui'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -344,7 +344,7 @@ export function CalibrationChart({ d }: { d: Derived }) {
           {series.units ? ` ${series.units}` : ''} · Show all
         </button>
       )}
-      <LadderGrid plot={ref} ladder={d.resolvable} flip={ui.flip} />
+      {ui.marginal && <StepRulers plot={ref} model={model} listed={listed} metric={series.metric} k={series.kTarget} flip={ui.flip} />}
       <ScatterHover plot={ref} model={model} listed={listed} flip={ui.flip} onCurve={ui.marginal} />
       <div
         ref={ref}

@@ -1,7 +1,9 @@
-import { useEffect, useState, type RefObject } from 'react'
+import { useEffect, useMemo, useState, type RefObject } from 'react'
 import { fmt } from '../format'
 import { concDist, signalDist, type HistSpace } from '../charts/histogram'
+import { ladder } from '../math/analysis'
 import type { Model } from '../math/model'
+import type { MetricKey } from '../math/types'
 import { useStore } from '../state/store'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -116,35 +118,52 @@ export function HistHover({ plot, model, space, xRange, top, skip }: { plot: Ref
 }
 
 /**
- * Concentration gridlines at the resolvable ladder (replacing the even 1, 2, 3… grid): each starts at the concentration
- * axis and fades out across the plot, so the resolvable steps read as a quiet ruler.
+ * Step rulers: from each level's Gaussian centre (c, mean(c)) a line runs along that level's signal height with ticks
+ * numbered 1, 2, 3… at the concentrations that are 1, 2, 3… resolvable steps away (the ladder started at c). Each
+ * further segment is fainter, so the ruler fades out.
  */
-export function LadderGrid({ plot, ladder, flip }: { plot: RefObject<HTMLDivElement | null>; ladder: number[]; flip: boolean }) {
+export function StepRulers({ plot, model, listed, metric, k, flip }: { plot: RefObject<HTMLDivElement | null>; model: Model; listed: number[]; metric: MetricKey; k: number; flip: boolean }) {
   const ax = useAxes(plot)
+  const steps = useMemo(
+    () => listed.map((c) => ({ c, mu: model.mean(c), L: ladder({ mean: model.mean, sd: model.sd, cMax: model.cMax }, metric, k, 0, 6, c).slice(1) })),
+    [listed, model, metric, k],
+  )
   if (!ax) return null
+  const P = (c: number, S: number): [number, number] => (flip ? [ax.X(S), ax.Y(c)] : [ax.X(c), ax.Y(S)])
   const { x, y, w, h } = ax.box
-  const id = flip ? 'ladder-fade-h' : 'ladder-fade-v'
-  const lines = ladder
-    .map((c) => (flip ? ax.Y(c) : ax.X(c)))
-    .filter((p) => Number.isFinite(p) && (flip ? p >= y - 0.5 && p <= y + h + 0.5 : p >= x - 0.5 && p <= x + w + 0.5))
   return (
-    <svg className="pointer-events-none absolute inset-0 h-full w-full">
+    <svg className="pointer-events-none absolute inset-0 z-[4] h-full w-full">
       <defs>
-        {flip ? (
-          <linearGradient id={id} gradientUnits="userSpaceOnUse" x1={x} y1={0} x2={x + w * 0.85} y2={0}>
-            <stop offset="0" stopColor="var(--accent)" stopOpacity={0.55} />
-            <stop offset="1" stopColor="var(--accent)" stopOpacity={0} />
-          </linearGradient>
-        ) : (
-          <linearGradient id={id} gradientUnits="userSpaceOnUse" x1={0} y1={y + h} x2={0} y2={y + h * 0.15}>
-            <stop offset="0" stopColor="var(--accent)" stopOpacity={0.55} />
-            <stop offset="1" stopColor="var(--accent)" stopOpacity={0} />
-          </linearGradient>
-        )}
+        <clipPath id="step-ruler-clip">
+          <rect x={x} y={y} width={w} height={h} />
+        </clipPath>
       </defs>
-      {lines.map((p, i) =>
-        flip ? <line key={i} x1={x} x2={x + w} y1={p} y2={p} stroke={`url(#${id})`} strokeWidth={1.2} /> : <line key={i} x1={p} x2={p} y1={y + h} y2={y} stroke={`url(#${id})`} strokeWidth={1.2} />,
-      )}
+      <g clipPath="url(#step-ruler-clip)" stroke="var(--accent)" fill="var(--accent)">
+        {steps.map(({ c, mu, L }) => {
+          if (!Number.isFinite(mu) || !L.length) return null
+          let prev = c
+          return (
+            <g key={c}>
+              {L.map((s, j) => {
+                const op = 0.6 * Math.pow(0.68, j)
+                const [x0, y0] = P(prev, mu)
+                const [x1, y1] = P(s, mu)
+                prev = s
+                const tick = flip ? { x1: x1 - 4, x2: x1 + 4, y1, y2: y1 } : { x1, x2: x1, y1: y1 - 4, y2: y1 + 4 }
+                return (
+                  <g key={j} opacity={op}>
+                    <line x1={x0} y1={y0} x2={x1} y2={y1} strokeWidth={1} strokeDasharray="1 3" />
+                    <line {...tick} strokeWidth={1.4} />
+                    <text x={flip ? x1 + 6 : x1} y={flip ? y1 + 3 : y1 - 6} fontSize={9} textAnchor={flip ? 'start' : 'middle'} stroke="none">
+                      {j + 1}
+                    </text>
+                  </g>
+                )
+              })}
+            </g>
+          )
+        })}
+      </g>
     </svg>
   )
 }
