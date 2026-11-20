@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type RefObject } from 'react'
 import { fmt } from '../format'
 import { concDist, signalDist, type HistSpace } from '../charts/histogram'
-import { ladder } from '../math/analysis'
+import { unitTicks } from '../math/analysis'
 import type { Model } from '../math/model'
 import type { MetricKey } from '../math/types'
 import { useStore } from '../state/store'
@@ -118,15 +118,15 @@ export function HistHover({ plot, model, space, xRange, top, skip }: { plot: Ref
 }
 
 /**
- * Step rulers: from each level's Gaussian centre (c, mean(c)) a line runs along that level's signal height with ticks
- * numbered 1, 2, 3… at the concentrations that are 1, 2, 3… resolvable steps away (the ladder started at c). Each
- * further segment is fainter, so the ruler fades out.
+ * Unit rulers: from each level's and each anchor's centre (c, mean(c)) a line runs along that signal height with ticks
+ * 1, 2, 3… where the separation from it reaches 1, 2, 3… target units (e.g. Δμ/Σσ = k, 2k, …). Fainter further out.
  */
-export function StepRulers({ plot, model, listed, metric, k, flip }: { plot: RefObject<HTMLDivElement | null>; model: Model; listed: number[]; metric: MetricKey; k: number; flip: boolean }) {
+export function StepRulers({ plot, model, origins, metric, k, flip }: { plot: RefObject<HTMLDivElement | null>; model: Model; origins: { c: number; anchor: boolean }[]; metric: MetricKey; k: number; flip: boolean }) {
   const ax = useAxes(plot)
+  const cTop = ax ? Math.max(model.cMax, flip ? ax.yr[1] : ax.xr[1]) : model.cMax
   const steps = useMemo(
-    () => listed.map((c) => ({ c, mu: model.mean(c), L: ladder({ mean: model.mean, sd: model.sd, cMax: model.cMax }, metric, k, 0, 6, c).slice(1) })),
-    [listed, model, metric, k],
+    () => origins.map((o) => ({ ...o, mu: model.mean(o.c), L: unitTicks({ mean: model.mean, sd: model.sd }, o.c, metric, k, Math.max(cTop, o.c * 1.0001 + 1e-9), 5) })),
+    [origins, model, metric, k, cTop],
   )
   if (!ax) return null
   const P = (c: number, S: number): [number, number] => (flip ? [ax.X(S), ax.Y(c)] : [ax.X(c), ax.Y(S)])
@@ -138,14 +138,15 @@ export function StepRulers({ plot, model, listed, metric, k, flip }: { plot: Ref
           <rect x={x} y={y} width={w} height={h} />
         </clipPath>
       </defs>
-      <g clipPath="url(#step-ruler-clip)" stroke="var(--accent)" fill="var(--accent)">
-        {steps.map(({ c, mu, L }) => {
+      <g clipPath="url(#step-ruler-clip)">
+        {steps.map(({ c, mu, L, anchor }) => {
           if (!Number.isFinite(mu) || !L.length) return null
+          const col = anchor ? 'var(--fg)' : 'var(--accent)'
           let prev = c
           return (
-            <g key={c}>
+            <g key={`${anchor ? 'a' : 'l'}${c}`} stroke={col} fill={col}>
               {L.map((s, j) => {
-                const op = 0.6 * Math.pow(0.68, j)
+                const op = (anchor ? 0.85 : 0.6) * Math.pow(0.7, j)
                 const [x0, y0] = P(prev, mu)
                 const [x1, y1] = P(s, mu)
                 prev = s

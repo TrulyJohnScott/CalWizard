@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defaultSeries } from '../math/presets'
 import { undoKey } from './keys'
-import { breakCoalescing, COALESCE_MS, HISTORY_LIMIT, useStore } from './store'
+import { breakCoalescing, COALESCE_MS, HISTORY_LIMIT, isPending, rulerPoints, useStore } from './store'
 
 const st = () => useStore.getState()
 const active = () => st().series.find((x) => x.id === st().activeId)!
@@ -86,7 +86,7 @@ describe('undo / redo', () => {
 
   it('undo clears the ladder list, the measurement, the zoom and the toast', () => {
     st().patch({ name: 'a' })
-    useStore.setState({ ladder: { list: [0, 1] }, measure: { a: 1, b: 2 }, focus: [0, 5], toast: { id: 1, text: 'x' } })
+    useStore.setState({ ladder: { list: [0, 1] }, measure: { pts: [1, 2] }, focus: [0, 5], toast: { id: 1, text: 'x' } })
     st().undo()
     expect([st().ladder, st().measure, st().focus, st().toast]).toEqual([null, null, null, null])
   })
@@ -104,8 +104,8 @@ describe('undo / redo', () => {
     const levels = active().levels
     st().clickMeasure(3)
     st().clickMeasure(7)
-    st().setMeasureEnd('b', 9)
-    expect(st().measure).toEqual({ a: 3, b: 9 })
+    st().setMeasurePoint(1, 9)
+    expect(st().measure).toEqual({ pts: [3, 9] })
     expect(active().levels).toBe(levels)
     expect(st().past).toHaveLength(0)
   })
@@ -181,37 +181,56 @@ describe('undoKey', () => {
   })
 })
 
-describe('ruler', () => {
-  it('first click starts, second completes, third starts again; same point ignored', () => {
-    st().clickMeasure(3)
-    expect(st().measure).toEqual({ a: 3, b: null })
-    st().clickMeasure(3)
-    expect(st().measure).toEqual({ a: 3, b: null })
-    st().clickMeasure(8)
-    expect(st().measure).toEqual({ a: 3, b: 8 })
+describe('ruler (N points)', () => {
+  it('each click adds a point (in placing order); clicking a point again removes it', () => {
+    st().clickMeasure(5)
+    expect(st().measure).toEqual({ pts: [5] })
     st().clickMeasure(2)
-    expect(st().measure).toEqual({ a: 2, b: null })
-  })
-
-  it('ends can be dragged only on a committed ruler, and never onto each other', () => {
-    st().setMeasureEnd('a', 4)
+    st().clickMeasure(9)
+    st().clickMeasure(3)
+    expect(st().measure).toEqual({ pts: [5, 2, 9, 3] })
+    st().clickMeasure(5)
+    expect(st().measure).toEqual({ pts: [2, 9, 3] })
+    for (const c of [2, 3, 9]) st().clickMeasure(c)
     expect(st().measure).toBeNull()
-    st().clickMeasure(3)
-    st().setMeasureEnd('b', 4)
-    expect(st().measure).toEqual({ a: 3, b: null })
-    st().clickMeasure(8)
-    st().setMeasureEnd('a', 8)
-    expect(st().measure).toEqual({ a: 3, b: 8 })
-    st().setMeasureEnd('a', 1)
-    expect(st().measure).toEqual({ a: 1, b: 8 })
   })
 
-  it('Keep as levels adds both ends as one undoable step (equations mode)', () => {
+  it('rulerPoints: blank first, sorted; the live point only while one point is placed', () => {
+    expect(rulerPoints(null, 4)).toEqual([])
+    expect(rulerPoints({ pts: [5] }, 2)).toEqual([0, 2, 5])
+    expect(rulerPoints({ pts: [5] }, 5)).toEqual([0, 5])
+    expect(rulerPoints({ pts: [5, 1] }, 3)).toEqual([0, 1, 5])
+    expect(rulerPoints({ pts: [0, 4] }, null)).toEqual([0, 4])
+    expect(isPending({ pts: [5] })).toBe(true)
+    expect(isPending({ pts: [1, 5] })).toBe(false)
+  })
+
+  it('points can be dragged, never onto another point', () => {
+    st().setMeasurePoint(0, 4)
+    expect(st().measure).toBeNull()
+    for (const c of [1, 5, 9]) st().clickMeasure(c)
+    st().setMeasurePoint(0, 7)
+    expect(st().measure).toEqual({ pts: [7, 5, 9] })
+    st().setMeasurePoint(0, 9)
+    st().setMeasurePoint(5, 2)
+    expect(st().measure).toEqual({ pts: [7, 5, 9] })
+  })
+
+  it('popMeasure removes the last point placed; the last one clears the ruler', () => {
+    st().popMeasure()
+    for (const c of [5, 1, 9]) st().clickMeasure(c)
+    st().popMeasure()
+    expect(st().measure).toEqual({ pts: [5, 1] })
+    st().popMeasure()
+    st().popMeasure()
+    expect(st().measure).toBeNull()
+  })
+
+  it('Keep as levels adds every point as one undoable step (equations mode)', () => {
     const before = active().levels
-    st().clickMeasure(3)
-    st().clickMeasure(700)
+    for (const c of [3, 7, 700]) st().clickMeasure(c)
     st().keepMeasure()
-    expect(active().levels).toEqual([...new Set([...before, 3, 700])].sort((a, b) => a - b))
+    expect(active().levels).toEqual([...new Set([...before, 3, 7, 700])].sort((a, b) => a - b))
     expect(active().cMax).toBe(700)
     expect(st().past).toHaveLength(1)
     st().keepMeasure()
@@ -220,9 +239,7 @@ describe('ruler', () => {
     expect(active().levels).toEqual(before)
   })
 
-  it('Keep does nothing without a committed ruler or in table modes', () => {
-    st().keepMeasure()
-    st().clickMeasure(3)
+  it('Keep does nothing without points or in table modes; measuring is not history', () => {
     st().keepMeasure()
     expect(st().past).toHaveLength(0)
     st().patch({ mode: 'summary' })

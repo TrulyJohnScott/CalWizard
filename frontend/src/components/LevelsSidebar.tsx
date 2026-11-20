@@ -5,7 +5,7 @@ import { closenessColor, closenessQ, rgbaCss } from '../math/closeness'
 import { METRIC_LABEL } from '../math/metrics'
 import { normLevels, parseNum } from '../math/tables'
 import type { Derived } from '../state/derived'
-import { measurePair, useStore } from '../state/store'
+import { isPending, rulerPoints, useStore } from '../state/store'
 import { ExperimentPanel } from './ExperimentPanel'
 import { IconChevron, IconX, Seg } from './ui'
 
@@ -53,22 +53,26 @@ export function LevelsSidebar({ d }: { d: Derived }) {
   const setExp = useStore((s) => s.setExp)
   const clearMeasure = useStore((s) => s.clearMeasure)
   const keepMeasure = useStore((s) => s.keepMeasure)
-  const probe = useStore((s) => (s.measure && s.measure.b === null ? s.probe : null))
+  const popMeasure = useStore((s) => s.popMeasure)
+  const probe = useStore((s) => (isPending(s.measure) ? s.probe : null))
   const [add, setAdd] = useState('')
   const { series: s, model: m, listed } = d
   const editable = s.mode === 'equations' && !lad?.list
   const metricName = METRIC_LABEL[s.metric]
   const rows = pairRows(m, listed, s.metric, s.kTarget)
 
-  // measure readout: committed pair, or live while the second point is pending
-  const pair = measurePair(measure, measure && measure.b === null ? probe : null)
-  const committed = !!measure && measure.b !== null
-  const pr = pair ? pairRow(m, pair[0], pair[1], s.metric, s.kTarget) : null
-  const p0 = pair?.[0]
-  const p1 = pair?.[1]
-  const steps = useMemo(
-    () => (p0 !== undefined && p1 !== undefined ? makeLadder({ mean: m.mean, sd: m.sd, cMax: p1 }, s.metric, s.kTarget, 0, 200, p0).length - 1 : 0),
-    [m, s.metric, s.kTarget, p0, p1],
+  // ruler readout: every adjacent pair of the placed points (the next point previewed live while only one is placed)
+  const pts = useMemo(() => rulerPoints(measure, probe), [measure, probe])
+  const committed = !!measure && measure.pts.length >= 2
+  const rulerRows = useMemo(
+    () =>
+      pts.slice(1).map((c2, i) => {
+        const c1 = pts[i]
+        const r = pairRow(m, c1, c2, s.metric, s.kTarget)
+        const steps = makeLadder({ mean: m.mean, sd: m.sd, cMax: c2 }, s.metric, s.kTarget, 0, 200, c1).length - 1
+        return { ...r, steps }
+      }),
+    [pts, m, s.metric, s.kTarget],
   )
 
   if (!open)
@@ -103,12 +107,6 @@ export function LevelsSidebar({ d }: { d: Derived }) {
     if (s.mode === 'equations') notify(`Levels set to the ladder (${d.resolvable.length})`)
   }
 
-  const cell = (label: string, val: string, hot?: boolean, pass?: boolean) => (
-    <div className="flex justify-between gap-1">
-      <span className="text-muted">{label}</span>
-      <span style={hot ? { color: pass ? 'var(--accent)' : 'var(--bad)' } : undefined}>{val}</span>
-    </div>
-  )
 
   return (
     <aside className="flex w-[280px] shrink-0 flex-col overflow-y-auto border-l border-line">
@@ -128,48 +126,62 @@ export function LevelsSidebar({ d }: { d: Derived }) {
         </div>
         {measure && (
           <div className="px-3 pb-2 text-[12px]">
-            {!pr || p0 === undefined || p1 === undefined ? (
-              <div className="flex items-center justify-between">
-                <span className="text-muted">{fmt(measure.a)} → click a second point</span>
-                <button className="btn ghost" style={{ height: 18, padding: '0 4px' }} onClick={clearMeasure} title="Clear (Esc)">
+            <div className="mb-1 flex items-center justify-between">
+              <span className="text-muted">
+                {measure.pts.length === 1 ? `${fmt(measure.pts[0])} → click more points` : `${measure.pts.length} points (+ blank)`}
+              </span>
+              <span className="flex items-center gap-1">
+                {committed && s.mode === 'equations' && !lad?.list && measure.pts.some((p) => !listed.includes(p)) && (
+                  <button
+                    className="link text-[11px]"
+                    onClick={() => {
+                      keepMeasure()
+                      notify(`Kept ${measure.pts.length} ruler points as levels`)
+                    }}
+                    title="Add every ruler point to the levels"
+                  >
+                    Keep as levels
+                  </button>
+                )}
+                <button className="btn ghost text-[11px]" style={{ height: 18, padding: '0 4px' }} onClick={popMeasure} title="Remove the last point placed (Backspace)">
+                  ↶
+                </button>
+                <button className="btn ghost" style={{ height: 18, padding: '0 4px' }} onClick={clearMeasure} title="Clear all points (Esc)">
                   <IconX />
                 </button>
-              </div>
-            ) : (
+              </span>
+            </div>
+            <div className="mb-1 text-[10.5px] text-faint">click to add · click a point to remove · Backspace: last · Esc: all</div>
+            {rulerRows.length > 0 && (
               <>
-                <div className="mb-1 flex items-center justify-between">
-                  <span className="font-medium" style={committed ? undefined : { color: 'var(--muted)' }}>
-                    {fmt(p0)} → {fmt(p1)}
+                <div className="grid text-[10.5px] text-muted" style={{ gridTemplateColumns: '1fr 52px 44px 44px 30px' }}>
+                  <span>pair</span>
+                  <span className="text-right">{metricName}</span>
+                  <span className="text-right">overlap</span>
+                  <span className="text-right" title="misclassification rate for a single reading">
+                    misread
                   </span>
-                  <span className="flex items-center gap-1">
-                    {committed && s.mode === 'equations' && !lad?.list && !(listed.includes(p0) && listed.includes(p1)) && (
-                      <button
-                        className="link text-[11px]"
-                        onClick={() => {
-                          keepMeasure()
-                          notify(`Kept ${fmt(p0)} and ${fmt(p1)} as levels`)
-                        }}
-                        title="Add both concentrations to the levels"
-                      >
-                        Keep as levels
-                      </button>
-                    )}
-                    <button className="btn ghost" style={{ height: 18, padding: '0 4px' }} onClick={clearMeasure} title="Clear (Esc)">
-                      <IconX />
-                    </button>
+                  <span className="text-right" title="resolvable steps between the two">
+                    steps
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-x-4 text-[11.5px]">
-                  {cell('Δμ', fmt(pr.dmu))}
-                  {cell('overlap', pct(pr.ovl))}
-                  {cell('Δμ/Σσ', fmt(pr.dsum), s.metric === 'dsum', pr.pass)}
-                  {cell('misclass.', pct(pr.err))}
-                  {cell('SSMD', fmt(pr.ssmd), s.metric === 'ssmd', pr.pass)}
-                  {cell('Z′', fmt(pr.zprime), s.metric === 'zprime', pr.pass)}
-                </div>
-                <div className="mt-1 text-[11.5px] text-muted">
-                  <span className="text-fg">{steps}</span> resolvable {steps === 1 ? 'step' : 'steps'} between
-                </div>
+                {rulerRows.map((r, i) => (
+                  <div
+                    key={i}
+                    className="grid items-center text-[11.5px]"
+                    style={{ gridTemplateColumns: '1fr 52px 44px 44px 30px', height: 20, color: committed ? undefined : 'var(--muted)' }}
+                  >
+                    <span className="truncate">
+                      {fmt(r.c1, 3)} → {fmt(r.c2, 3)}
+                    </span>
+                    <span className="text-right" style={{ color: r.pass ? 'var(--accent)' : 'var(--bad)' }}>
+                      {fmt(r[s.metric])}
+                    </span>
+                    <span className="text-right text-muted">{pct(r.ovl)}</span>
+                    <span className="text-right text-muted">{pct(r.err)}</span>
+                    <span className="text-right">{r.steps}</span>
+                  </div>
+                ))}
               </>
             )}
           </div>
@@ -196,7 +208,7 @@ export function LevelsSidebar({ d }: { d: Derived }) {
           const r = i > 0 ? rows[i - 1] : null
           const col = r ? closenessColor(closenessQ(r, s.metric, s.kTarget)) : null
           const hot = col !== null && col[3] > 0.01
-          const measured = committed && measure !== null && (c === measure.a || c === measure.b)
+          const measured = committed && measure !== null && measure.pts.includes(c)
           const why = r && !r.pass ? whyNot({ mean: m.mean, sd: m.sd, cMax: m.cMax }, r.c1, r.c2, s.metric, s.kTarget) : null
           return (
             <div key={`${i}`}>
@@ -277,7 +289,7 @@ export function LevelsSidebar({ d }: { d: Derived }) {
             </button>
           )}
         </div>
-        {!measure && <span className="text-[11px] text-faint">click the chart twice to measure</span>}
+        {!measure && <span className="text-[11px] text-faint">click the chart to place ruler points</span>}
       </div>
       </>
       )}

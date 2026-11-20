@@ -51,18 +51,22 @@ export const HISTORY_LIMIT = 100
 /** consecutive edits of the same kind within this many ms are one undo step */
 export const COALESCE_MS = 1000
 
-/** The ruler: never part of the levels until "Keep as levels". */
+/** The ruler: any number of points in the order placed (unique); never part of the levels until "Keep as levels". */
 export interface Measure {
-  a: number
-  b: number | null
+  pts: number[]
 }
 
-/** Measured pair (sorted): committed, or live while the second point is still being chosen. */
-export function measurePair(m: Measure | null, live: number | null): [number, number] | null {
-  if (!m) return null
-  const b = m.b ?? live
-  if (b === null || b === m.a) return null
-  return m.a <= b ? [m.a, b] : [b, m.a]
+/** One point placed: the next point is previewed live under the mouse. */
+export const isPending = (m: Measure | null): boolean => !!m && m.pts.length === 1
+
+/**
+ * What the ruler compares, sorted: the blank (c = 0) as a fixed first anchor, the placed points, and the live point
+ * under the mouse while only one point is placed.
+ */
+export function rulerPoints(m: Measure | null, live: number | null): number[] {
+  if (!m) return []
+  const pts = isPending(m) && live !== null ? [...m.pts, live] : m.pts
+  return [...new Set([0, ...pts])].sort((a, b) => a - b)
 }
 
 interface State {
@@ -104,12 +108,14 @@ interface State {
   /** show "<text> · Undo" for a few seconds */
   notify: (text: string) => void
   dismissToast: () => void
-  /** a click on the scatter at concentration c: first point, then second (a third click starts again) */
+  /** a click on the scatter at concentration c: adds a ruler point, or removes it if it is already there */
   clickMeasure: (c: number) => void
-  /** drag one end of a committed ruler */
-  setMeasureEnd: (end: 'a' | 'b', c: number) => void
+  /** drag ruler point i to c */
+  setMeasurePoint: (i: number, c: number) => void
+  /** remove the most recently placed ruler point */
+  popMeasure: () => void
   clearMeasure: () => void
-  /** add the ruler's two concentrations to the levels (equations mode): one undo step */
+  /** add every ruler point to the levels (equations mode): one undo step */
   keepMeasure: () => void
   /** add a simulated concentration (equations: levels; tables: extraLevels). One undo step; false if already there */
   addSimLevel: (c: number) => boolean
@@ -274,16 +280,26 @@ export const useStore = create<State>((set) => ({
   dismissToast: () => set({ toast: null }),
   clickMeasure: (c) =>
     set((s) => {
-      const m = s.measure
-      if (!m || m.b !== null) return { measure: { a: c, b: null } }
-      return c === m.a ? {} : { measure: { a: m.a, b: c } }
+      const pts = s.measure?.pts ?? []
+      if (pts.includes(c)) {
+        const left = pts.filter((p) => p !== c)
+        return { measure: left.length ? { pts: left } : null }
+      }
+      return { measure: { pts: [...pts, c] } }
     }),
-  setMeasureEnd: (end, c) =>
+  popMeasure: () =>
     set((s) => {
-      const m = s.measure
-      if (!m || m.b === null || m[end] === c) return {}
-      const other = end === 'a' ? m.b : m.a
-      return c === other ? {} : { measure: { ...m, [end]: c } }
+      const pts = s.measure?.pts
+      if (!pts) return {}
+      return { measure: pts.length > 1 ? { pts: pts.slice(0, -1) } : null }
+    }),
+  setMeasurePoint: (i, c) =>
+    set((s) => {
+      const pts = s.measure?.pts
+      if (!pts || i < 0 || i >= pts.length || pts[i] === c || pts.includes(c)) return {}
+      const next = [...pts]
+      next[i] = c
+      return { measure: { pts: next } }
     }),
   clearMeasure: () => set((s) => (s.measure ? { measure: null } : {})),
   addSimLevel: (c) => {
@@ -308,12 +324,12 @@ export const useStore = create<State>((set) => ({
     set((s) => {
       const m = s.measure
       const act = s.series.find((x) => x.id === s.activeId)
-      if (!m || m.b === null || !act || act.mode !== 'equations') return {}
-      const levels = normLevels([...act.levels, m.a, m.b])
+      if (!m || !act || act.mode !== 'equations') return {}
+      const levels = normLevels([...act.levels, ...m.pts])
       if (sameValue(levels, normLevels(act.levels))) return {}
       return {
         ...record(s, ''),
-        series: s.series.map((x) => (x.id === s.activeId ? { ...x, levels, cMax: Math.max(x.cMax, m.a, m.b ?? 0) } : x)),
+        series: s.series.map((x) => (x.id === s.activeId ? { ...x, levels, cMax: Math.max(x.cMax, ...m.pts) } : x)),
         ladder: null,
       }
     }),

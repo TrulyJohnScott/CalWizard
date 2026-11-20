@@ -25,8 +25,8 @@ export interface HistogramIn {
   listed: number[]
   dots: LevelDots[]
   histBars: boolean
-  /** measured pair (committed or live), emphasised */
-  pair: [number, number] | null
+  /** ruler points (committed + live), emphasised; their adjacent pairs get the overlap fills */
+  pair: number[] | null
   probe: number | null
   space: HistSpace
   /** the scatter's x range (signal range when `signal`, concentration range when `conc`) */
@@ -112,13 +112,13 @@ export function concDist(m: Pick<Model, 'mean' | 'sd' | 'cMax'>, c: number, view
   return { c, f, xs, lo: xs[0], hi: xs[xs.length - 1], mode, peak }
 }
 
-/** Concentrations a distribution view draws: the levels plus the measured pair. */
-export const drawnConcs = (listed: number[], pair: [number, number] | null) => [...new Set([...listed, ...(pair ?? [])])].sort((a, b) => a - b)
+/** Concentrations a distribution view draws: the levels plus the ruler points. */
+export const drawnConcs = (listed: number[], pair: number[] | null) => [...new Set([...listed, ...(pair ?? [])])].sort((a, b) => a - b)
 
 export function buildHistogram(h: HistogramIn): HistSpec {
   const { model: m, pal, series: s, pair, space } = h
   const concs = drawnConcs(h.listed, pair)
-  const emph = (c: number) => !pair || c === pair[0] || c === pair[1]
+  const emph = (c: number) => !pair || pair.includes(c)
   const dist = (c: number) => (space === 'signal' ? signalDist(m, c) : concDist(m, c, h.xRange))
   const dists = concs.map(dist)
   const top = Math.max(0, ...dists.map((d) => (d ? d.peak : 0))) || 1
@@ -162,11 +162,13 @@ export function buildHistogram(h: HistogramIn): HistSpec {
   // overlap of adjacent levels (or of the measured pair); the overlap coefficient is the same in both spaces
   const pairs: [Dist, Dist][] = []
   const at = (c: number) => dists[concs.indexOf(c)]
-  if (pair) {
-    const a = at(pair[0])
-    const b = at(pair[1])
-    if (a && b) pairs.push([a, b])
-  } else
+  if (pair)
+    for (let i = 0; i + 1 < pair.length; i++) {
+      const a = at(pair[i])
+      const b = at(pair[i + 1])
+      if (a && b) pairs.push([a, b])
+    }
+  else
     for (let i = 0; i + 1 < dists.length; i++) {
       const a = dists[i]
       const b = dists[i + 1]

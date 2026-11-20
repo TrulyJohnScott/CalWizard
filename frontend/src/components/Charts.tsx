@@ -7,7 +7,7 @@ import { fmt } from '../format'
 import { inverse } from '../math/analysis'
 import { compileExpr } from '../math/expr'
 import type { Derived } from '../state/derived'
-import { breakCoalescing, measurePair, useStore } from '../state/store'
+import { breakCoalescing, isPending, rulerPoints, useStore, type Measure } from '../state/store'
 import { usePalette } from '../theme'
 import { HistHover, ScatterHover, StepRulers } from './HoverOverlay'
 import { Seg } from './ui'
@@ -94,9 +94,8 @@ function useDrag(
   }, [ref])
 }
 
-/** Ruler handles are drag targets with negative ids. */
-const RULER_A = -1
-const RULER_B = -2
+/** Ruler point i is drag target -(i + 1). */
+const rulerId = (i: number) => -(i + 1)
 
 /** rAF-throttled mover: levels clamp between neighbours (3 significant digits); ruler ends move freely (c ≥ 0). */
 function useLevelMover(d: Derived) {
@@ -110,8 +109,8 @@ function useLevelMover(d: Derived) {
     pending.current = null
     if (!p) return
     const c3 = (c: number) => +Math.max(0, c).toPrecision(3)
-    if (p.i === RULER_A || p.i === RULER_B) {
-      useStore.getState().setMeasureEnd(p.i === RULER_A ? 'a' : 'b', c3(p.c))
+    if (p.i < 0) {
+      useStore.getState().setMeasurePoint(-p.i - 1, c3(p.c))
       return
     }
     const { listed, model } = live.current
@@ -143,7 +142,7 @@ function useLevelMover(d: Derived) {
 }
 
 /** Levels editable by dragging (equations mode, no display-only ladder) + the committed ruler's two handles (last). */
-function dragTargets(d: Derived, editable: boolean, measure: { a: number; b: number | null } | null, at: (c: number) => [number, number] | null): Target[] {
+function dragTargets(d: Derived, editable: boolean, measure: { pts: number[] } | null, at: (c: number) => [number, number] | null): Target[] {
   const out: Target[] = []
   if (editable)
     d.listed.forEach((c, i) => {
@@ -151,14 +150,11 @@ function dragTargets(d: Derived, editable: boolean, measure: { a: number; b: num
       const p = at(c)
       if (p) out.push({ i, x: p[0], y: p[1] })
     })
-  if (measure && measure.b !== null)
-    for (const [i, c] of [
-      [RULER_A, measure.a],
-      [RULER_B, measure.b],
-    ] as const) {
+  if (measure && measure.pts.length >= 2)
+    measure.pts.forEach((c, j) => {
       const p = at(c)
-      if (p) out.push({ i, x: p[0], y: p[1] })
-    }
+      if (p) out.push({ i: rulerId(j), x: p[0], y: p[1] })
+    })
   return out
 }
 
@@ -169,7 +165,7 @@ export function CalibrationChart({ d }: { d: Derived }) {
   const setLadder = useStore((s) => s.setLadder)
   const lad = useStore((s) => s.ladder)
   // the hovered concentration only matters to the figure while a measurement waits for its second point
-  const probe = useStore((s) => (s.measure && s.measure.b === null ? s.probe : null))
+  const probe = useStore((s) => (isPending(s.measure) ? s.probe : null))
   const setProbe = useStore((s) => s.setProbe)
   const viewRev = useStore((s) => s.viewRev)
   const resetView = useStore((s) => s.resetView)
@@ -181,7 +177,7 @@ export function CalibrationChart({ d }: { d: Derived }) {
   const pal = usePalette()
   const { series, model, dots, listed, range, focus } = d
   const setFocus = useStore((s) => s.setFocus)
-  const live = measure && measure.b === null ? probe : null
+  const live = isPending(measure) ? probe : null
   const ghostSrc = useStore((s) => s.ghost)
   const ghost = useMemo(() => {
     if (!ghostSrc) return null
@@ -189,6 +185,11 @@ export function CalibrationChart({ d }: { d: Derived }) {
     const sd = ghostSrc.sdExpr ? compileExpr(ghostSrc.sdExpr, 'S') : null
     return { mean: m?.ok ? m.fn : undefined, sd: sd?.ok ? sd.fn : undefined }
   }, [ghostSrc])
+  // unit rulers start at every level and at every placed anchor (ruler point)
+  const rulerOrigins = useMemo(
+    () => [...listed.map((c) => ({ c, anchor: false })), ...(measure?.pts ?? []).filter((c) => !listed.includes(c)).map((c) => ({ c, anchor: true }))],
+    [listed, measure],
+  )
   const estimates = useMemo(() => d.exp?.first.levels.map((l) => ({ c: l.c, mean: l.mean })) ?? null, [d.exp])
   const spec = useMemo(
     () => buildCalibration({ series, model, dots, listed, flip: ui.flip, shading: ui.shading, stepR: ui.stepR, jitter: ui.jitter, measure, live, range, focus, viewRev, reading, probe: null, onCurve: ui.marginal, estimates, ghost, ladderTicks: d.resolvable, pal }),
@@ -197,7 +198,7 @@ export function CalibrationChart({ d }: { d: Derived }) {
   const ref = usePlot(spec)
   const down = useRef<{ x: number; y: number } | null>(null)
   /** ruler state before the latest single click, so a double-click (view reset) can take that click back */
-  const beforeClick = useRef<{ a: number; b: number | null } | null>(null)
+  const beforeClick = useRef<Measure | null>(null)
   const mover = useLevelMover(d)
   const editable = series.mode === 'equations' && !lad?.list
   useDrag(ref, {
@@ -344,7 +345,7 @@ export function CalibrationChart({ d }: { d: Derived }) {
           {series.units ? ` ${series.units}` : ''} · Show all
         </button>
       )}
-      {ui.marginal && <StepRulers plot={ref} model={model} listed={listed} metric={series.metric} k={series.kTarget} flip={ui.flip} />}
+      {ui.marginal && <StepRulers plot={ref} model={model} origins={rulerOrigins} metric={series.metric} k={series.kTarget} flip={ui.flip} />}
       <ScatterHover plot={ref} model={model} listed={listed} flip={ui.flip} onCurve={ui.marginal} />
       <div
         ref={ref}
@@ -409,7 +410,7 @@ export function HistogramChart({ d }: { d: Derived }) {
   const histBars = useStore((s) => s.ui.histBars)
   const flip = useStore((s) => s.ui.flip)
   const measure = useStore((s) => s.measure)
-  const probe = useStore((s) => (s.measure && s.measure.b === null ? s.probe : null))
+  const probe = useStore((s) => (isPending(s.measure) ? s.probe : null))
   const lad = useStore((s) => s.ladder)
   const setLadder = useStore((s) => s.setLadder)
   const viewRev = useStore((s) => s.viewRev)
@@ -418,7 +419,7 @@ export function HistogramChart({ d }: { d: Derived }) {
   const { series, model, dots, listed, range, focus } = d
   const space = flip ? 'signal' : 'conc'
   const xRange = useMemo<[number, number]>(() => (flip ? range : concRange(model.cMax, focus)), [flip, range, model.cMax, focus])
-  const pair = useMemo(() => measurePair(measure, measure && measure.b === null ? probe : null), [measure, probe])
+  const pair = useMemo(() => (measure ? rulerPoints(measure, isPending(measure) ? probe : null) : null), [measure, probe])
   const spec = useMemo(
     () => buildHistogram({ series, model, listed, dots, histBars, pair, probe: null, space, xRange, viewRev, pal }),
     [series, model, listed, dots, histBars, pair, space, xRange, viewRev, pal],

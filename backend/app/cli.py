@@ -91,8 +91,10 @@ def cmd_measure(args) -> None:
     s = _load_series(args.series)
     m = _compile(s)
     metric, k = _metric_k(args, s)
-    _out({**A.pair(m, args.c1, args.c2, metric, k), "stepsBetween": A.steps_between(m, args.c1, args.c2, metric, k),
-          "whyNot": A.why_not(m, args.c1, args.c2, metric, k)})
+    try:
+        _out(A.measure_points(m, args.concs, metric, k))
+    except ValueError as e:
+        raise CliError(str(e)) from e
 
 
 def cmd_recover(args) -> None:
@@ -199,9 +201,8 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--start", type=float, default=0.0)
     sp.add_argument("--stop", type=float, help="default: cMax")
     sp.add_argument("--sig", type=int, default=A.DEFAULT_SIG, help="round levels up to N significant digits; 0 = off")
-    sp = add("measure", cmd_measure, "separation row between two concentrations, plus stepsBetween")
-    sp.add_argument("c1", type=float)
-    sp.add_argument("c2", type=float)
+    sp = add("measure", cmd_measure, "separation between concentrations (2 or more): first pair as given, plus every adjacent pair")
+    sp.add_argument("concs", type=float, nargs="+", metavar="C", help="two or more concentrations (anchors)")
     metric_opts(sp)
     sp = add("recover", cmd_recover, "read back concentration from signal, with the range consistent with it")
     sp.add_argument("signals", type=float, nargs="+", metavar="S")

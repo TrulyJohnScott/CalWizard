@@ -211,3 +211,45 @@ export function whyNot(m: Curve & { cMax: number }, c1: number, c2: number, metr
   const L = ladder(m, metric, k, 0, 2, c1)
   return { needDmu: needDmu !== null && needDmu > 0 ? needDmu : needDmu === null ? null : 0, dmu: Math.abs(r.dmu), sdScale: Number.isFinite(q) && q > 0 ? q : null, moveTo: L.length > 1 ? L[1] : null }
 }
+
+/** Closeness of the pair (a, b) in target units: q = |metric| / k (Z′: |dsum| / (3/(1 − k)); none for k ≥ 1). */
+function unitsBetween(m: Curve, a: number, b: number, metric: MetricKey, k: number): number {
+  if (metric === 'zprime') return k < 1 ? Math.abs(metricValue(m, a, b, 'dsum')) / (3 / (1 - k)) : NaN
+  return k > 0 ? Math.abs(metricValue(m, a, b, metric)) / k : NaN
+}
+
+/**
+ * Resolvable-unit ticks from an anchor: tick j (1…maxJ) is the smallest c in (anchor, stop] whose separation from the
+ * anchor is j target units (q = j). 2000-point scan + 50 bisections per tick; ticks beyond stop are omitted.
+ */
+export function unitTicks(m: Curve, anchor: number, metric: MetricKey, k: number, stop: number, maxJ = 5): number[] {
+  const N = 2000
+  const xs: number[] = []
+  const qs: number[] = []
+  for (let i = 1; i <= N; i++) {
+    const x = anchor + ((stop - anchor) * i) / N
+    xs.push(x)
+    qs.push(unitsBetween(m, anchor, x, metric, k))
+  }
+  const out: number[] = []
+  let from = 0
+  for (let j = 1; j <= maxJ; j++) {
+    let hit = -1
+    for (let i = from; i < N; i++)
+      if (qs[i] >= j) {
+        hit = i
+        break
+      }
+    if (hit < 0) break
+    let lo = hit === 0 ? anchor : xs[hit - 1]
+    let hi = xs[hit]
+    for (let t = 0; t < 50; t++) {
+      const mid = 0.5 * (lo + hi)
+      if (unitsBetween(m, anchor, mid, metric, k) >= j) hi = mid
+      else lo = mid
+    }
+    out.push(hi)
+    from = hit
+  }
+  return out
+}

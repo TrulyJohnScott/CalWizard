@@ -21,6 +21,12 @@ export default function App() {
         useStore.getState().setReading(null)
         return clearMeasure()
       }
+      const t = e.target as HTMLElement | null
+      const typing = !!t && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName))
+      if ((e.key === 'Backspace' || e.key === 'Delete') && !typing && useStore.getState().measure) {
+        e.preventDefault()
+        return useStore.getState().popMeasure()
+      }
       const action = undoKey(e)
       if (!action) return
       e.preventDefault()

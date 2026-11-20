@@ -257,3 +257,18 @@ def why_not(model: Model, c1: float, c2: float, metric: str = "ssmd", k: float =
     steps = ladder(model, metric, k, start=float(c1), sig=0, max_levels=2)
     return {"c1": float(c1), "c2": float(c2), "needDmu": need, "dmu": abs(r["dmu"]),
             "sdScale": q if math.isfinite(q) and q > 0 else None, "moveTo": steps[1] if len(steps) > 1 else None}
+
+
+def measure_points(model: Model, concs, metric: str = "ssmd", k: float = 3.0) -> dict:
+    """N-point ruler (spec section 11 v2.6): the first two concentrations as given (section 5 row + stepsBetween + whyNot,
+    the two-point output), plus `pairs` = the same for every adjacent pair of the sorted unique concentrations."""
+    cs = [float(c) for c in concs]
+    if len(cs) < 2 or not all(math.isfinite(c) for c in cs):
+        raise ValueError("measure needs at least two finite concentrations")
+
+    def full(a, b):
+        return {**pair(model, a, b, metric, k), "stepsBetween": steps_between(model, a, b, metric, k),
+                "whyNot": why_not(model, a, b, metric, k)}
+
+    srt = sorted(set(cs))
+    return {**full(cs[0], cs[1]), "pairs": [full(a, b) for a, b in zip(srt, srt[1:])]}

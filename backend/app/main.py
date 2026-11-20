@@ -83,8 +83,9 @@ class LadderRequest(SeriesRequest):
 
 
 class MeasureRequest(SeriesRequest):
-    c1: float
-    c2: float
+    c1: float | None = None
+    c2: float | None = None
+    concs: list[float] | None = None
     metric: Literal["dsum", "ssmd", "zprime"] | None = None
     k: float | None = None
 
@@ -102,8 +103,11 @@ def measure(req: MeasureRequest):
     m = _compile(req.series)
     metric = req.metric or req.series.metric
     k = req.series.k_target if req.k is None else req.k
-    return ok({**A.pair(m, req.c1, req.c2, metric, k), "stepsBetween": A.steps_between(m, req.c1, req.c2, metric, k),
-               "whyNot": A.why_not(m, req.c1, req.c2, metric, k)})
+    concs = req.concs if req.concs is not None else [c for c in (req.c1, req.c2) if c is not None]
+    try:
+        return ok(A.measure_points(m, concs, metric, k))
+    except ValueError as e:
+        raise HTTPException(422, detail={"error": str(e), "pos": None})
 
 
 class RecoverRequest(SeriesRequest):

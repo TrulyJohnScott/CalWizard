@@ -7,7 +7,7 @@ import { heatImage, type HeatImage } from '../math/heat'
 import type { Model } from '../math/model'
 import { hashUnit, type LevelDots } from '../math/sim'
 import type { Series } from '../math/types'
-import { measurePair, type Measure } from '../state/store'
+import { rulerPoints, type Measure } from '../state/store'
 import { heatRgb, levelColor, withAlpha, type Palette } from '../theme'
 import { axisStyle, baseLayout, concRange, linspace, MARGIN, nn } from './common'
 import type { PlotSpec } from './usePlot'
@@ -23,7 +23,7 @@ export interface CalibrationIn {
   stepR: number
   jitter: number
   measure: Measure | null
-  /** hovered concentration while the second measure point is pending */
+  /** hovered concentration while only one ruler point is placed (live preview of the next) */
   live: number | null
   range: [number, number]
   /** zoomed concentration window, or null */
@@ -254,10 +254,10 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
       hovertemplate: '%{text}<extra></extra>',
     } as Data)
 
-  // measure markers + bracket, coloured by the pair's closeness (live while the second point is pending)
-  const pair = measurePair(x.measure, x.live)
+  // ruler: open handles on the curve; every adjacent pair gets a bracket coloured by its closeness, labelled with
+  // its metric value (the second point is previewed live while only one is placed)
   if (x.measure) {
-    const cs = pair ? [pair[0], pair[1]] : [x.measure.a]
+    const cs = rulerPoints(x.measure, x.live)
     traces.push({
       type: 'scatter',
       mode: 'markers',
@@ -265,19 +265,18 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
       marker: { size: 9, color: pal.fg, symbol: 'circle-open', line: { width: 1.6, color: pal.fg } },
       hoverinfo: 'skip',
     } as Data)
-    if (pair) {
-      const [c1, c2] = pair
+    for (let i = 0; i + 1 < cs.length; i++) {
+      const [c1, c2] = [cs[i], cs[i + 1]]
       const [m1, m2] = [m.mean(c1), m.mean(c2)]
       const off = 0.04 * (sHi - sLo) * (m2 >= m1 ? -1 : 1)
       const row = pairRow(m, c1, c2, s.metric, s.kTarget)
       const col = closenessColor(closenessQ(row, s.metric, s.kTarget))
       const mid = 0.5 * (c1 + c2)
-      const label = `${METRIC_LABEL[s.metric]} ${fmt(row[s.metric])}`
       notes.push({
         ...(flip ? { x: 0.5 * (m1 + m2) + off, y: mid, xanchor: off < 0 ? 'right' : 'left' } : { x: mid, y: 0.5 * (m1 + m2) + off, yanchor: off < 0 ? 'top' : 'bottom' }),
         xref: 'x',
         yref: 'y',
-        text: label,
+        text: cs.length > 2 ? fmt(row[s.metric]) : `${METRIC_LABEL[s.metric]} ${fmt(row[s.metric])}`,
         showarrow: false,
         font: { size: 11, color: rgbaCss([col[0], col[1], col[2], 1]) },
         bgcolor: pal.panel,

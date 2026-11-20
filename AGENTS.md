@@ -50,7 +50,7 @@ JSON on stderr, exit 1 (invalid expression/model) or 2 (bad input).
 |---|---|
 | `calwizard evaluate SERIES [--grid C...]` | mean, sd, adjacent-level rows, levels, `resolvable` headline, `rule` |
 | `calwizard ladder SERIES [--metric M --k K --start C --stop C --sig N]` | `{levels, n}` |
-| `calwizard measure SERIES C1 C2 [--metric M --k K]` | §5 row + `stepsBetween` + `whyNot` (what would make it pass) |
+| `calwizard measure SERIES C1 C2 [C3 ...] [--metric M --k K]` | §5 row + `stepsBetween` + `whyNot` (what would make it pass) |
 | `calwizard rule [--metric M] (--k K or --error E)` | pass rule in plain words: `{metric, k, error, text}` |
 | `calwizard inverse SERIES S...` | concentration per signal (null if out of range) |
 | `calwizard recover SERIES S... [--conf 0.95]` | read-back c with its range `{signal, c, lo, hi, loOpen, hiOpen}` |

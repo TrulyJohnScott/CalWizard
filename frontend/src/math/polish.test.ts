@@ -100,3 +100,18 @@ describe('why not resolved', () => {
     expect(whyNot(lin, 0, 0.5, 'zprime', 1).needDmu).toBeNull()
   })
 })
+
+describe('unit ticks (resolvable units from an anchor)', () => {
+  it('linear, constant SD: tick j at j target units', async () => {
+    const { unitTicks } = await import('./analysis')
+    // dsum k=1: units = (10Δc)/(5+5) = Δc → ticks at anchor + 1, 2, 3
+    const t = unitTicks(lin, 2, 'dsum', 1, 100, 3)
+    t.forEach((x, j) => expect(x).toBeCloseTo(2 + (j + 1), 6))
+    // ssmd k=3: units = 10Δc/√50/3 → Δc = j·3√50/10
+    unitTicks(lin, 0, 'ssmd', 3, 100, 2).forEach((x, j) => expect(x).toBeCloseTo(((j + 1) * 3 * Math.sqrt(50)) / 10, 6))
+    // Z′ 0.5: unit = dsum 6 → Δc = 6j
+    unitTicks(lin, 0, 'zprime', 0.5, 100, 2).forEach((x, j) => expect(x).toBeCloseTo(6 * (j + 1), 6))
+    expect(unitTicks(lin, 0, 'zprime', 1, 100)).toEqual([])
+    expect(unitTicks(lin, 98, 'dsum', 1, 100, 5)).toHaveLength(2) // only ticks within stop
+  })
+})

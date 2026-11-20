@@ -269,8 +269,18 @@ the input drawer) · Flip axes button (`c → S` / `S → c`) · small Settings 
   distribution is drawn sideways at its concentration, on the curve's own signal axis, extending toward higher c:
   true density (the tightest drawn level spans 7% of the concentration axis, others narrower in proportion to
   σ_ref/σ), level colours, drawn out to ±3.5σ with small dots marking ±1σ (hover: the ±1σ range and SD).
-  Numbered step rulers run from each level's Gaussian centre along its signal height: ticks 1, 2, 3… (up to 5) at
-  the ladder started from that level, each segment fainter. Hovering draws a dashed one at the hovered concentration plus dotted guide lines
+  **Unit rulers** run from each level's and each anchor's centre along its signal height: tick j (1…5) at the smallest
+  c above it whose separation from it is j target units, i.e. closeness q = j (dsum/ssmd: |value| = j·k; Z′: |dsum| =
+  j·3/(1 − k); none when k ≥ 1). Each further segment fainter; anchors drawn darker than levels.
+- **Anchors (N-point ruler, v2.6):** each click places an anchor on the curve (snapping to levels/ladder ticks; Alt =
+  free), clicking an anchor removes it; any number. The blank (c = 0) is always the first anchor, so the
+  separation from 0 to the first placed point is shown too. Backspace (or ↶) removes the last point placed, Esc (or ×)
+  clears all. Every adjacent pair of anchors shows a bracket coloured by
+  closeness with its metric value; the sidebar lists each pair (metric, overlap, misread, steps between); the
+  histogram emphasises the anchors and fills their adjacent overlaps. While only one anchor is placed the next is
+  previewed live under the mouse. Anchors are independent of the tested concentrations and of the curve's source
+  (equations or table); **Keep as levels** adds them all (one undo step). Headless: `calwizard measure SERIES C1 C2
+  [C3…]` / `POST /api/measure {series, concs}` → `pairs` (each §5 row + `stepsBetween` + `whyNot`). Hovering draws a dashed one at the hovered concentration plus dotted guide lines
   from the concentration axis up to the curve and from the signal axis across to it. Gear `Gaussians on curve
   On | Off` (default On); works in both orientations.
 - **Shared x axis.** The histogram below always shares the scatter's x axis (range, zoom, pan, plot edges): in
