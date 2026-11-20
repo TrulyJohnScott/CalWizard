@@ -45,6 +45,8 @@ export interface ExpState {
 export interface Toast {
   id: number
   text: string
+  /** what the toast's Undo does (default: undo the last series change) */
+  undo?: () => void
 }
 
 export const HISTORY_LIMIT = 100
@@ -107,8 +109,8 @@ interface State {
   undo: () => void
   redo: () => void
   toast: Toast | null
-  /** show "<text> · Undo" for a few seconds */
-  notify: (text: string) => void
+  /** show "<text> · Undo" for a few seconds; `undo` overrides what Undo does (for changes outside the history) */
+  notify: (text: string, undo?: () => void) => void
   dismissToast: () => void
   /** a click on the scatter at concentration c: adds a ruler point, or removes it if it is already there */
   clickMeasure: (c: number) => void
@@ -282,7 +284,7 @@ export const useStore = create<State>((set) => ({
       }
     }),
   toast: null,
-  notify: (text) => set({ toast: { id: ++toastId, text } }),
+  notify: (text, undo) => set({ toast: { id: ++toastId, text, undo } }),
   dismissToast: () => set({ toast: null }),
   clickMeasure: (c) =>
     set((s) => {

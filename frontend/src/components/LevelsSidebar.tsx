@@ -61,8 +61,9 @@ export function LevelsSidebar({ d }: { d: Derived }) {
     const start = measure && sel !== null && sel !== undefined ? measure.pts[sel] : 0
     const steps = makeLadder({ mean: m.mean, sd: m.sd, cMax: m.cMax }, s.metric, s.kTarget, 4, 200, start)
     const keep = (measure?.pts ?? []).filter((p) => p < start)
+    const before = measure
     setMeasurePts([...keep, ...steps.filter((c) => c > 0)])
-    notify(`Placed ${steps.length - 1} anchors one ${metricName} target apart from ${fmt(start)}`)
+    notify(`Placed ${steps.length - 1} anchors one ${metricName} target apart from ${fmt(start)}`, () => useStore.setState({ measure: before }))
   }
   const probe = useStore((s) => (isPending(s.measure) ? s.probe : null))
   const [add, setAdd] = useState('')

@@ -302,3 +302,14 @@ describe('auto-spaced anchors', () => {
     expect(st().measure).toBeNull()
   })
 })
+
+describe('toast with its own undo', () => {
+  it('carries a custom undo (anchors are not series history)', () => {
+    let called = 0
+    st().notify('x', () => called++)
+    st().toast!.undo!()
+    expect(called).toBe(1)
+    st().notify('y')
+    expect(st().toast!.undo).toBeUndefined()
+  })
+})
