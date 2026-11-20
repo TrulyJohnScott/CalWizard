@@ -1,6 +1,6 @@
 import type { Data, Layout } from 'plotly.js'
 import { fmt, recoveryText } from '../format'
-import { pairRow, pairRows, recover } from '../math/analysis'
+import { pairRow, recover, resolutionProfile } from '../math/analysis'
 import { closenessColor, closenessQ, rgbaCss } from '../math/closeness'
 import { METRIC_LABEL } from '../math/metrics'
 import { heatImage, type HeatImage } from '../math/heat'
@@ -56,38 +56,30 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
   const mu = grid.map((c) => m.mean(c))
   const sd = grid.map((c) => m.sd(c))
   const xy = (c: (number | null)[], sig: (number | null)[]) => (flip ? { x: sig, y: c } : { x: c, y: sig })
-  const band = (k: number, sign: 1 | -1) => grid.map((_, i) => nn(mu[i] + sign * k * sd[i]))
   const traces: Data[] = []
   const shapes: Partial<Layout['shapes'][number]>[] = []
   const notes: Partial<Layout['annotations'][number]>[] = []
 
-  // one comparison set for every closeness colour on this chart: the anchors (blank included) when any are placed,
-  // otherwise the levels. Haze, wash and brackets all colour a stretch by the pair it lies between.
-  const cmp = x.measure ? rulerPoints(x.measure, x.live) : x.listed
-  const cmpRows = pairRows(m, cmp, s.metric, s.kTarget)
-  const cmpRgb = cmpRows.map((r) => {
-    const col = closenessColor(closenessQ(r, s.metric, s.kTarget))
-    return [col[0], col[1], col[2]] as [number, number, number]
-  })
-  const NEUTRAL: [number, number, number] = pal.dark ? [140, 140, 155] : [150, 150, 165]
-  const pairColourAt = (c: number): [number, number, number] => {
-    for (let i = 0; i < cmpRows.length; i++) if (c >= cmpRows[i].c1 && c <= cmpRows[i].c2) return cmpRgb[i]
-    return NEUTRAL
+  // background colour (haze / wash / lines) = local resolution at each concentration: intrinsic to the curve, SD,
+  // metric and k, independent of placed points (spec §11 v2.7). Brackets and the sidebar stay pair-specific.
+  const prof = resolutionProfile(m, s.metric, s.kTarget, cEnd)
+  const resColourAt = (c: number): [number, number, number] => {
+    const i = Math.min(prof.c.length - 1, Math.max(0, Math.round((c / cEnd) * (prof.c.length - 1))))
+    const col = closenessColor(prof.q[i])
+    return [col[0], col[1], col[2]]
   }
+  const SEG = linspace(0, cEnd, 41)
 
   if (x.shading === 'lines') {
     // Bollinger-style: ±1σ solid, ±2σ dashed, ±3σ dotted; each stretch coloured by its pair's closeness, neutral beyond
-    const stretches: { a: number; b: number; rgb: [number, number, number] }[] = cmpRows.map((r, i) => ({ a: r.c1, b: r.c2, rgb: cmpRgb[i] }))
-    const last = cmp[cmp.length - 1] ?? 0
-    if (cEnd > last) stretches.push({ a: last, b: cEnd, rgb: NEUTRAL })
-    if (cmp.length && cmp[0] > 0) stretches.unshift({ a: 0, b: cmp[0], rgb: NEUTRAL })
+    const stretches = SEG.slice(1).map((b, i) => ({ a: SEG[i], b, rgb: resColourAt(0.5 * (SEG[i] + b)) }))
     const styles = [
       { k: 1, dash: 'solid', width: 1.6, alpha: 0.95 },
       { k: 2, dash: 'dash', width: 1.1, alpha: 0.75 },
       { k: 3, dash: 'dot', width: 1, alpha: 0.6 },
     ] as const
     for (const st of stretches) {
-      const cs = linspace(st.a, st.b, 48)
+      const cs = linspace(st.a, st.b, 10)
       const colr = `rgba(${st.rgb[0]},${st.rgb[1]},${st.rgb[2]},`
       for (const sty of styles)
         for (const sign of [1, -1])
@@ -100,46 +92,30 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
           } as Data)
     }
   } else if (x.shading === 'heat') {
-    const hk = `${flip}|${sLo}|${sHi}|${cEnd}|${cmp.join(',')}|${s.metric}|${s.kTarget}`
+    const hk = `${flip}|${sLo}|${sHi}|${cEnd}|${s.metric}|${s.kTarget}`
     let hm = heatMemo.get(m)
     if (!hm || hm.k !== hk) {
-      hm = { k: hk, img: heatImage(m, { space: flip ? 's2c' : 'c2s', cMax: cEnd, sLo, sHi, nc: 400, ns: 260 }, pairColourAt) }
+      hm = { k: hk, img: heatImage(m, { space: flip ? 's2c' : 'c2s', cMax: cEnd, sLo, sHi, nc: 400, ns: 260 }, resColourAt) }
       heatMemo.set(m, hm)
     }
     const img = hm.img
     traces.push({ type: 'image', colormodel: 'rgba', z: img.z, x0: img.x0, dx: img.dx, y0: img.y0, dy: img.dy, hoverinfo: 'skip' } as unknown as Data)
   } else {
-    const fillMode = flip ? 'tonextx' : 'tonexty'
-    // neutral ±1/±2 SD band over the whole range (uncertainty is always visible); closeness heat on top
-    const idx = grid.map((_, i) => i)
-    const mk = (k: number, sign: 1 | -1, fill: boolean, alpha: number): Data =>
-      ({
-        type: 'scatter',
-        mode: 'lines',
-        ...xy(
-          idx.map((i) => grid[i]),
-          idx.map((i) => band(k, sign)[i]),
-        ),
-        line: { width: 0, color: 'rgba(0,0,0,0)' },
-        fill: fill ? fillMode : 'none',
-        fillcolor: withAlpha(pal.accent, alpha),
-        hoverinfo: 'skip',
-      }) as Data
-    if (idx.length > 1) traces.push(mk(2, -1, false, 0), mk(2, 1, true, 0.07), mk(1, -1, false, 0), mk(1, 1, true, 0.12))
-    cmpRows.forEach((r) => {
-      const col = closenessColor(closenessQ(r, s.metric, s.kTarget))
-      if (col[3] < 0.01) return
-      const cs = linspace(r.c1, r.c2, 40)
+    // coloured ±2σ wash + ±1σ ribbon in short segments, each in the local-resolution colour
+    SEG.slice(1).forEach((b, si) => {
+      const a = SEG[si]
+      const rgb = resColourAt(0.5 * (a + b))
+      const col: [number, number, number, number] = [rgb[0], rgb[1], rgb[2], 0.6]
+      const cs = linspace(a, b, 8)
       const up = cs.map((c) => m.mean(c) + 2 * m.sd(c))
       const dn = cs.map((c) => m.mean(c) - 2 * m.sd(c))
       const cc = [...cs, ...cs.slice().reverse(), cs[0]]
       const sg = [...up, ...dn.slice().reverse(), up[0]].map(nn)
-      // faint ±2σ wash + a ±1σ heat ribbon: the colour says how close, its width follows the SD at each point
       const up1 = cs.map((c) => m.mean(c) + m.sd(c))
       const dn1 = cs.map((c) => m.mean(c) - m.sd(c))
       const s1 = [...up1, ...dn1.slice().reverse(), up1[0]].map(nn)
-      traces.push({ type: 'scatter', mode: 'lines', ...xy(cc, sg), line: { width: 0 }, fill: 'toself', fillcolor: rgbaCss(col, 0.14), hoverinfo: 'skip' } as Data)
-      traces.push({ type: 'scatter', mode: 'lines', ...xy(cc, s1), line: { width: 0 }, fill: 'toself', fillcolor: rgbaCss(col, 0.75), hoverinfo: 'skip' } as Data)
+      traces.push({ type: 'scatter', mode: 'lines', ...xy(cc, sg), line: { width: 0 }, fill: 'toself', fillcolor: rgbaCss(col, 0.18), hoverinfo: 'skip' } as Data)
+      traces.push({ type: 'scatter', mode: 'lines', ...xy(cc, s1), line: { width: 0 }, fill: 'toself', fillcolor: rgbaCss(col, 0.6), hoverinfo: 'skip' } as Data)
     })
   }
 

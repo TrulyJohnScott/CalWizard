@@ -115,3 +115,16 @@ describe('unit ticks (resolvable units from an anchor)', () => {
     expect(unitTicks(lin, 98, 'dsum', 1, 100, 5)).toHaveLength(2) // only ticks within stop
   })
 })
+
+describe('local resolution (background colour)', () => {
+  it('linear, constant SD: the resolvable step is exact', async () => {
+    const { resolutionAt, resolutionQ } = await import('./analysis')
+    // dsum k=1 on mean 100+10c, sd 5: one unit = Δc of 1 everywhere
+    for (const c of [0, 2, 10]) expect(resolutionAt(lin, c, 'dsum', 1, 100)).toBeCloseTo(1, 4)
+    expect(resolutionAt(lin, 0, 'dsum', 50, 3)).toBe(Infinity)
+    expect(resolutionQ(1, 2, 0.1)).toBeCloseTo(1) // ±50% → the edge
+    expect(resolutionQ(0.5, 2, 0.1)).toBeCloseTo(2) // ±25% → clear
+    expect(resolutionQ(Infinity, 2, 0.1)).toBe(0)
+    expect(resolutionQ(1, 0, 4)).toBeCloseTo(2) // c → 0 uses cRef
+  })
+})

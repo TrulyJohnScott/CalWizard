@@ -253,3 +253,59 @@ export function unitTicks(m: Curve, anchor: number, metric: MetricKey, k: number
   }
   return out
 }
+
+/**
+ * Local resolution: the smallest Δc > 0 such that c and c + Δc are one target unit apart (closeness q = 1), searched
+ * up to `stop` (coarse scan of `n` points + 30 bisections). Infinity when nothing within `stop` resolves from c.
+ */
+export function resolutionAt(m: Curve, c: number, metric: MetricKey, k: number, stop: number, n = 400): number {
+  const q = (x: number) => unitsBetween(m, c, x, metric, k)
+  let prev = c
+  for (let i = 1; i <= n; i++) {
+    const x = c + ((stop - c) * i) / n
+    if (q(x) >= 1) {
+      let lo = prev
+      let hi = x
+      for (let t = 0; t < 30; t++) {
+        const mid = 0.5 * (lo + hi)
+        if (q(mid) >= 1) hi = mid
+        else lo = mid
+      }
+      return hi - c
+    }
+    prev = x
+  }
+  return Infinity
+}
+
+/**
+ * Background closeness from local resolution: r = Δc / max(c, cRef) (the relative change resolvable at c; cRef keeps
+ * c → 0 finite) mapped to the closeness scale q = 0.5 / r, so ±50% is the edge (q = 1), ±25% clear blue (q = 2),
+ * c vs 2c orange (q = 0.5), unresolvable red (q = 0).
+ */
+export function resolutionQ(dc: number, c: number, cRef: number): number {
+  if (!Number.isFinite(dc)) return 0
+  const r = dc / Math.max(c, cRef)
+  return r > 0 ? 0.5 / r : 2
+}
+
+const profMemo = new WeakMap<object, { key: string; c: number[]; q: number[] }>()
+
+/** Local-resolution closeness across [0, cEnd] (201 points), memoised per model. */
+export function resolutionProfile(m: Curve & { levels?: number[]; cMax: number }, metric: MetricKey, k: number, cEnd: number): { c: number[]; q: number[] } {
+  const key = `${metric}|${k}|${cEnd}`
+  const hit = profMemo.get(m)
+  if (hit && hit.key === key) return hit
+  const cRef = (m.levels ?? []).find((l) => l > 0) ?? m.cMax / 100
+  const stop = Math.max(cEnd, m.cMax) * 3
+  const c: number[] = []
+  const q: number[] = []
+  for (let i = 0; i <= 200; i++) {
+    const x = (cEnd * i) / 200
+    c.push(x)
+    q.push(resolutionQ(resolutionAt(m, x, metric, k, stop, 300), x, cRef))
+  }
+  const out = { key, c, q }
+  profMemo.set(m, out)
+  return out
+}

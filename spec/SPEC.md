@@ -255,13 +255,13 @@ the input drawer) · Flip axes button (`c → S` / `S → c`) · small Settings 
 - **Readings below** (gear, was "Dot histogram"): each replicate reading drawn as a short tick (rug) along the
   histogram's baseline in its level colour, read back to concentration in c → S. Replaces binned bars, which are
   noise at small n.
-- **One colour language (v2.6).** Every closeness colour on the scatter (Heat haze, Band wash/ribbon, ruler brackets)
-  colours a stretch of the curve by the §12 closeness q of the neighbouring pair it lies between, in one comparison
-  set: the anchors (blank included) when any are placed, otherwise the levels; same metric, k and red→blue ramp as
-  the sidebar. Beyond the last point the haze is neutral grey.
-  Shading `Band | Heat | Lines`: **Lines** (Bollinger-style) draws ±1σ solid, ±2σ dashed, ±3σ dotted around the curve,
-  each stretch in its closeness colour (neutral outside the comparison set). (The old fixed "c vs r·c" heat and its `Heat step ×`
-  setting are gone.)
+- **Colour (v2.7).** Two layers, one red→blue ramp. **Background** (Heat haze, Band wash/ribbon, Lines): the *local
+  resolution* at each concentration c, i.e. the smallest Δc > 0 with closeness q(c, c + Δc) = 1 under the series
+  metric and k (searched up to 3·max(cEnd, cMax); none → red), as r = Δc / max(c, c_ref) (c_ref = first positive
+  level) mapped to q = 0.5 / r: ±25% or better clear blue, ±50% the yellow edge, c vs 2c orange, unresolvable red.
+  Intrinsic, continuous, independent of placed points. **Foreground** (ruler brackets, sidebar rows): the closeness
+  of that specific pair. Shading `Band | Heat | Lines`; **Lines** (Bollinger-style) = ±1σ solid, ±2σ dashed, ±3σ
+  dotted, coloured like the background.
 - **SD band always on**: the neutral ±1σ/±2σ band covers the whole curve; closeness wash and glow sit on top
   between adjacent levels (no gap where a pair is comfortably resolved).
 - **Double-click resets the view** to the ranges computed from the current data (whole `[0, cMax]`, signal
