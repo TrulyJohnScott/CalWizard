@@ -18,7 +18,8 @@ import { parseReader } from './reader'
 import { checkRequirements } from './requirements'
 import { separate } from './separate'
 import { bake } from './whatif'
-import { budget, cumulative } from './layers'
+import { compare } from './conditions'
+import { budget, cumulative, tolerance } from './layers'
 import type { Series } from './types'
 
 const FIXTURE = resolve(process.cwd(), '../spec/fixtures/model_vectors.json')
@@ -158,6 +159,12 @@ suite(`parity with backend fixtures${fx ? '' : ` (${why})`}`, () => {
           w.layers.forEach((lw: Json, q: number) => close(got[j].layers[q].var, lw.var, `budget[${j}].layers[${q}].var`))
         })
         expect(cumulative(ser).map((x) => x.n)).toEqual(cs.cumulative.map((x: Json) => x.n))
+        const tol = tolerance(ser, m)
+        expect([tol.met, tol.total]).toEqual([cs.tolerance.met, cs.tolerance.total])
+        cs.tolerance.rows.forEach((w: Json, j: number) => {
+          for (const key of ['bias', 'sd', 'total', 'worst', 'rel', 'worstRel'] as const) close(tol.rows[j][key] as number, w[key], `tolerance[${j}].${key}`)
+          expect(tol.rows[j].ok, `tolerance[${j}].ok`).toBe(w.ok)
+        })
       }
       if (cs.inverse) {
         cs.inverse.signals.forEach((S: number, i: number) => {
@@ -228,6 +235,27 @@ suite(`parity with backend fixtures${fx ? '' : ` (${why})`}`, () => {
       }
       close(got.first.lobSignal, w.first.lobSignal, 'first.lobSignal', 1e-9)
       close(got.first.lod as number, w.first.lod, 'first.lod')
+    })
+  }
+  for (const [i, cc] of (fx?.compare ?? []).entries()) {
+    it(`compare ${i}`, () => {
+      const items = cc.series.map((b: Json) => {
+        const series = { ...defaultSeries(), ...(b as Partial<Series>) } as Series
+        return { series, model: compileModel(series) }
+      })
+      const got = compare(items)
+      const w = cc.result
+      expect(got.conditions.map((x) => [x.name, x.levels])).toEqual(w.conditions.map((x: Json) => [x.name, x.levels]))
+      w.conditions.forEach((x: Json, j: number) => close(got.conditions[j].lod as number, x.lod, `conditions[${j}].lod`))
+      w.rows.forEach((r: Json, j: number) =>
+        r.mean.forEach((_: number, q: number) => {
+          close(got.rows[j].mean[q], r.mean[q], `rows[${j}].mean[${q}]`)
+          close(got.rows[j].bias[q] as number, r.bias[q], `rows[${j}].bias[${q}]`, 1e-6, 1e-12)
+          close(got.rows[j].concBias[q] as number, r.concBias[q], `rows[${j}].concBias[${q}]`, 1e-6, 1e-9)
+        }),
+      )
+      if (w.between === null) expect(got.between).toBeNull()
+      else for (const key of ['units', 'offsetSd', 'gainCv'] as const) close(got.between![key], w.between[key], `between.${key}`)
     })
   }
   for (const [i, ic] of (fx?.importCases ?? []).entries()) {

@@ -9,6 +9,7 @@ import { BudgetPanel } from './BudgetPanel'
 import { DesignBlock } from './ExperimentPanel'
 import { layerColor, LayersEditor } from './LayersEditor'
 import { Page, Section, Verdict } from './kit'
+import { ConditionsSection, ErrorBudgetSection } from './VariabilityExtras'
 
 /** Resolvable levels as each layer is added: one bar per step, so the costly layer is the visible drop. */
 function Chain({ steps }: { steps: { layers: string[]; n: number }[] }) {
@@ -58,6 +59,8 @@ export function VariabilityWorkspace({ d }: { d: Derived }) {
 
       {steps.length > 1 && <Chain steps={steps} />}
 
+      <ConditionsSection d={d} />
+
       <div className="grid gap-x-10 gap-y-6" style={{ gridTemplateColumns: 'minmax(300px, 4fr) minmax(0, 5fr)' }}>
         <div className="flex flex-col gap-4">
           <Section title="1 · Predict" hint="What you expect each source to add">
@@ -79,6 +82,8 @@ export function VariabilityWorkspace({ d }: { d: Derived }) {
           </div>
         </Section>
       </div>
+
+      <ErrorBudgetSection d={d} />
     </Page>
   )
 }

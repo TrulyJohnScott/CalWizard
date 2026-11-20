@@ -12,6 +12,7 @@ import numpy as np
 from scipy.optimize import nnls
 
 from . import analysis as A
+from . import limits as L
 from . import experiment as EX
 from . import metrics as K
 from .series import Model, Series, compile_series, layer_terms
@@ -39,6 +40,44 @@ def budget(model: Model, concs=None) -> list[dict]:
         out.append({"c": c, "mean": mu, "total": total, "within": within,
                     "withinShare": within / total if total > 0 else None, "layers": rows})
     return out
+
+
+def tolerance(model: Model, concs=None, k: float | None = None, tea: float | None = None) -> dict:
+    """Spec section 24: the error budget per concentration, as a tolerance stack in concentration units.
+
+    Sources: the within-run spread plus every layer that is on. Each has a fixed bias (biasOffset + biasPct * mean,
+    layers only) and an SD; both are divided by the curve's slope to become concentration. `total` is the usual
+    budget |sum of biases| + k * sqrt(sum of variances); `worst` is the linear stack sum |bias| + k * sum SD.
+    `rel` / `worstRel` are those as a fraction of c, and `ok` compares `rel` with the allowed total error."""
+    s = model.series
+    k = s.tolerance.k if k is None else float(k)
+    tea = s.tolerance.tea if tea is None else float(tea)
+    if not (math.isfinite(k) and k > 0 and math.isfinite(tea) and tea > 0):
+        raise ValueError("k and tea must be > 0")
+    on = [lay for lay in s.layers if lay.on]
+    mu0 = _mu0(model)
+    rows = []
+    for c in [float(c) for c in (model.levels if concs is None else concs)]:
+        mu = float(np.asarray(model.mean(c)))
+        within, terms = layer_terms(mu, float(np.asarray(model.sd_within(c))), mu0, on)
+        slope = float(L.slope(model, c))
+        src = [{"name": "within run", "bias": 0.0, "sd": math.sqrt(float(within))}]
+        src += [{"name": lay.name, "bias": lay.bias_offset + lay.bias_pct * mu, "sd": math.sqrt(float(t))} for lay, t in zip(on, terms)]
+        row = {"c": c, "mean": mu, "slope": slope, "sources": src, "bias": None, "sd": None, "total": None, "worst": None,
+               "rel": None, "worstRel": None, "ok": None}
+        if slope != 0 and math.isfinite(slope):
+            for x in src:
+                x["biasC"], x["sdC"] = x["bias"] / slope, x["sd"] / abs(slope)
+            bias = sum(x["biasC"] for x in src)
+            sd = math.sqrt(sum(x["sdC"] ** 2 for x in src))
+            total = abs(bias) + k * sd
+            worst = sum(abs(x["biasC"]) for x in src) + k * sum(x["sdC"] for x in src)
+            row.update(bias=bias, sd=sd, total=total, worst=worst)
+            if c > 0:
+                row.update(rel=total / c, worstRel=worst / c, ok=bool(total / c <= tea))
+        rows.append(row)
+    judged = [r for r in rows if r["ok"] is not None]
+    return {"k": k, "tea": tea, "rows": rows, "met": sum(1 for r in judged if r["ok"]), "total": len(judged)}
 
 
 def _with_layers(series: Series, on_names: set[str]) -> Model:

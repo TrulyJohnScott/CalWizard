@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app import analysis as A  # noqa: E402
 from app import experiment as EX  # noqa: E402
 from app import expr as E  # noqa: E402
+from app import conditions as CD  # noqa: E402
 from app import importer as IM  # noqa: E402
 from app import layers as LY  # noqa: E402
 from app import limits as L  # noqa: E402
@@ -87,7 +88,7 @@ def case(name: str, **kw) -> dict:
         "inverse": {"signals": signals, "c": inv},
         "ladder": ladders,
         "measure": measure,
-        **({"budget": LY.budget(m), "cumulative": LY.cumulative(m)} if series.layers else {}),
+        **({"budget": LY.budget(m), "cumulative": LY.cumulative(m), "tolerance": LY.tolerance(m)} if series.layers else {}),
     })
 
 
@@ -130,7 +131,7 @@ def build_cases() -> list[dict]:
     cases.append(case("eq-4pl-layers", mode="equations", meanExpr=MEANS["4pl"], sdExpr=SDS["floor_cv"], levels=LEVELS,
                       cMax=500, layers=[
                           {"name": "Lot", "units": 3, "cv": 0.02, "gainCv": 0.04, "noiseCv": 0.1},
-                          {"name": "Reader", "units": 4, "offsetSd": 12, "cv": 0.01},
+                          {"name": "Reader", "units": 4, "offsetSd": 12, "cv": 0.01, "biasOffset": -8, "biasPct": 0.05},
                           {"name": "Day", "units": 3, "offsetSd": 5, "on": False}]))
     cases.append(case("summary-layers", mode="summary", summary=[
         {"c": 0, "mean": 50, "sd": 15}, {"c": 5, "mean": 95, "sd": 16}, {"c": 25, "mean": 400, "sd": 30},
@@ -256,10 +257,27 @@ def build_import_cases() -> list[dict]:
     return [clean({"text": t, "conc": c, "signal": g, "result": IM.parse_reader(t, c, g)}) for t, c, g in IMPORT_TEXTS]
 
 
+COMPARE = [
+    {"name": "Lot A"}, {"name": "Lot B", "meanExpr": "4300 + (60 - 4300)/(1 + (c/44)^1.2)"},
+    {"name": "Lot C", "mode": "summary", "summary": [
+        {"c": 0, "mean": 44, "sd": 15}, {"c": 5, "mean": 320, "sd": 30}, {"c": 25, "mean": 1350, "sd": 110},
+        {"c": 100, "mean": 2800, "sd": 230}, {"c": 500, "mean": 3500, "sd": 290}]},
+]
+
+
+def build_compare_cases() -> list[dict]:
+    out = []
+    for group in (COMPARE, COMPARE[:1]):
+        series = [Series.model_validate(b) for b in group]
+        out.append(clean({"series": [s.model_dump(by_alias=True) for s in series],
+                          "result": CD.compare([compile_series(s) for s in series])}))
+    return out
+
+
 def build_payload() -> dict:
     return {"version": 2, "cases": build_cases(), "exprCases": build_expr_cases(), "ruleCases": build_rule_cases(),
             "simulate": build_sim_cases(), "requirements": build_requirement_cases(), "plan": build_plan_cases(),
-            "importCases": build_import_cases()}
+            "importCases": build_import_cases(), "compare": build_compare_cases()}
 
 
 def main() -> None:

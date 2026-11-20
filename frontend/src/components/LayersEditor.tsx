@@ -34,7 +34,7 @@ export function LayersEditor({ d }: { d: Derived }) {
   }
   const set = (i: number, p: Partial<Layer>) => patch({ layers: current().map((l, j) => (j === i ? { ...l, ...p } : l)) })
   const add = (q: (typeof QUICK)[number]) =>
-    patch({ layers: [...current(), { name: q.name, units: 3, on: true, offsetSd: 0, cv: 0, gainCv: 0, noiseCv: 0, ...q.layer }] })
+    patch({ layers: [...current(), { name: q.name, units: 3, on: true, offsetSd: 0, cv: 0, gainCv: 0, noiseCv: 0, biasOffset: 0, biasPct: 0, ...q.layer }] })
   const onCount = layers.filter((l) => l.on).length
   const allOn = cum ? cum[cum.length - 1].n : null
 
@@ -85,6 +85,13 @@ export function LayersEditor({ d }: { d: Derived }) {
                 />
               </label>
             ))}
+          </div>
+          <div className="mt-1 flex items-center gap-2 text-[10.5px] text-muted" title="A known, fixed shift of this source against the calibration (for example a reader that reads 5% high). It moves accuracy, shown in the error budget, not the spread.">
+            <span>known bias</span>
+            <NumField value={+l.biasOffset.toPrecision(4)} step={1} width={48} onCommit={(v) => set(i, { biasOffset: v })} title="fixed shift in signal units" />
+            <span>signal +</span>
+            <NumField value={pctField(l.biasPct)} step={0.5} width={44} onCommit={(v) => set(i, { biasPct: v / 100 })} title="fixed shift as a % of the signal" />
+            <span>%</span>
           </div>
         </div>
       ))}

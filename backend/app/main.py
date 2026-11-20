@@ -151,6 +151,36 @@ class DesignRequest(SeriesRequest):
     alpha: float = 0.05
 
 
+class ToleranceRequest(SeriesRequest):
+    concs: list[float] | None = None
+    k: float | None = None
+    tea: float | None = None
+
+
+@router.post("/tolerance")
+def tolerance_route(req: ToleranceRequest):
+    from . import layers as LY
+    m = _compile(req.series)
+    try:
+        return ok(LY.tolerance(m, req.concs, req.k, req.tea))
+    except ValueError as e:
+        raise HTTPException(422, detail={"error": str(e), "pos": None})
+
+
+class CompareRequest(Camel):
+    series: list[Series]
+    concs: list[float] | None = None
+
+
+@router.post("/compare")
+def compare_route(req: CompareRequest):
+    from . import conditions as CD
+    try:
+        return ok(CD.compare([_compile(s) for s in req.series], req.concs))
+    except ValueError as e:
+        raise HTTPException(422, detail={"error": str(e), "pos": None})
+
+
 @router.post("/design")
 def design_route(req: DesignRequest):
     from . import layers as LY

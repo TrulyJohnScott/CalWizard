@@ -117,6 +117,24 @@ def cmd_budget(args) -> None:
     _out({"rows": LY.budget(m, args.c), "cumulative": LY.cumulative(m)})
 
 
+def cmd_tolerance(args) -> None:
+    from . import layers as LY
+    m = _compile(_load_series(args.series))
+    try:
+        _out(LY.tolerance(m, args.c, args.k, args.tea))
+    except ValueError as e:
+        raise CliError(str(e)) from e
+
+
+def cmd_compare(args) -> None:
+    from . import conditions as CD
+    models = [_compile(_load_series(p)) for p in args.series]
+    try:
+        _out(CD.compare(models, args.c))
+    except ValueError as e:
+        raise CliError(str(e)) from e
+
+
 def cmd_design(args) -> None:
     from . import layers as LY
 
@@ -335,6 +353,13 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--conf", type=float, default=0.95, help="coverage of the range (default 0.95)")
     sp = add("budget", cmd_budget, "variance budget per concentration and cumulative resolvable levels by layer (spec 22)")
     sp.add_argument("--c", type=float, nargs="+", metavar="C", help="concentrations (default: the levels)")
+    sp = add("tolerance", cmd_tolerance, "error budget per concentration: bias + k SD of every source, as a tolerance stack (spec 24)")
+    sp.add_argument("-c", type=float, nargs="+", metavar="C", help="concentrations (default: the levels)")
+    sp.add_argument("--k", type=float, help="coverage factor on the spread (default: the series', 2)")
+    sp.add_argument("--tea", type=float, help="allowed total error as a fraction of c (default: the series', 0.3)")
+    sp = add("compare", cmd_compare, "conditions: several series against the first (bias per level, claims, spread as a layer; spec 23)", False)
+    sp.add_argument("series", nargs="+", metavar="SERIES", help="two or more Series JSON files; the first is the reference")
+    sp.add_argument("-c", type=float, nargs="+", metavar="C", help="concentrations (default: the reference's levels)")
     sp = add("design", cmd_design, "experiments drawing actual lots/readers/days: separation, power, component precision (spec 22.3)")
     sp.add_argument("--concs", type=float, nargs="+", metavar="C")
     sp.add_argument("--n", type=int, default=2, help="replicates per unit combination (default 2)")

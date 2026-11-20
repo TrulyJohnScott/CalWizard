@@ -100,6 +100,20 @@ class Requirement(Camel):
     label: str = ""
 
 
+class Tolerance(Camel):
+    """Error budget settings (spec section 24): allowed total error as a fraction of the concentration, and the
+    coverage factor on the spread."""
+    tea: float = 0.3
+    k: float = 2.0
+
+    @field_validator("tea", "k")
+    @classmethod
+    def _pos(cls, v):
+        if not (math.isfinite(v) and v > 0):
+            raise ValueError("tea and k must be > 0")
+        return v
+
+
 class Sample(Camel):
     """One row of the read-back sheet (spec section 18)."""
     id: str = ""
@@ -116,6 +130,10 @@ class Layer(Camel):
     cv: float = 0.0
     gain_cv: float = 0.0
     noise_cv: float = 0.0
+    # a known, fixed shift of this source against the calibration (spec section 24): signal units, and a fraction of
+    # the signal. Bias moves accuracy (the error budget), not the spread, so it does not change resolution.
+    bias_offset: float = 0.0
+    bias_pct: float = 0.0
 
     @field_validator("offset_sd", "cv", "gain_cv", "noise_cv")
     @classmethod
@@ -179,6 +197,7 @@ class Series(Camel):
     limits: LimitSettings = LimitSettings()
     requirements: list[Requirement] = []
     samples: list[Sample] = []
+    tolerance: Tolerance = Tolerance()
     layers: list[Layer] = []
 
     @field_validator("levels")

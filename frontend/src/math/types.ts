@@ -77,6 +77,8 @@ export interface Series {
   limits: LimitSettings
   requirements: Requirement[]
   samples: Sample[]
+  /** error budget settings (spec §24): allowed total error as a fraction of c, coverage factor on the spread */
+  tolerance: { tea: number; k: number }
   /** variability layers on top of the within-run curve (spec §22) */
   layers: Layer[]
 }
@@ -90,6 +92,9 @@ export interface Layer {
   cv: number
   gainCv: number
   noiseCv: number
+  /** a known fixed shift against the calibration (spec §24): signal units, and a fraction of the signal */
+  biasOffset: number
+  biasPct: number
 }
 
 export const NO_ADJUST: Adjust = { bottom: null, top: null, cScale: 1, sdScale: 1 }

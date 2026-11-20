@@ -55,6 +55,7 @@ export function defaultSeries(): Series {
     limits: { ...DEFAULT_LIMITS },
     requirements: [],
     samples: [],
+    tolerance: { tea: 0.3, k: 2 },
     layers: [],
   }
 }

@@ -149,6 +149,9 @@ function Headline({ d }: { d: Derived }) {
 function Labels() {
   const s = useActive()
   const patch = useStore((x) => x.patch)
+  const all = useStore((x) => x.series)
+  const select = useStore((x) => x.selectCondition)
+  const add = useStore((x) => x.addCondition)
   const field = (label: string, key: 'name' | 'analyte' | 'units' | 'signalLabel', placeholder: string) => (
     <Row label={label}>
       <input type="text" className="w-[150px]" value={s[key]} placeholder={placeholder} onChange={(e) => patch({ [key]: e.target.value })} />
@@ -163,7 +166,7 @@ function Labels() {
             {s.name || 'Untitled'}
           </span>
           <span className="labels-extra truncate text-muted" style={{ maxWidth: 150 }}>
-            {[s.analyte, s.units].filter(Boolean).join(' · ')}
+            {[s.analyte, s.units, all.length > 1 ? `${all.findIndex((x) => x.id === s.id) + 1} of ${all.length}` : ''].filter(Boolean).join(' · ')}
           </span>
         </button>
       )}
@@ -174,6 +177,18 @@ function Labels() {
         {field('Units', 'units', 'ng/mL')}
         {field('Signal', 'signalLabel', 'T/C ratio')}
         <p className="mt-2 border-t border-line pt-2 text-[11.5px] leading-snug text-muted">These label every axis, sentence, report and export.</p>
+        <div className="mt-2 flex flex-col border-t border-line pt-2">
+          <span className="label mb-1">Conditions</span>
+          {all.map((x) => (
+            <button key={x.id} className="menu-item" style={{ flexDirection: 'row', fontWeight: x.id === s.id ? 600 : 400 }} onClick={() => select(x.id)}>
+              <span className="mr-1.5 text-accent">{x.id === s.id ? '●' : '○'}</span>
+              <span className="truncate">{x.name || 'Untitled'}</span>
+            </button>
+          ))}
+          <button className="link mt-1 self-start" onClick={() => add(`${s.name} ${all.length + 1}`)} title="Another lot, reader or day: starts as a copy, then paste or import its own data">
+            + Add a condition
+          </button>
+        </div>
       </div>
     </Popover>
   )

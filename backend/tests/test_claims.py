@@ -295,6 +295,47 @@ def test_import_to_series_round_trips_through_the_schema():
     assert float(compile_series(s).mean(5)) == pytest.approx(0.1085)
 
 
+# ---------------------------------------------------------------- error budget (24) and conditions (23)
+def test_tolerance_stack_on_a_line():
+    from app import layers as LY
+    # slope 20, within SD 10; a reader that reads 5% high plus 4 signal units, with an offset SD of 6
+    m = model(**LINE, layers=[{"name": "Reader", "offsetSd": 6, "biasOffset": 4, "biasPct": 0.05}, {"name": "Off", "on": False, "biasOffset": 99}])
+    out = LY.tolerance(m, [0, 10], k=2, tea=0.25)
+    r = out["rows"][1]
+    bias = (4 + 0.05 * 300) / 20  # mean at c = 10 is 300
+    sd = math.sqrt(10 ** 2 + 6 ** 2) / 20
+    assert [x["name"] for x in r["sources"]] == ["within run", "Reader"]
+    assert r["bias"] == pytest.approx(bias) and r["sd"] == pytest.approx(sd)
+    assert r["total"] == pytest.approx(bias + 2 * sd) and r["worst"] == pytest.approx(bias + 2 * (10 + 6) / 20)
+    assert r["rel"] == pytest.approx((bias + 2 * sd) / 10) and r["ok"] is True
+    assert out["rows"][0]["rel"] is None and (out["met"], out["total"]) == (1, 1)
+    assert LY.tolerance(m, [10], tea=0.1)["rows"][0]["ok"] is False
+    assert float(m.mean(10)) == 300 and len(A.ladder(m, "ssmd", 3)) == len(A.ladder(model(**LINE, layers=[{"name": "Reader", "offsetSd": 6}]), "ssmd", 3))
+    with pytest.raises(ValueError):
+        LY.tolerance(m, k=0)
+    flat = LY.tolerance(model(mode="equations", meanExpr="100", sdExpr="10", cMax=10), [5])["rows"][0]
+    assert flat["total"] is None and flat["ok"] is None
+
+
+def test_compare_conditions_against_the_reference():
+    from app import conditions as CD
+    a = model(**LINE, name="A")
+    b = model(**{**LINE, "meanExpr": "110 + 22*c"}, name="B")
+    out = CD.compare([a, b], [0, 10])
+    assert out["reference"] == "A" and [c["name"] for c in out["conditions"]] == ["A", "B"]
+    r = out["rows"][1]
+    assert r["mean"] == [300, 330] and r["bias"][1] == pytest.approx(0.1)
+    assert r["readsAs"][1] == pytest.approx(11.5) and r["concBias"][1] == pytest.approx(0.15)  # 330 on A's curve
+    assert out["rows"][0]["concBias"] == [None, None]
+    assert out["between"]["units"] == 2 and out["between"]["offsetSd"] == pytest.approx(math.sqrt(50))
+    assert out["between"]["gainCv"] == pytest.approx(math.sqrt(200) / 210)  # rises 200 and 220 at c = 10
+    assert CD.compare([a])["between"] is None
+    with pytest.raises(ValueError):
+        CD.compare([])
+    with pytest.raises(ValueError):
+        CD.compare([a], [-1])
+
+
 # ---------------------------------------------------------------- CLI and API wiring
 def run(capsys, *argv):
     code = cli.main([str(a) for a in argv])
@@ -349,6 +390,17 @@ def test_cli_requirements_read_bake_report(capsys, line, tmp_path):
     assert out["resolvable"]["n"] == len(out["resolvable"]["levels"]) and out["limitsData"] is None
 
 
+def test_cli_tolerance_and_compare(capsys, line, tmp_path):
+    code, out, _ = run(capsys, "tolerance", line, "-c", "10", "--k", "2", "--tea", "0.2")
+    assert code == 0 and out["rows"][0]["total"] == pytest.approx(1.0) and out["met"] == 1
+    assert run(capsys, "tolerance", line, "--k", "0")[0] == 2
+    other = tmp_path / "b.json"
+    other.write_text(json.dumps({**LINE, "meanExpr": "110 + 22*c", "name": "B"}), encoding="utf-8")
+    code, out, _ = run(capsys, "compare", line, other, "-c", "10")
+    assert code == 0 and out["rows"][0]["bias"][1] == pytest.approx(0.1) and out["between"]["units"] == 2
+    assert run(capsys, "compare", line, "-c", "-1")[0] == 2
+
+
 def test_cli_import(capsys, tmp_path, monkeypatch):
     f = tmp_path / "lot 3.csv"
     f.write_text(READER, encoding="utf-8")
@@ -387,3 +439,8 @@ def test_api_surfaces():
     assert c.post("/api/import", json={"text": "nothing"}).json()["ok"] is False
     assert c.post("/api/bake", json={"series": {**LINE, "adjust": {"top": 5000}}}).json()["adjust"] is None
     assert c.post("/api/report", json={"series": series}).json()["requirements"]["total"] == 1
+    assert c.post("/api/tolerance", json={"series": series, "concs": [10]}).json()["rows"][0]["total"] == pytest.approx(1.0)
+    assert c.post("/api/tolerance", json={"series": series, "k": 0}).status_code == 422
+    two = c.post("/api/compare", json={"series": [series, {**LINE, "meanExpr": "110 + 22*c"}], "concs": [10]}).json()
+    assert two["rows"][0]["bias"][1] == pytest.approx(0.1)
+    assert c.post("/api/compare", json={"series": []}).status_code == 422

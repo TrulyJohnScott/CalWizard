@@ -125,6 +125,10 @@ interface State {
   /** change the active series (one undo step; same-key bursts within COALESCE_MS coalesce) */
   patch: (p: Partial<Series>) => void
   setUi: (p: Partial<Ui>) => void
+  /** conditions (spec §23): the other series in the store. Add a copy of the active one, switch, or remove. */
+  addCondition: (name?: string) => void
+  selectCondition: (id: string) => void
+  removeCondition: (id: string) => void
   /** replace the active series wholesale (Load JSON): one undo step */
   replaceActive: (s: Series) => void
   setLadder: (l: LadderState | null) => void
@@ -248,6 +252,8 @@ export function sanitizeSeries(raw: unknown): Series {
           cv: isNum(l.cv) && l.cv >= 0 ? l.cv : 0,
           gainCv: isNum(l.gainCv) && l.gainCv >= 0 ? l.gainCv : 0,
           noiseCv: isNum(l.noiseCv) && l.noiseCv >= 0 ? l.noiseCv : 0,
+          biasOffset: isNum(l.biasOffset) ? l.biasOffset : 0,
+          biasPct: isNum(l.biasPct) ? l.biasPct : 0,
         }))
       : [],
     sim: { n: isNum(sim?.n) ? Math.max(0, Math.floor(sim!.n as number)) : 5, seed: isNum(sim?.seed) ? Math.floor(sim!.seed as number) : 42 },
@@ -260,6 +266,10 @@ export function sanitizeSeries(raw: unknown): Series {
     },
     requirements,
     samples,
+    tolerance: (() => {
+      const t = (r.tolerance ?? {}) as Record<string, unknown>
+      return { tea: isNum(t.tea) && t.tea > 0 ? t.tea : 0.3, k: isNum(t.k) && t.k > 0 ? t.k : 2 }
+    })(),
   }
 }
 
@@ -340,6 +350,21 @@ export const useStore = create<State>((set) => ({
   replaceActive: (n) =>
     set((s) => ({ ...record(s, ''), series: s.series.map((x) => (x.id === s.activeId ? { ...n, id: x.id } : x)), ladder: null, measure: null, focus: null })),
   setUi: (p) => set((s) => ({ ui: { ...s.ui, ...p } })),
+  addCondition: (name) =>
+    set((s) => {
+      const act = s.series.find((x) => x.id === s.activeId)
+      if (!act) return {}
+      const id = uid()
+      const copy = { ...structuredClone(act), id, name: name ?? `${act.name} copy` }
+      return { ...record(s, ''), series: [...s.series, copy], activeId: id, ladder: null, measure: null, focus: null }
+    }),
+  selectCondition: (id) => set((s) => (s.series.some((x) => x.id === id) && id !== s.activeId ? { ...record(s, ''), activeId: id, ladder: null, measure: null, focus: null } : {})),
+  removeCondition: (id) =>
+    set((s) => {
+      if (s.series.length < 2 || !s.series.some((x) => x.id === id)) return {}
+      const series = s.series.filter((x) => x.id !== id)
+      return { ...record(s, ''), series, activeId: id === s.activeId ? series[0].id : s.activeId, ladder: null, measure: null, focus: null }
+    }),
   setLadder: (ladder) => set({ ladder }),
   applyLadder: (levels) =>
     set((s) => {
