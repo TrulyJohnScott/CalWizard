@@ -31,28 +31,41 @@ export function bake(s: Series): Series {
   const p = compileModel(s).adjust
   if (!p) return { ...s, adjust: null }
   const { b0, b1, gain, cScale: xs, sdScale: ss } = p
+  const split = p.floorScale !== 1 || p.cvScale !== 1
   if (s.mode === 'equations') {
     const inner = astToText(parseExpr(s.meanExpr, 'c'), `(c/${lit(xs)})`)
     return {
       ...s,
       adjust: null,
       meanExpr: `${lit(b1)} + (${inner} - ${lit(b0)})*${lit(gain)}`,
-      sdExpr: `${lit(ss)}*(${astToText(parseExpr(s.sdExpr, 'S'), 'S')})`,
+      sdExpr: split
+        ? `sqrt((${lit(p.floorScale)}*${lit(p.s0 as number)})^2 + ${lit(p.cvScale)}^2*((${lit(ss)}*(${astToText(parseExpr(s.sdExpr, 'S'), 'S')}))^2 - ${lit(p.s0 as number)}^2))`
+        : `${lit(ss)}*(${astToText(parseExpr(s.sdExpr, 'S'), 'S')})`,
     }
   }
   const y = (v: number) => b1 + (v - b0) * gain
   const concs = s.replicates.concs.map((c) => (num(c) ? c * xs : c))
   // with the SD interpolated in CV the noise follows the new signal: a deviation scales by ss·|y(μ)|/|μ| (port of bake)
   const byCv = compileModel({ ...s, adjust: null }).cv !== undefined
-  const spread = (mu: number) => ss * (byCv && mu !== 0 ? Math.abs(y(mu)) / Math.abs(mu) : 1)
-  const cells = s.replicates.concs.map((_, j) => {
+  // split noise: also scale by the split ratio at each new concentration (port of bake)
+  const mSplit = split ? compileModel(s) : null
+  const mPlain = split ? compileModel({ ...s, adjust: { ...(s.adjust as Adjust), floorScale: 1, cvScale: 1 } }) : null
+  const spread = (mu: number, c?: number) => {
+    const base = ss * (byCv && mu !== 0 ? Math.abs(y(mu)) / Math.abs(mu) : 1)
+    if (!mSplit || !mPlain || c === undefined) return base
+    const den = mPlain.sd(c * xs)
+    return base * (den > 0 ? mSplit.sd(c * xs) / den : 1)
+  }
+  const cells = s.replicates.concs.map((cj, j) => {
     const col = s.replicates.cells[j] ?? []
     const vals = col.filter(num)
     const mu = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0
-    return col.map((x) => (num(x) ? y(mu) + (x - mu) * spread(mu) : null))
+    return col.map((x) => (num(x) ? y(mu) + (x - mu) * spread(mu, num(cj) ? cj : undefined) : null))
   })
-  const summary = s.summary.map((r) => ({ c: num(r.c) ? r.c * xs : r.c, mean: num(r.mean) ? y(r.mean) : r.mean, sd: num(r.sd) ? r.sd * (num(r.mean) ? spread(r.mean) : ss) : r.sd }))
-  return { ...s, adjust: null, replicates: { concs, cells }, summary, extraLevels: (s.extraLevels ?? []).map((c) => c * xs) }
+  const summary = s.summary.map((r) => ({ c: num(r.c) ? r.c * xs : r.c, mean: num(r.mean) ? y(r.mean) : r.mean, sd: num(r.sd) ? r.sd * (num(r.mean) ? spread(r.mean, num(r.c) ? r.c : undefined) : ss) : r.sd }))
+  // the chosen data curve follows the what-if like an equation (port of bake)
+  const dataFit = s.dataFit?.meanExpr ? { ...s.dataFit, meanExpr: `${lit(b1)} + (${astToText(parseExpr(s.dataFit.meanExpr, 'c'), `(c/${lit(xs)})`)} - ${lit(b0)})*${lit(gain)}` } : (s.dataFit ?? null)
+  return { ...s, adjust: null, dataFit, replicates: { concs, cells }, summary, extraLevels: (s.extraLevels ?? []).map((c) => c * xs) }
 }
 
 /** The adjust with one field changed, or null when that leaves nothing adjusted. */

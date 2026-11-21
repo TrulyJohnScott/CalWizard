@@ -122,6 +122,8 @@ def build_cases() -> list[dict]:
         dataFit={"meanExpr": "2278 - 2230/(1 + (c/58.3)^1.234)", "label": "4PL", "kind": "4pl"}))
     cases.append(case("adjust-equations", mode="equations", meanExpr=MEANS["4pl"], sdExpr=SDS["floor_cv"], levels=LEVELS,
                       cMax=500, adjust={"bottom": 30, "top": 4600, "cScale": 0.8, "sdScale": 0.7}))
+    cases.append(case("adjust-split-noise", mode="equations", meanExpr=MEANS["4pl"], sdExpr=SDS["floor_cv"], levels=LEVELS,
+                      cMax=500, adjust={"floorScale": 0.5, "cvScale": 0.8}))
     cases.append(case("adjust-falling", mode="equations", meanExpr="3000/(1 + c/50) + 100", sdExpr="0.05*S + 10",
                       levels=[0, 10, 50, 200, 800], cMax=800, adjust={"bottom": 3400, "sdScale": 1.5}))
     cases.append(case("adjust-replicates", mode="replicates", metric="dsum", kTarget=1, adjust={"top": 1500, "cScale": 1.3},

@@ -42,6 +42,9 @@ class Adjust(Camel):
     top: float | None = None
     c_scale: float = 1.0
     sd_scale: float = 1.0
+    #: the noise split in two (core design): floor = the SD at the blank, CV part = the rest; each scaled on its own
+    floor_scale: float = 1.0
+    cv_scale: float = 1.0
 
     @field_validator("c_scale")
     @classmethod
@@ -50,7 +53,7 @@ class Adjust(Camel):
             raise ValueError("cScale must be > 0")
         return v
 
-    @field_validator("sd_scale")
+    @field_validator("sd_scale", "floor_scale", "cv_scale")
     @classmethod
     def _ss(cls, v):
         if not (math.isfinite(v) and v >= 0):
@@ -59,7 +62,8 @@ class Adjust(Camel):
 
     @property
     def active(self) -> bool:
-        return self.bottom is not None or self.top is not None or self.c_scale != 1 or self.sd_scale != 1
+        return (self.bottom is not None or self.top is not None or self.c_scale != 1 or self.sd_scale != 1
+                or self.floor_scale != 1 or self.cv_scale != 1)
 
 
 class LimitSettings(Camel):
@@ -352,7 +356,9 @@ class Model:
         b1 = b0 if adj.bottom is None else adj.bottom
         t1 = t0 if adj.top is None else adj.top
         gain = (t1 - b1) / (t0 - b0) if (math.isfinite(t0 - b0) and t0 != b0) else 1.0
-        self.adjust_params = {"b0": b0, "t0": t0, "b1": b1, "t1": t1, "gain": gain, "cScale": xs, "sdScale": ss}
+        fs, gs = adj.floor_scale, adj.cv_scale
+        self.adjust_params = {"b0": b0, "t0": t0, "b1": b1, "t1": t1, "gain": gain, "cScale": xs, "sdScale": ss,
+                              "floorScale": fs, "cvScale": gs}
 
         def mean(c):
             return b1 + (f(c / xs) - b0) * gain
@@ -370,6 +376,16 @@ class Model:
         else:
             def sd(c):
                 return ss * g(c / xs)
+
+        if fs != 1 or gs != 1:
+            # split noise: sd'^2 = (fs·s0)^2 + gs^2·(sd^2 - s0^2), s0 = the SD at the blank (core design)
+            unsplit = sd
+            s0 = float(np.asarray(unsplit(np.float64(0.0))))
+            self.adjust_params["s0"] = s0
+
+            def sd(c, unsplit=unsplit):
+                v = np.asarray(unsplit(c), dtype=float)
+                return np.sqrt(np.maximum((fs * s0) ** 2 + gs**2 * (v * v - s0 * s0), 0.0))
 
         self._mean, self._sd = mean, sd
 
@@ -499,6 +515,9 @@ def bake(series: Series) -> Series:
         inner = E.to_text(E.parse(series.mean_expr, "c"), f"(c/{_lit(xs)})")
         mean_expr = f"{_lit(b1)} + ({inner} - {_lit(b0)})*{_lit(gain)}"
         sd_expr = f"{_lit(ss)}*({E.to_text(E.parse(series.sd_expr, 'S'), 'S')})"
+        if p["floorScale"] != 1 or p["cvScale"] != 1:
+            s0, fs, gs = _lit(p["s0"]), _lit(p["floorScale"]), _lit(p["cvScale"])
+            sd_expr = f"sqrt(({fs}*{s0})^2 + {gs}^2*(({sd_expr})^2 - {s0}^2))"
         return series.model_copy(update={"adjust": None, "mean_expr": mean_expr, "sd_expr": sd_expr})
 
     def y(v):
@@ -507,16 +526,29 @@ def bake(series: Series) -> Series:
     # with the SD interpolated in CV the noise follows the new signal: a deviation scales by ss·|y(μ)|/|μ|
     by_cv = getattr(compile_series(series.model_copy(update={"adjust": None})), "_cv", None) is not None
 
-    def spread(mu):
-        return ss * (abs(y(mu)) / abs(mu) if by_cv and mu != 0 else 1.0)
+    split = p["floorScale"] != 1 or p["cvScale"] != 1
+    if split:  # the split ratio at each new concentration: sd with the split over sd without it
+        m_split = Model(series)
+        m_plain = Model(series.model_copy(update={"adjust": series.adjust.model_copy(update={"floor_scale": 1.0, "cv_scale": 1.0})}))
+
+    def spread(mu, c=None):
+        base = ss * (abs(y(mu)) / abs(mu) if by_cv and mu != 0 else 1.0)
+        if not split or c is None:
+            return base
+        den = float(np.asarray(m_plain.sd(np.float64(c * xs))))
+        return base * (float(np.asarray(m_split.sd(np.float64(c * xs)))) / den if den > 0 else 1.0)
 
     concs, cells = [], []
     for c, col in zip(series.replicates.concs, series.replicates.cells):
         v = [x for x in col if x is not None and math.isfinite(x)]
         mu = sum(v) / len(v) if v else 0.0
         concs.append(c * xs)
-        cells.append([None if (x is None or not math.isfinite(x)) else y(mu) + (x - mu) * spread(mu) for x in col])
-    summary = [SummaryRow(c=r.c * xs, mean=y(r.mean), sd=None if r.sd is None else r.sd * (spread(r.mean) if r.mean is not None else ss)) for r in series.summary]
+        cells.append([None if (x is None or not math.isfinite(x)) else y(mu) + (x - mu) * spread(mu, c) for x in col])
+    summary = [SummaryRow(c=r.c * xs, mean=y(r.mean), sd=None if r.sd is None else r.sd * (spread(r.mean, r.c) if r.mean is not None else ss)) for r in series.summary]
+    data_fit = series.data_fit
+    if data_fit is not None and data_fit.mean_expr:  # the chosen curve follows the what-if like an equation
+        inner = E.to_text(E.parse(data_fit.mean_expr, "c"), f"(c/{_lit(xs)})")
+        data_fit = data_fit.model_copy(update={"mean_expr": f"{_lit(b1)} + ({inner} - {_lit(b0)})*{_lit(gain)}"})
     return series.model_copy(update={
-        "adjust": None, "replicates": Replicates(concs=concs, cells=cells), "summary": summary,
+        "adjust": None, "data_fit": data_fit, "replicates": Replicates(concs=concs, cells=cells), "summary": summary,
         "extra_levels": [c * xs for c in series.extra_levels]})

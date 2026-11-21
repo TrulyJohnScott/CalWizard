@@ -543,3 +543,14 @@ def test_cli_points_and_excel_sheets(capsys, tmp_path):
     assert json.loads(capsys.readouterr().out)["total"] == 2
     wb = build_workbook(Series.model_validate(body))
     assert {"Points", "Limits", "Read-back"} <= set(wb.sheetnames)
+
+
+@pytest.mark.parametrize("fs, gs", [(0.5, 1.0), (1.0, 0.5)])
+def test_split_noise_scales_the_floor_and_the_cv_part_separately(fs, gs):
+    body = {"mode": "equations", "meanExpr": "100 + 20*c", "sdExpr": "sqrt(10^2 + (0.1*S)^2)", "cMax": 100}
+    m0, m = model(**body), model(**body, adjust={"floorScale": fs, "cvScale": gs})
+    s0 = float(m0.sd(0))
+    for c in (0.0, 10.0, 80.0):
+        assert float(m.sd(c)) == pytest.approx(math.sqrt((fs * s0) ** 2 + gs**2 * (float(m0.sd(c)) ** 2 - s0**2)))
+    b = compile_series(bake(Series.model_validate({**body, "adjust": {"floorScale": fs, "cvScale": gs}})))
+    assert np.allclose(b.sd([0, 10, 80]), m.sd([0, 10, 80]), rtol=1e-9)

@@ -24,6 +24,9 @@ export interface Adjust {
   cScale: number
   /** every SD is multiplied by this */
   sdScale: number
+  /** the noise split in two (core design): floor = the SD at the blank, CV part = the rest; each scaled on its own */
+  floorScale?: number
+  cvScale?: number
 }
 
 /** Detection-limit settings (spec §15). */
@@ -104,7 +107,7 @@ export interface Layer {
   biasPct: number
 }
 
-export const NO_ADJUST: Adjust = { bottom: null, top: null, cScale: 1, sdScale: 1 }
+export const NO_ADJUST: Adjust = { bottom: null, top: null, cScale: 1, sdScale: 1, floorScale: 1, cvScale: 1 }
 export const DEFAULT_LIMITS: LimitSettings = { alpha: 0.05, beta: 0.05, cv: 0.2, reads: 1 }
 
-export const adjustActive = (a: Adjust | null | undefined): a is Adjust => !!a && (a.bottom !== null || a.top !== null || a.cScale !== 1 || a.sdScale !== 1)
+export const adjustActive = (a: Adjust | null | undefined): a is Adjust => !!a && (a.bottom !== null || a.top !== null || a.cScale !== 1 || a.sdScale !== 1 || (a.floorScale ?? 1) !== 1 || (a.cvScale ?? 1) !== 1)

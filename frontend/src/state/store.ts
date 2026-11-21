@@ -220,7 +220,7 @@ export function sanitizeSeries(raw: unknown): Series {
   const sim = r.sim as { n?: unknown; seed?: unknown } | undefined
   const ar = r.adjust as Record<string, unknown> | null | undefined
   const adjRaw: Adjust | null = ar && typeof ar === 'object'
-    ? { bottom: numOrNull(ar.bottom), top: numOrNull(ar.top), cScale: isNum(ar.cScale) && ar.cScale > 0 ? ar.cScale : 1, sdScale: isNum(ar.sdScale) && ar.sdScale >= 0 ? ar.sdScale : 1 }
+    ? { bottom: numOrNull(ar.bottom), top: numOrNull(ar.top), cScale: isNum(ar.cScale) && ar.cScale > 0 ? ar.cScale : 1, sdScale: isNum(ar.sdScale) && ar.sdScale >= 0 ? ar.sdScale : 1, floorScale: isNum(ar.floorScale) && ar.floorScale >= 0 ? ar.floorScale : 1, cvScale: isNum(ar.cvScale) && ar.cvScale >= 0 ? ar.cvScale : 1 }
     : null
   const lr = (r.limits ?? {}) as Record<string, unknown>
   const rate = (v: unknown, f: number) => (isNum(v) && v > 0 && v < 0.5 ? v : f)

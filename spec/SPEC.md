@@ -538,6 +538,13 @@ With `f`, `g` the unadjusted mean and SD, `B = f(0)`, `T = f(cMax)`, `B' = botto
   tables: `sd'(c) = sdScale · g(c/xs)`; with the SD in CV (§3): `sd'(c) = sdScale · CV(c/xs) · |mean'(c)|` (the
   noise follows the new signal, as in equations).
 
+**Split noise (v4, core design):** `floorScale` and `cvScale` (default 1) scale the two parts of the noise separately:
+`s0` = the SD at the blank after the above, and `sd''(c) = √max((floorScale·s0)² + cvScale²·(sd'(c)² − s0²), 0)`. Both 1 =
+unchanged. The GUI offers "noise floor ×" and "CV ×" in place of one noise lever (`sdScale` stays for files and the
+CLI). Bake wraps the equations' SD as `sqrt((f·s0)^2 + g^2·((sdExpr')^2 − s0^2))`; tables scale each reading's
+deviation by the split ratio at its concentration (exact at the data points); a stored `dataFit` follows the
+what-if like an equation.
+
 `cMax` and the levels do not change. Everything downstream (rows, ladder, limits, read-back, export) uses the adjusted
 curve. Validation: `cScale > 0`, `sdScale ≥ 0`, both finite.
 

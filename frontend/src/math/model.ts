@@ -12,6 +12,10 @@ export interface AdjustParams {
   gain: number
   cScale: number
   sdScale: number
+  floorScale: number
+  cvScale: number
+  /** the SD at the blank the split noise is measured from (when split) */
+  s0?: number
 }
 
 /** Spec section 1: compiled mean(c) / sd(c) for the active mode. */
@@ -124,7 +128,20 @@ function applyAdjust(s: Series, base: Model, sdOfSignal?: (S: number) => number)
   const mean = (c: number) => b1 + (f(c / xs) - b0) * gain
   const cv = base.cv
   const sd = s.mode === 'equations' ? (sdOfSignal ? (c: number) => ss * sdOfSignal(mean(c)) : () => NaN) : cv ? (c: number) => ss * cv(c / xs) * Math.abs(mean(c)) : (c: number) => ss * g(c / xs)
-  return { ...base, mean, sd, adjusted: true, adjust: { b0, t0, b1, t1, gain, cScale: xs, sdScale: ss }, base: { mean: f, sd: g } }
+  const fs = adj.floorScale ?? 1
+  const gs = adj.cvScale ?? 1
+  const params: AdjustParams = { b0, t0, b1, t1, gain, cScale: xs, sdScale: ss, floorScale: fs, cvScale: gs }
+  let sdOut = sd
+  if (fs !== 1 || gs !== 1) {
+    // split noise: sd'^2 = (fs·s0)^2 + gs^2·(sd^2 − s0^2), s0 = the SD at the blank (port of Model._apply_adjust)
+    const s0 = sd(0)
+    params.s0 = s0
+    sdOut = (c: number) => {
+      const v = sd(c)
+      return Math.sqrt(Math.max((fs * s0) ** 2 + gs * gs * (v * v - s0 * s0), 0))
+    }
+  }
+  return { ...base, mean, sd: sdOut, adjusted: true, adjust: params, base: { mean: f, sd: g } }
 }
 
 /**
