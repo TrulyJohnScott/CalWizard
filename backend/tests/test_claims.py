@@ -513,3 +513,14 @@ def test_a_read_value_averaged_over_strips_has_a_narrower_range():
     z = norm.ppf(0.975)
     assert one["hi"] - one["lo"] == pytest.approx(2 * z * 10 / 20, rel=1e-3)
     assert four["hi"] - four["lo"] == pytest.approx(2 * z * 5 / 20, rel=1e-3) and four["cv"] == pytest.approx(one["cv"] / 2)
+
+
+def test_the_data_curve_is_4pl_unless_another_is_clearly_better_and_it_defines_the_mean():
+    from app import fit as F
+    four = {"kind": "4pl", "label": "4PL", "ok": True, "aicc": 10.0, "expr": "1 + c"}
+    lin = {"kind": "linear", "label": "Linear", "ok": True, "aicc": 9.0, "expr": "2 + c"}
+    quad = {"kind": "quadratic", "label": "Quadratic", "ok": True, "aicc": 0.0, "expr": "3 + c"}
+    assert F.choose([four, lin, quad])["kind"] == "4pl"  # 1 AICc better is not clearly better; quadratic never
+    assert F.choose([four, {**lin, "aicc": 7.0}])["kind"] == "linear"
+    m = model(**TABLE, dataFit={"meanExpr": "5 + 2*c", "label": "Linear"})
+    assert float(m.mean(3)) == pytest.approx(11)

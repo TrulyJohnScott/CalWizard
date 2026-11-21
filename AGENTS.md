@@ -60,7 +60,7 @@ JSON on stderr, exit 1 (invalid expression/model) or 2 (bad input).
 | `calwizard rule [--metric M] (--k K or --error E)` | pass rule in plain words: `{metric, k, error, text}` |
 | `calwizard inverse SERIES S...` | concentration per signal (null if out of range) |
 | `calwizard recover SERIES S... [--conf 0.95]` | read-back c with its range `{signal, c, lo, hi, loOpen, hiOpen}` |
-| `calwizard fit INPUT` | ranked mean/sd fits from `{points}`/`{summary}` JSON or a table Series |
+| `calwizard fit INPUT [--apply]` | ranked mean/sd fits and the `chosen` curve; `--apply` prints the Series with it stored as `dataFit` |
 | `calwizard simulate SERIES [--concs C...] [--n N \| --n-per N...] [--runs R] [--seed S] [--metric M --k K --conf P] [--measured-n]` | simulated experiments (spec §13): per-run readings, ranges, `pPass`, `pAllPass` |
 | `calwizard export SERIES -o file.xlsx` | Excel workbook |
 | `calwizard limits SERIES [--alpha A --beta B --cv CV --reads N --low C... --no-profile]` | LoB / LoD / LoQ, precision profile; `data` = classical estimate from blank + low replicates (spec §15) |

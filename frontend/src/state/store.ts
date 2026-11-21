@@ -271,6 +271,10 @@ export function sanitizeSeries(raw: unknown): Series {
     },
     requirements,
     samples,
+    dataFit: (() => {
+      const f = r.dataFit as Record<string, unknown> | null | undefined
+      return f && typeof f.meanExpr === 'string' && f.meanExpr ? { meanExpr: f.meanExpr, label: str(f.label, ''), kind: str(f.kind, '') } : null
+    })(),
     points: Array.isArray(r.points)
       ? (r.points as Record<string, unknown>[])
           .filter((p) => p && isNum(p.c) && (p.c as number) > 0)

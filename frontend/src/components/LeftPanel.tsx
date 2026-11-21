@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Fit } from '../api'
 import { MEAN_PRESETS, SD_PRESETS } from '../math/presets'
 import { tableFromEquations } from '../math/table'
@@ -32,6 +32,14 @@ export function LeftPanel({ d }: { d: Derived }) {
   const { series, model } = d
   const source: View = series.mode === 'equations' ? 'function' : series.mode === 'summary' ? 'stats' : 'data'
   const fit = useAutoFit(series, model, source !== 'function')
+  useEffect(() => {
+    if (source === 'function' || !fit.res) return
+    const c = fit.res.chosen ?? null
+    const cur = series.dataFit ?? null
+    if ((c?.meanExpr ?? '') === (cur?.meanExpr ?? '')) return
+    const st = useStore.getState()
+    useStore.setState({ series: st.series.map((x) => (x.id === st.activeId ? { ...x, dataFit: c ? { meanExpr: c.meanExpr, label: c.label, kind: c.kind } : null } : x)) })
+  }, [fit.res, source, series.dataFit])
   const derivedTable = useMemo(() => (source === 'function' ? tableFromEquations(series, model, 0) : null), [source, series, model])
 
   /** Drive the curve from equations (keeping the table's levels and range when coming from the table). */
@@ -63,7 +71,10 @@ export function LeftPanel({ d }: { d: Derived }) {
 
   const note =
     view === source ? (
-      <span className="text-[10.5px] font-medium text-accent">● {view === 'data' ? 'these readings define' : view === 'stats' ? 'these stats define' : 'these functions define'} the curve</span>
+      <span className="text-[10.5px] font-medium text-accent">
+        ● {view === 'data' ? 'these readings define' : view === 'stats' ? 'these stats define' : 'these functions define'} the curve
+        {view !== 'function' && <span className="font-normal text-muted"> · {series.dataFit ? `best fit: ${series.dataFit.label}` : fit.busy ? 'fitting…' : 'smooth through the means'}</span>}
+      </span>
     ) : (
       <span className="text-[10.5px] text-muted">○ shown from the current curve · editing here makes it define the curve</span>
     )

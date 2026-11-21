@@ -117,6 +117,9 @@ def build_cases() -> list[dict]:
         "concs": [0, 2, 4, 10, 50, 200],
         "cells": [[48.1, 52.0, 47.3, 55.2, 44.9, 50.3, 51.8, 46.6], [70.2, 66.5, 75.1, 63.9, 71.0], [92.0, 99.4, 88.7, 95.5, 101.2],
                   [160.0, 171.2, 150.9], [640.0, 700.5, 661.3], [2100.0, 2250.0, 1980.0]]}))
+    cases.append(case("replicates-datafit", mode="replicates", replicates={
+        "concs": [0, 1, 5, 25, 100], "cells": [[48, 52, 50], [60, 63, None], [150, 160, 155], [600, 640, 620], [1500, 1550, 1520]]},
+        dataFit={"meanExpr": "2278 - 2230/(1 + (c/58.3)^1.234)", "label": "4PL", "kind": "4pl"}))
     cases.append(case("adjust-equations", mode="equations", meanExpr=MEANS["4pl"], sdExpr=SDS["floor_cv"], levels=LEVELS,
                       cMax=500, adjust={"bottom": 30, "top": 4600, "cScale": 0.8, "sdScale": 0.7}))
     cases.append(case("adjust-falling", mode="equations", meanExpr="3000/(1 + c/50) + 100", sdExpr="0.05*S + 10",

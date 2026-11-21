@@ -70,7 +70,9 @@ function compileBase(s: Series): Model & { sdOfSignal?: (S: number) => number } 
     pts.push(...summaryPoints(s.summary).filter((p) => !have.has(p.c) && s.replicates.concs.includes(p.c)))
   }
   else pts = summaryPoints(s.summary)
-  const mean = makeInterp(pts.map((p) => [p.c, p.mean]), true)
+  // the curve chosen from the data defines the mean (core design); without one, smooth interpolation
+  const fit = s.dataFit?.meanExpr ? compileExpr(s.dataFit.meanExpr, 'c') : null
+  const mean = fit?.ok ? fit.fn : makeInterp(pts.map((p) => [p.c, p.mean]), true)
   const withSd = pts.filter((p) => p.sd !== null)
   const sdPts = withSd.map((p): [number, number] => [p.c, p.sd as number])
   const noSd = sdPts.length === 0

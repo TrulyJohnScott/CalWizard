@@ -121,6 +121,13 @@ class Point(Camel):
     strips: int | None = None
 
 
+class DataFit(Camel):
+    """The curve chosen from the data (core design): its mean expression in c; set by the GUI or `calwizard fit --apply`."""
+    mean_expr: str
+    label: str = ""
+    kind: str = ""
+
+
 class Sample(Camel):
     """One row of the read-back sheet (spec section 18)."""
     id: str = ""
@@ -207,6 +214,7 @@ class Series(Camel):
     requirements: list[Requirement] = []
     samples: list[Sample] = []
     points: list[Point] = []
+    data_fit: DataFit | None = None
     tolerance: Tolerance = Tolerance()
     layers: list[Layer] = []
 
@@ -297,6 +305,13 @@ class Model:
             top = float(self.levels.max())
             self.c_max = top if top > 0 else 1.0
             mean_t = Table([p[0] for p in pts], [p[1] for p in pts], extend=True)
+            fit = series.data_fit
+            if fit is not None and fit.mean_expr:
+                try:  # the curve chosen from the data defines the mean (core design); the SD stays per concentration
+                    ast = E.parse(fit.mean_expr, "c")
+                    mean_t = lambda c, ast=ast: np.asarray(E.evaluate(ast, np.asarray(c, dtype=float)), dtype=float)  # noqa: E731
+                except E.ExprError:
+                    pass
             sd_pts = [(p[0], p[2], p[1]) for p in pts if p[2] is not None and math.isfinite(p[2])]
             self.sd_missing = not sd_pts
             if sd_pts and all(abs(p[2]) > 0 for p in sd_pts):

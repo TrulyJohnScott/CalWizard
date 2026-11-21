@@ -264,12 +264,28 @@ def _prepare(body: dict):
     return levels, c, y, w
 
 
+#: models that may define the curve from data (core design); quadratic is left out: it bends where data stop
+CURVE_KINDS = ("4pl", "5pl", "linear", "log", "power", "exponential")
+CLEARLY_BETTER = 2.0  # AICc units
+
+
+def choose(mean_fits: list[dict]) -> dict | None:
+    """The curve to use from data: 4PL unless another candidate's AICc is lower by more than CLEARLY_BETTER."""
+    ok = [f for f in mean_fits if f["ok"] and f["kind"] in CURVE_KINDS and f["aicc"] is not None and f["expr"]]
+    if not ok:
+        return None
+    best = min(ok, key=lambda f: f["aicc"])
+    four = next((f for f in ok if f["kind"] == "4pl"), None)
+    pick = four if four is not None and best["aicc"] >= four["aicc"] - CLEARLY_BETTER else best
+    return {"kind": pick["kind"], "label": pick["label"], "meanExpr": pick["expr"]}
+
+
 def run_fit(body: dict) -> dict:
     """Body for POST /api/fit: {points?, summary?} -> {levels, meanFits, sdFits}. Never raises."""
     try:
         levels, c, y, w = _prepare(body if isinstance(body, dict) else {})
     except Exception:  # noqa: BLE001
-        return {"levels": [], "meanFits": [], "sdFits": []}
+        return {"levels": [], "meanFits": [], "sdFits": [], "chosen": None}
     cmax = float(c.max()) if len(c) and c.max() > 0 else 1.0
     mean_fits = []
     for kind, m in MEAN_MODELS.items():
@@ -286,4 +302,4 @@ def run_fit(body: dict) -> dict:
             sd_fits.append(fit_sd(kind, s, sd))
         except Exception:  # noqa: BLE001
             sd_fits.append(_fail(kind, m["label"]))
-    return {"levels": levels, "meanFits": _rank(mean_fits), "sdFits": _rank(sd_fits)}
+    return {"levels": levels, "meanFits": _rank(mean_fits), "sdFits": _rank(sd_fits), "chosen": choose(mean_fits)}

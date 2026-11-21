@@ -77,6 +77,11 @@ levels `0, 1, 5, 25, 100, 500`, cMax = 500.
   `(c_i, mean_i)` and separately `(c_i, sd_i)`. 1 point ⇒ constant; 2 points ⇒ linear.
 - Below c_first: hold flat. Above c_last: the **mean continues as a straight line** with the PCHIP end
   slope (`d_n`, scipy's `derivative()(c_last)`; 2 points ⇒ the line continues); the **SD holds** its last value.
+- **The curve chosen from the data (v4, core design):** `Series.dataFit = {meanExpr, label, kind}` (null = none). When
+  set, it defines the mean in the table modes instead of PCHIP (the SD stays per concentration, below). The GUI keeps it
+  live: 400 ms after the data change it refits (§8) and stores `chosen`: 4PL unless another of 4PL, 5PL, linear, log,
+  power, exponential has an AICc lower by more than 2 (quadratic never: it bends where the data stop). `POST /api/fit`
+  returns `chosen`; `calwizard fit SERIES --apply` prints the Series with it stored.
 - **SD in CV (v4, core design):** when every concentration with an SD has a non-zero mean, the table SD is
   `sd(c) = CV(c) · |mean(c)|` with `CV` = PCHIP through `SD_i / |mean_i|` (held flat beyond the ends). A
   concentration with a single reading (no SD) therefore borrows its neighbours' CV, and beyond the last calibrator

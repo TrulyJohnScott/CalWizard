@@ -27,7 +27,7 @@ from . import readback as RB
 from . import report as RP
 from . import requirements as R
 from .jsonutil import clean
-from .series import Sample, Series, bake, compile_series
+from .series import DataFit, Sample, Series, bake, compile_series
 
 
 class CliError(Exception):
@@ -190,7 +190,15 @@ def _fit_body(data: Any) -> dict:
 
 
 def cmd_fit(args) -> None:
-    _out(F.run_fit(_fit_body(_read_json(args.input))))
+    raw = _read_json(args.input)
+    res = F.run_fit(_fit_body(raw))
+    if not getattr(args, "apply", False):
+        return _out(res)
+    # --apply: the Series with the chosen curve stored as its data fit (core design)
+    s = _validate(raw)
+    chosen = res.get("chosen")
+    fit = None if not chosen else {"meanExpr": chosen["meanExpr"], "label": chosen["label"], "kind": chosen["kind"]}
+    _out(s.model_copy(update={"data_fit": None if fit is None else DataFit.model_validate(fit)}).model_dump(by_alias=True))
 
 
 def cmd_export(args) -> None:
@@ -379,6 +387,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("signals", type=float, nargs="+", metavar="S")
     sp = add("fit", cmd_fit, "fit mean/sd models to {points|summary} JSON (or a replicates/summary Series)", False)
     sp.add_argument("input", metavar="INPUT", help="JSON file, or - for stdin")
+    sp.add_argument("--apply", action="store_true", help="for a Series: print it with the chosen curve stored as its data fit")
     sp = add("export", cmd_export, "write the Excel workbook")
     sp.add_argument("-o", "--output", required=True, metavar="FILE.xlsx")
     sp = add("simulate", cmd_simulate, "simulated experiments: n readings per concentration, over many runs (spec 13)")

@@ -82,6 +82,8 @@ export interface Series {
   /** the concentrations being evaluated (core design): separate from the calibration data; `strips` per point
    *  (null = the default, limits.reads). 0 is always the first point and is not stored. */
   points: { c: number; strips: number | null }[]
+  /** the curve chosen from the data (core design): it defines the mean in Data and Stats; null = smooth interpolation */
+  dataFit?: { meanExpr: string; label: string; kind: string } | null
   /** error budget settings (spec §24): allowed total error as a fraction of c, coverage factor on the spread */
   tolerance: { tea: number; k: number }
   /** variability layers on top of the within-run curve (spec §22) */

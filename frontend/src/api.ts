@@ -20,6 +20,8 @@ export interface FitResult {
   levels: { c: number; mean: number; sd: number | null; n: number }[]
   meanFits: Fit[]
   sdFits: Fit[]
+  /** the curve to use from the data: 4PL unless another is clearly better by AICc (core design) */
+  chosen?: { kind: string; label: string; meanExpr: string } | null
 }
 
 export async function fitData(body: { points?: { c: number; y: number }[]; summary?: { c: number; mean: number; sd: number | null }[] }): Promise<FitResult> {

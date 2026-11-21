@@ -106,7 +106,7 @@ def test_fit_expr_sign_formatting():
 def test_fit_never_errors_on_bad_data(body):
     r = client.post("/api/fit", json=body)
     assert r.status_code == 200
-    assert set(r.json()) == {"levels", "meanFits", "sdFits"}
+    assert set(r.json()) == {"levels", "meanFits", "sdFits", "chosen"}
 
 
 def test_fit_garbage_body():
