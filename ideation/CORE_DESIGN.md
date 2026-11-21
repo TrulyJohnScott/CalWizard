@@ -99,7 +99,37 @@ These stay in the CLI and API; only the GUI drops them:
 - the LoD verification planner and the precision profile;
 - conditions and the error budget section, until the variance step brings them back in the left and right columns.
 
-## Decisions to settle
+## Agreed in the interview (2026-11-21)
+
+- **The curve and your points are separate.** The curve (from data, stats or function) is the truth being traced.
+  Your points (`Series.points`, `[{c, strips}]`) are the concentrations you evaluate, e.g. 0, 2, 5, 10, 25, 40; never
+  fractional ladder values. 0 is always first and not stored.
+- **Entry:** a typed list above the chart (`2, 5, 10×3, 25, 40`; `×n` = that point's strips). Alt+click places a point
+  (2 significant figures), drag slides it (2 s.f.), a plain click selects, Delete removes.
+- **Strips:** a default (strips per result = `limits.reads`), overridable per point. Strips affect the evaluation only:
+  one result's SD is `sdOfReads(c, strips)` (within-run averages, layers don't). The curve is the truth.
+- **Capability vs your concentrations:** without points the headline gives what the assay could separate ("14 steps
+  apart · 0–441 ng/mL"); with points it gives their verdict ("your 6 concentrations: 4 of 5 steps apart"), red when any
+  step fails. "None apart from the blank" is said in red with how far off and what it would take.
+- **Fill** places round concentrations (1-2-5 series) from 0, each kept only when apart from the previous one.
+- **Rules:** Classify = gap ≥ N × (σ₁+σ₂) (default, N = 3, ≈1 misread in 740), Order = gap ≥ N × √(σ₁²+σ₂²) (SSMD,
+  for comparing lots or conditions). Settable by N or by misread %. Z′ leaves the screen.
+- **LoB / LoD / LoQ** are one overlay, on by default, α = β = 5%, LoQ CV target 15%.
+- **Pairs:** each point against the one below it.
+- **Threshold:** a clinical cut-off if set, else where the spreads cross; dragging explores without changing the spec.
+- **Repeat** re-runs the calibration (the data's concentrations and replicates, or an editable default
+  0, 1, 5, 25, 100, 500 × 3 for a function) and reports verdict stability, LoD spread and read-back spread.
+- **Fits from data:** mean by 4PL by default (auto-pick by AICc among 4PL, 5PL, linear, hook when clearly better).
+  SD per concentration, interpolated in CV between calibrators, held beyond the ends (marked), a single reading
+  borrows the neighbours' CV. Floor + CV drawn faintly for reference.
+- **Read panel:** each value can carry its strips averaged.
+- **Levers:** background, top, midpoint, noise floor ×, CV × (noise split in two).
+- **Outputs:** share link, save/open, Excel (curve and SDs, your points, limits, read-back).
+- **Competitive curves:** handled automatically, same words.
+- **Explainer:** "?" by the rule opens it in the bottom quarter; opens by itself on first use.
+- **Later, with variance:** overlays of several curves; reader, day, lot, site and stability sources.
+
+## Decisions to settle (first draft; answered above)
 
 1. **Points vs data concentrations.** With Data or Stats defining the curve, the data's concentrations are fixed. Do
    your points sit on top as extra points to test (proposed), or replace them?

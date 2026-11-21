@@ -268,6 +268,12 @@ export function sanitizeSeries(raw: unknown): Series {
     },
     requirements,
     samples,
+    points: Array.isArray(r.points)
+      ? (r.points as Record<string, unknown>[])
+          .filter((p) => p && isNum(p.c) && (p.c as number) > 0)
+          .map((p) => ({ c: p.c as number, strips: isNum(p.strips) && (p.strips as number) >= 1 ? Math.round(p.strips as number) : null }))
+          .sort((a, b) => a.c - b.c)
+      : [],
     tolerance: (() => {
       const t = (r.tolerance ?? {}) as Record<string, unknown>
       return { tea: isNum(t.tea) && t.tea > 0 ? t.tea : 0.3, k: isNum(t.k) && t.k > 0 ? t.k : 2 }
@@ -444,8 +450,9 @@ export const useStore = create<State>((set) => ({
       const pts = m.pts.filter((_, i) => i !== drop)
       return { measure: pts.length ? { pts, sel: null } : null }
     }),
-  setMeasurePoint: (i, c) =>
+  setMeasurePoint: (i, c0) =>
     set((s) => {
+      const c = c0 > 0 ? +c0.toPrecision(2) : 0 // dragged points land on 2 significant figures (core design)
       const pts = s.measure?.pts
       if (!pts || i < 0 || i >= pts.length || pts[i] === c || pts.includes(c)) return {}
       const next = [...pts]
@@ -499,3 +506,27 @@ useStore.subscribe((s) => {
     }
   }, 300)
 })
+
+// The ruler points (measure) are the active series' evaluation points: edits to one are written to the other, and
+// switching or loading a series brings its points back (core design).
+const ptsKey = (pts: number[]) => pts.filter((c) => c > 0).sort((a, b) => a - b).join(',')
+useStore.subscribe((s, prev) => {
+  const act = s.series.find((x) => x.id === s.activeId)
+  if (!act) return
+  const stored = act.points ?? []
+  if (s.measure !== prev.measure) {
+    const pts = (s.measure?.pts ?? []).filter((c) => c > 0)
+    if (ptsKey(pts) === ptsKey(stored.map((p) => p.c))) return
+    const strips = new Map(stored.map((p) => [p.c, p.strips]))
+    const points = [...new Set(pts)].sort((a, b) => a - b).map((c) => ({ c, strips: strips.get(c) ?? null }))
+    useStore.setState({ series: s.series.map((x) => (x.id === s.activeId ? { ...x, points } : x)) })
+    return
+  }
+  const cur = (s.measure?.pts ?? []).filter((c) => c > 0)
+  if (ptsKey(cur) !== ptsKey(stored.map((p) => p.c))) useStore.setState({ measure: stored.length ? { pts: stored.map((p) => p.c), sel: null } : null })
+})
+{
+  const st = useStore.getState()
+  const act = st.series.find((x) => x.id === st.activeId)
+  if (act?.points?.length) useStore.setState({ measure: { pts: act.points.map((p) => p.c), sel: null } })
+}

@@ -115,6 +115,12 @@ class Tolerance(Camel):
         return v
 
 
+class Point(Camel):
+    """An evaluated concentration (core design): separate from the calibration data; strips None = limits.reads."""
+    c: float
+    strips: int | None = None
+
+
 class Sample(Camel):
     """One row of the read-back sheet (spec section 18)."""
     id: str = ""
@@ -198,6 +204,7 @@ class Series(Camel):
     limits: LimitSettings = LimitSettings()
     requirements: list[Requirement] = []
     samples: list[Sample] = []
+    points: list[Point] = []
     tolerance: Tolerance = Tolerance()
     layers: list[Layer] = []
 

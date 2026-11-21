@@ -500,6 +500,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -1306,6 +1307,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -2249,6 +2251,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -3068,6 +3071,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -3860,6 +3864,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -4674,6 +4679,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -5644,6 +5650,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -6472,6 +6479,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -7288,6 +7296,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -8117,6 +8126,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -8931,6 +8941,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -9728,6 +9739,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -10582,6 +10594,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -11506,6 +11519,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -12354,6 +12368,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -13200,6 +13215,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -14022,6 +14038,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -14992,6 +15009,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -15842,6 +15860,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -17116,6 +17135,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -18101,6 +18121,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -18895,6 +18916,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -19882,6 +19904,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -20316,6 +20339,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -20643,6 +20667,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -20883,6 +20908,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -21291,6 +21317,7 @@
      }
     ],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -21568,6 +21595,7 @@
      }
     ],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -21866,6 +21894,7 @@
      }
     ],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -22142,6 +22171,7 @@
      }
     ],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -22332,6 +22362,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -22477,6 +22508,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -22660,6 +22692,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -22804,6 +22837,7 @@
     },
     "requirements": [],
     "samples": [],
+    "points": [],
     "tolerance": {
      "tea": 0.3,
      "k": 2.0
@@ -23362,6 +23396,7 @@
      },
      "requirements": [],
      "samples": [],
+     "points": [],
      "tolerance": {
       "tea": 0.3,
       "k": 2.0
@@ -23410,6 +23445,7 @@
      },
      "requirements": [],
      "samples": [],
+     "points": [],
      "tolerance": {
       "tea": 0.3,
       "k": 2.0
@@ -23484,6 +23520,7 @@
      },
      "requirements": [],
      "samples": [],
+     "points": [],
      "tolerance": {
       "tea": 0.3,
       "k": 2.0
@@ -23704,6 +23741,7 @@
      },
      "requirements": [],
      "samples": [],
+     "points": [],
      "tolerance": {
       "tea": 0.3,
       "k": 2.0

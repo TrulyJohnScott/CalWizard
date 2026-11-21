@@ -1,16 +1,19 @@
 import { useState } from 'react'
 import { exportExcel, saveJson } from '../api'
-import { fmt } from '../format'
-import { METRIC_LABEL } from '../math/metrics'
+import { fmt, withUnits } from '../format'
 import { kForError, kText, pctText, ruleError } from '../math/rule'
 import type { MetricKey } from '../math/types'
 import type { Derived } from '../state/derived'
+import { steps } from '../state/points'
 import { useActive, useStore, type Theme, type Workspace } from '../state/store'
 import { IconGrid, IconShare } from './kit'
 import { copyShareLink, saveReportHtml } from './Present'
 import { IconGear, IconRedo, IconUndo, NumField, Popover, Row, Seg } from './ui'
 
-const K_DEFAULT: Record<MetricKey, number> = { dsum: 1, ssmd: 3, zprime: 0.5 }
+const K_DEFAULT: Record<MetricKey, number> = { dsum: 3, ssmd: 3, zprime: 0.5 }
+/** the two separation rules (core design): Classify = N·(σ₁+σ₂), Order = N·√(σ₁²+σ₂²) */
+export const RULE_NAME: Record<MetricKey, string> = { dsum: 'Classify', ssmd: 'Order', zprime: 'Z′' }
+export const RULE_GAP: Record<MetricKey, string> = { dsum: 'σ₁+σ₂', ssmd: '√(σ₁²+σ₂²)', zprime: '3(σ₁+σ₂)' }
 
 /** The workspaces, in the order a project usually moves through them (spec §21). */
 export const WORKSPACES: { id: Workspace; label: string; tip: string; soon?: boolean }[] = [
@@ -63,18 +66,17 @@ function RuleEditor() {
   const err = ruleError(s.metric, s.kTarget)
   return (
     <div className="flex flex-col">
-      <Row label="Metric">
+      <Row label="Rule">
         <Seg<MetricKey>
           value={s.metric}
           options={[
-            ['dsum', 'Δμ/Σσ', 'Separation over summed spread: (μ₂ − μ₁) / (σ₁ + σ₂). At 1 the ±1σ ranges just touch. Equal spreads: misread = Φ(−value).'],
-            ['ssmd', 'SSMD', 'Strictly standardised mean difference: (μ₂ − μ₁) / √(σ₁² + σ₂²). 3 is the usual bar (≈1.7% misread with equal spreads).'],
-            ['zprime', 'Z′', 'Z-prime: 1 − 3(σ₁ + σ₂) / |μ₂ − μ₁|. 1 = no spread; 0.5 is the classic “excellent” bar; ≤ 0 means the ±3σ ranges overlap.'],
+            ['dsum', 'Classify', 'Gap ≥ N × (σ₁ + σ₂): a single reading lands on its own side of the threshold. N = 3: about 1 misread in 740. The usual choice for product claims.'],
+            ['ssmd', 'Order', 'Gap ≥ N × √(σ₁² + σ₂²) (SSMD): one reading of each comes out in the right order. Looser for single readings; for comparing lots or conditions.'],
           ]}
           onChange={(metric) => patch({ metric, kTarget: s.kTarget === K_DEFAULT[s.metric] ? K_DEFAULT[metric] : s.kTarget })}
         />
       </Row>
-      <Row label="Target k" title="a neighbouring pair is resolved when the metric reaches this value">
+      <Row label="N" title="how many of the spreads must fit between neighbouring means">
         <NumField value={s.kTarget} step={s.metric === 'zprime' ? 0.1 : 0.5} onCommit={(kTarget) => patch({ kTarget })} />
       </Row>
       <Row label="Allowed error %" title="misread rate at the threshold for equal spreads; sets k">
@@ -91,8 +93,8 @@ function RuleEditor() {
         />
       </Row>
       <p className="mt-2 border-t border-line pt-2 text-[11.5px] leading-snug text-muted">
-        Neighbouring levels count as resolved when {METRIC_LABEL[s.metric]} ≥ {kText(s.kTarget)}. With equal spreads, a single reading
-        is then assigned to the wrong level {pctText(err)} of the time.
+        Neighbours count as apart when their means differ by at least {kText(s.kTarget)} × ({RULE_GAP[s.metric]}). With equal spreads, a
+        single reading is then misread {pctText(err)} of the time.
       </p>
     </div>
   )
@@ -101,36 +103,33 @@ function RuleEditor() {
 /** "N resolvable levels" + the pass rule in plain words; always visible. */
 function Headline({ d }: { d: Derived }) {
   const s = d.series
-  const applyLadder = useStore((x) => x.applyLadder)
-  const notify = useStore((x) => x.notify)
-  const setUi = useStore((x) => x.setUi)
-  const n = d.resolvable.length
-  const was = d.baseline?.resolvable
+  const measure = useStore((x) => x.measure)
+  const pts = (measure?.pts ?? []).filter((c) => c > 0)
+  const u = s.units
+  const lod = d.limits?.lod?.c ?? null
+  let text: string
+  let bad = false
+  if (pts.length) {
+    const st = steps(s, d.model, pts)
+    const ok = st.filter((x) => x.q >= 1).length
+    bad = ok < st.length
+    text = `your ${st.length + 1} concentrations: ${ok} of ${st.length} steps apart`
+  } else {
+    const n = d.resolvable.length - 1
+    bad = n < 1
+    text = n < 1 ? 'none apart from the blank' : `${n} step${n === 1 ? '' : 's'} apart · 0–${fmt(d.resolvable[d.resolvable.length - 1])} ${u}`
+  }
   return (
     <div className="flex items-center gap-1">
-      <button
-        className="btn ghost"
-        title={`Ladder from 0 to ${fmt(d.model.cMax)} ${s.units}: ${d.resolvable.map((c) => fmt(c, 4)).join(', ')}\nClick to use these as the levels`}
-        onClick={() => {
-          applyLadder(d.resolvable)
-          setUi({ sidebar: true, workspace: 'curve' })
-          if (s.mode === 'equations') notify(`Levels set to the ladder (${n})`)
-        }}
-      >
-        {was !== undefined && was !== n && <span className="text-muted line-through">{was}</span>}
-        <span className="font-semibold tabular-nums" data-testid="resolvable-count">
-          {n}
-        </span>
-        <span className="text-muted">
-          <span className="lv-extra">resolvable </span>
-          {n === 1 ? 'level' : 'levels'}
-        </span>
-      </button>
+      <span className="px-1.5 text-[12.5px]" data-testid="resolvable-count" style={{ color: bad ? 'var(--bad)' : undefined }}>
+        {text}
+        {lod !== null && <span className="text-muted"> · detects {withUnits(lod, u)}</span>}
+      </span>
       <Popover
         align="right"
         trigger={(open, toggle) => (
           <button className="btn" data-on={open} onClick={toggle} title="Pass rule: when two neighbouring levels count as resolved" data-testid="rule-chip">
-            {METRIC_LABEL[s.metric]} ≥ {kText(s.kTarget)}
+            {RULE_NAME[s.metric]} · N {kText(s.kTarget)}
             <span className="rule-extra text-muted">· {pctText(ruleError(s.metric, s.kTarget))} misread</span>
           </button>
         )}

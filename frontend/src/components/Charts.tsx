@@ -12,6 +12,7 @@ import type { RepeatResult } from '../state/repeat'
 import { breakCoalescing, isPending, rulerPoints, useStore, type Measure } from '../state/store'
 import { usePalette } from '../theme'
 import { autoSpace } from '../state/autospace'
+import { PointsField } from './PointsField'
 import { HistHover, ScatterHover, StepRulers } from './HoverOverlay'
 import { Seg } from './ui'
 
@@ -178,8 +179,6 @@ export function CalibrationChart({ d, repeat = null }: { d: Derived; repeat?: Re
   const setProbe = useStore((s) => s.setProbe)
   const viewRev = useStore((s) => s.viewRev)
   const resetView = useStore((s) => s.resetView)
-  const addSimLevel = useStore((s) => s.addSimLevel)
-  const notify = useStore((s) => s.notify)
   const reading = useStore((s) => s.reading)
   const setReading = useStore((s) => s.setReading)
   const setUi = useStore((s) => s.setUi)
@@ -388,8 +387,11 @@ export function CalibrationChart({ d, repeat = null }: { d: Derived; repeat?: Re
           </button>
         )}
       </div>
+      <div className="absolute z-10" style={{ left: 66, top: 8 }}>
+        <PointsField d={d} />
+      </div>
       {focus && (
-        <button className="btn absolute z-10" style={{ left: 66, top: 6, height: 22, fontSize: 11 }} onClick={resetView} title="Back to the whole range (or double-click the chart)">
+        <button className="btn absolute z-10" style={{ left: 66, top: 34, height: 22, fontSize: 11 }} onClick={resetView} title="Back to the whole range (or double-click the chart)">
           {fmt(focus[0], 3)}–{fmt(focus[1], 3)}
           {series.units ? ` ${series.units}` : ''} · Show all
         </button>
@@ -416,27 +418,27 @@ export function CalibrationChart({ d, repeat = null }: { d: Derived; repeat?: Re
           if (!p || e.detail > 2 || Math.hypot(e.clientX - p.x, e.clientY - p.y) >= 4) return // drag = zoom, not a click
           const raw = concAt(ref.current, e, lv.current.flip)
           if (raw === null) return
-          // snap to a level or a ladder tick within 7px (hold Alt for a free point)
-          let c = raw
+          // core design: Alt+click places a point (2 significant figures); a plain click selects the nearest point
+          // within 9px, or clears the selection
+          const pts = useStore.getState().measure?.pts ?? []
           if (!e.altKey) {
             const fl = (ref.current as any)._fullLayout
             const ax = lv.current.flip ? fl.yaxis : fl.xaxis
-            let best = 7
-            for (const t of [...listed, ...d.resolvable]) {
+            let best = 9
+            let pick = -1
+            pts.forEach((t, j) => {
               const dpx = Math.abs(ax.d2p(t) - ax.d2p(raw))
               if (dpx <= best) {
                 best = dpx
-                c = t
+                pick = j
               }
-            }
-          }
-          const c3 = c === raw ? +c.toPrecision(3) : c
-          if (e.shiftKey) {
-            if (addSimLevel(c3)) notify(`Added ${fmt(c3)}${series.units ? ` ${series.units}` : ''} as a simulated level`)
+            })
+            useStore.getState().selectMeasure(pick >= 0 ? pick : null)
             return
           }
+          if (!(raw > 0)) return
           beforeClick.current = useStore.getState().measure
-          clickMeasure(c3)
+          clickMeasure(+raw.toPrecision(2))
         }}
         onMouseMove={(e) => {
           if (e.buttons || onModebar(e.target)) return

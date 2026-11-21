@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { fmt, pct2, withUnits } from '../format'
 import { ratesAt, separate } from '../math/separate'
 import type { Derived } from '../state/derived'
+import { evalCurve } from '../state/points'
 import { rulerPoints, useStore } from '../state/store'
 import { Scrub } from './kit'
 import { PairPlot } from './SeparateWorkspace'
@@ -48,11 +49,11 @@ export function PairPanel({ d, pair }: { d: Derived; pair: { lo: number; hi: num
   useEffect(() => setT(null), [pair.lo, pair.hi, m])
   const r = useMemo(() => {
     try {
-      return separate(m, pair.lo, pair.hi, s.metric, s.kTarget, { n: Math.max(2, s.sim.n || 3), runs: 300, seed: 1, threshold: t })
+      return separate(evalCurve(s, m), pair.lo, pair.hi, s.metric, s.kTarget, { n: Math.max(2, s.sim.n || 3), runs: 300, seed: 1, threshold: t })
     } catch {
       return null
     }
-  }, [m, pair.lo, pair.hi, s.metric, s.kTarget, s.sim.n, t])
+  }, [s, m, pair.lo, pair.hi, t])
   if (!r) return <div className="label p-4">These two points cannot be compared.</div>
   const th = t ?? r.threshold
   const rates = r.at ?? { sensitivity: r.sensitivity, specificity: r.specificity }

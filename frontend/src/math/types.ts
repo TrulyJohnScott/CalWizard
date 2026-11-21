@@ -77,6 +77,9 @@ export interface Series {
   limits: LimitSettings
   requirements: Requirement[]
   samples: Sample[]
+  /** the concentrations being evaluated (core design): separate from the calibration data; `strips` per point
+   *  (null = the default, limits.reads). 0 is always the first point and is not stored. */
+  points: { c: number; strips: number | null }[]
   /** error budget settings (spec §24): allowed total error as a fraction of c, coverage factor on the spread */
   tolerance: { tea: number; k: number }
   /** variability layers on top of the within-run curve (spec §22) */
