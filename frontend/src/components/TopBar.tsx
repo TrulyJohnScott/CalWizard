@@ -33,6 +33,9 @@ function Settings() {
   const sim = s.mode !== 'replicates'
   return (
     <div className="flex flex-col">
+      <Row label="Axes" title="Concentration across (the usual), or signal across">
+        <Seg value={ui.flip ? 's2c' : 'c2s'} options={[['c2s', 'c → S'], ['s2c', 'S → c']]} onChange={(v) => setUi({ flip: v === 's2c' })} />
+      </Row>
       {sim && (
         <>
           <Row label="Simulated n">

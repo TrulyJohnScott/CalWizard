@@ -2,7 +2,6 @@ import type { Data, Layout } from 'plotly.js'
 import { concLabel, fmt, recoveryText } from '../format'
 import { pairRow, recover } from '../math/analysis'
 import { closenessColor, closenessQ, rgbaCss } from '../math/closeness'
-import { METRIC_LABEL } from '../math/metrics'
 import type { Model } from '../math/model'
 import { hashUnit, type LevelDots } from '../math/sim'
 import type { Series } from '../math/types'
@@ -66,6 +65,22 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
   const shapes: Partial<Layout['shapes'][number]>[] = []
   const notes: Partial<Layout['annotations'][number]>[] = []
 
+  // repeat experiments: a faint fan of calibration curves behind the true one
+  if (x.repeat && x.repeat.runs.length) {
+    const cx: (number | null)[] = []
+    const sy: (number | null)[] = []
+    for (const ys of x.repeat.runs) {
+      x.repeat.concs.forEach((c, i) => {
+        cx.push(c)
+        sy.push(nn(ys[i]))
+      })
+      cx.push(null)
+      sy.push(null)
+    }
+    const n = x.repeat.runs.length
+    traces.push({ type: 'scatter', mode: 'lines', ...xy(cx, sy), line: { color: withAlpha(pal.fg, n === 1 ? 0.45 : n <= 100 ? 0.07 : 0.022), width: 1 }, hoverinfo: 'skip', connectgaps: false } as Data)
+  }
+
   // the spread as lines (spec §11): mean in the middle, ±1, ±2, ±3 SD fading outward; no shading
   const SPREAD = [
     { k: 1, width: 1.2, alpha: 0.6 },
@@ -81,22 +96,6 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
         line: { color: withAlpha(pal.accent, st.alpha), width: st.width },
         hoverinfo: 'skip',
       } as Data)
-
-  // repeat experiments: a faint fan of calibration curves behind the true one
-  if (x.repeat && x.repeat.runs.length) {
-    const cx: (number | null)[] = []
-    const sy: (number | null)[] = []
-    for (const ys of x.repeat.runs) {
-      x.repeat.concs.forEach((c, i) => {
-        cx.push(c)
-        sy.push(nn(ys[i]))
-      })
-      cx.push(null)
-      sy.push(null)
-    }
-    const n = x.repeat.runs.length
-    traces.push({ type: 'scatter', mode: 'lines', ...xy(cx, sy), line: { color: withAlpha(pal.fg, n === 1 ? 0.6 : n <= 100 ? 0.14 : 0.045), width: 1 }, hoverinfo: 'skip', connectgaps: false } as Data)
-  }
 
   // mean curve
   const u = s.units ? ` ${s.units}` : ''
@@ -292,13 +291,16 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
       const [m1, m2] = [m.mean(c1), m.mean(c2)]
       const off = 0.04 * (sHi - sLo) * (m2 >= m1 ? -1 : 1)
       const row = pairRow(x.pointCurve ?? m, c1, c2, s.metric, s.kTarget)
-      const col = closenessColor(closenessQ(row, s.metric, s.kTarget))
+      const q = closenessQ(row, s.metric, s.kTarget)
+      const col = closenessColor(q)
       const mid = 0.5 * (c1 + c2)
+      const selC = sel !== null && sel !== undefined ? x.measure.pts[sel] : null
+      if (q < 1 || c2 === selC)
       notes.push({
         ...(flip ? { x: 0.5 * (m1 + m2) + off, y: mid, xanchor: off < 0 ? 'right' : 'left' } : { x: mid, y: 0.5 * (m1 + m2) + off, yanchor: off < 0 ? 'top' : 'bottom' }),
         xref: 'x',
         yref: 'y',
-        text: cs.length > 2 ? fmt(row[s.metric]) : `${METRIC_LABEL[s.metric]} ${fmt(row[s.metric])}`,
+        text: `${fmt(q * s.kTarget, 2)}×`,
         showarrow: false,
         font: { size: 11, color: rgbaCss([col[0], col[1], col[2], 1]) },
         bgcolor: pal.panel,

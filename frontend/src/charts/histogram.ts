@@ -213,7 +213,7 @@ export function buildHistogram(h: HistogramIn): HistSpec {
     traces.push({ type: 'scatter', mode: 'text', x: px, y: py, yaxis: yr, text: pt, textposition: 'top center', textfont: { size: 9.5, color: pal.muted }, cliponaxis: false, hoverinfo: 'skip' } as Data)
     // lane name
     if (lanes.length > 1 || L.lane === 'anchors')
-      notes.push({ xref: 'paper', yref: `${yr} domain`, x: 0, y: 1, xanchor: 'left', yanchor: 'top', text: L.lane, showarrow: false, font: { size: 10, color: pal.muted } })
+      notes.push({ xref: 'paper', yref: `${yr} domain`, x: 0, y: 1, xanchor: 'left', yanchor: 'top', text: L.lane === 'anchors' ? 'your concentrations, read back' : 'calibration levels', showarrow: false, font: { size: 10, color: pal.muted } })
   }
 
   const u = s.units ? ` (${s.units})` : ''

@@ -14,7 +14,7 @@ import { usePalette } from '../theme'
 import { autoSpace } from '../state/autospace'
 import { PointsField } from './PointsField'
 import { evalCurve } from '../state/points'
-import { HistHover, ScatterHover, StepRulers } from './HoverOverlay'
+import { HistHover, ScatterHover } from './HoverOverlay'
 import { Seg } from './ui'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -194,11 +194,6 @@ export function CalibrationChart({ d, repeat = null }: { d: Derived; repeat?: Re
     const sd = ghostSrc.sdExpr ? compileExpr(ghostSrc.sdExpr, 'S') : null
     return { mean: m?.ok ? m.fn : undefined, sd: sd?.ok ? sd.fn : undefined }
   }, [ghostSrc])
-  // unit rulers start at every level and at every placed anchor (ruler point)
-  const rulerOrigins = useMemo(
-    () => [...listed.map((c) => ({ c, anchor: false })), ...(measure?.pts ?? []).filter((c) => !listed.includes(c)).map((c) => ({ c, anchor: true }))],
-    [listed, measure],
-  )
   const estimates = useMemo(() => d.exp?.first.levels.map((l) => ({ c: l.c, mean: l.mean })) ?? null, [d.exp])
   const limitTicks = useMemo(() => (ui.showLimits && d.limits ? { lod: d.limits.lod?.c ?? null, loq: d.limits.loq?.c ?? null, lob: d.limits.lob.signal } : null), [ui.showLimits, d.limits])
   const pointCurve = useMemo(() => evalCurve(series, model), [series, model])
@@ -352,18 +347,10 @@ export function CalibrationChart({ d, repeat = null }: { d: Derived; repeat?: Re
   return (
     <>
       <div className="absolute z-10 flex items-center gap-1" style={{ right: 36, top: 6 }}>
-        <Seg
-          value={ui.flip ? 's2c' : 'c2s'}
-          options={[
-            ['c2s', 'c → S', 'Concentration across, signal up (histogram below: read-back concentration)'],
-            ['s2c', 'S → c', 'Signal across, concentration up (histogram below: signal)'],
-          ]}
-          onChange={(v) => setUi({ flip: v === 's2c' })}
-        />
         <button
           className="btn"
           style={{ height: 24, fontSize: 11.5 }}
-          title={`Place anchors one ${series.metric === 'dsum' ? 'Δμ/Σσ' : series.metric === 'ssmd' ? 'SSMD' : 'Z′'} target apart, from the selected anchor (or 0) to the end of the range`}
+          title="Place round concentrations (1, 2, 5, 10, 20, 50 …) from 0, each one apart from the one below"
           onClick={() => autoSpace(d)}
         >
           Fill
@@ -398,7 +385,6 @@ export function CalibrationChart({ d, repeat = null }: { d: Derived; repeat?: Re
           {series.units ? ` ${series.units}` : ''} · Show all
         </button>
       )}
-      {ui.marginal && <StepRulers plot={ref} model={model} origins={rulerOrigins} metric={series.metric} k={series.kTarget} flip={ui.flip} />}
       <ScatterHover plot={ref} model={model} listed={listed} flip={ui.flip} onCurve={ui.marginal} />
       <div
         ref={ref}
@@ -460,14 +446,13 @@ export function CalibrationChart({ d, repeat = null }: { d: Derived; repeat?: Re
 }
 
 export function HistogramChart({ d }: { d: Derived }) {
-  const distView = useStore((s) => s.ui.distView)
   const setUi = useStore((s) => s.setUi)
   const flip = useStore((s) => s.ui.flip)
   const measure = useStore((s) => s.measure)
   const hasAnchors = !!measure
   // placing anchors flips the panel to them; clearing them flips back
   useEffect(() => setUi({ distView: hasAnchors ? 'anchors' : 'levels' }), [hasAnchors, setUi])
-  const showAnchors = hasAnchors && distView === 'anchors'
+  const showAnchors = hasAnchors
   const probe = useStore((s) => (isPending(s.measure) ? s.probe : null))
   const lad = useStore((s) => s.ladder)
   const setLadder = useStore((s) => s.setLadder)
@@ -521,18 +506,6 @@ export function HistogramChart({ d }: { d: Derived }) {
   })
   return (
     <>
-    {hasAnchors && (
-      <div className="absolute z-10" style={{ left: 66, top: 2 }}>
-        <Seg
-          value={showAnchors ? 'anchors' : 'levels'}
-          options={[
-            ['levels', 'Levels', 'Distributions of your levels'],
-            ['anchors', 'Anchors', 'Distributions of the anchors you placed (blank included)'],
-          ]}
-          onChange={(v) => setUi({ distView: v })}
-        />
-      </div>
-    )}
     <HistHover plot={ref} model={model} space={space} xRange={xRange} top={spec.top} skip={[...listed, ...(pair ?? [])]} />
     <div
       ref={ref}
