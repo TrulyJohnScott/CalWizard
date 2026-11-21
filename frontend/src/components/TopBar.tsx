@@ -136,12 +136,15 @@ function Headline({ d }: { d: Derived }) {
       >
         <RuleEditor />
       </Popover>
+      <button className="btn ghost" style={{ padding: '0 7px' }} title="What the separation rule means" aria-label="Explain the separation rule" onClick={() => useStore.getState().setUi({ explain: !useStore.getState().ui.explain })}>
+        ?
+      </button>
     </div>
   )
 }
 
 /** Name, analyte, units and signal label: the words every axis, sentence and export uses. */
-function Labels() {
+export function Labels() {
   const s = useActive()
   const patch = useStore((x) => x.patch)
   const all = useStore((x) => x.series)
@@ -247,8 +250,6 @@ export function TopBar({ d }: { d: Derived }) {
         <IconGrid />
         <span className="font-semibold tracking-tight">Cal Wizard</span>
       </button>
-      <span className="text-faint">/</span>
-      <Labels />
       <div className="flex-1" />
       <Headline d={d} />
       <span className="mx-0.5 h-4 border-l border-line" />

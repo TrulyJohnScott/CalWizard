@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { CalibrationChart, HistogramChart, useLinkedSignalAxis } from './components/Charts'
 import { LeftPanel } from './components/LeftPanel'
+import { Explainer } from './components/Explainer'
 import { PairPanel, selectedPair } from './components/PairPanel'
 import { ReadPanel } from './components/ReadPanel'
 import { Sentence } from './components/Sentence'
@@ -28,6 +29,7 @@ function CurveWorkspace({ d }: { d: Derived }) {
   const flip = useStore((s) => s.ui.flip)
   const reps = useStore((s) => s.ui.repeat)
   const measure = useStore((s) => s.measure)
+  const explain = useStore((s) => s.ui.explain)
   useLinkedSignalAxis(flip)
   const pair = selectedPair(d, measure)
   const repeat = useMemo(() => {
@@ -46,7 +48,7 @@ function CurveWorkspace({ d }: { d: Derived }) {
         </div>
         {/* bottom quarter: the histograms or the selected pair, and the sentence */}
         <div className="flex min-h-[170px] flex-1 basis-0 flex-col border-t border-line">
-          <div className="relative min-h-0 flex-1">{pair ? <PairPanel d={d} pair={pair} /> : <HistogramChart d={d} />}</div>
+          <div className="relative min-h-0 flex-1">{explain ? <Explainer d={d} pair={pair} /> : pair ? <PairPanel d={d} pair={pair} /> : <HistogramChart d={d} />}</div>
           <Sentence d={d} repeat={repeat} />
         </div>
       </main>

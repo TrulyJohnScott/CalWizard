@@ -10,6 +10,7 @@ import { FitList, useAutoFit } from './FitPanel'
 import { CurveLevers } from './CurveLevers'
 import { StatsTable } from './StatsTable'
 import { TableEditor } from './TableEditor'
+import { Labels } from './TopBar'
 import { IconChevron, Seg } from './ui'
 
 type View = 'data' | 'stats' | 'function'
@@ -76,6 +77,9 @@ export function LeftPanel({ d }: { d: Derived }) {
         className="absolute inset-y-0 left-0 z-20 flex flex-col overflow-y-auto border-r border-line bg-bg p-3"
         style={{ width: wide ? 'min(60vw, 900px)' : '100%', transition: 'width 120ms ease-out' }}
       >
+        <div className="-mx-1 mb-2">
+          <Labels />
+        </div>
         <div className="mb-1 flex items-center justify-between">
           <Seg<View>
             value={view}

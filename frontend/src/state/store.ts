@@ -30,6 +30,8 @@ export interface Ui {
   repeat: 0 | 1 | 100 | 1000
   /** LoD / LoQ ticks on the curve's concentration axis */
   showLimits: boolean
+  /** the explainer of the separation rule in the bottom quarter (core design) */
+  explain: boolean
   /** Separate workspace: the two concentrations compared (null = first two positive levels) and n per side */
   sep: { a: number; b: number } | null
   sepN: number
@@ -185,6 +187,7 @@ const defaultUi = (): Ui => ({
   whatIf: false,
   repeat: 0,
   showLimits: true,
+  explain: false,
   sep: null,
   sepN: 3,
   plan: { nBlank: 20, nLow: 20, low: null, seed: 1 },
@@ -529,4 +532,13 @@ useStore.subscribe((s, prev) => {
   const st = useStore.getState()
   const act = st.series.find((x) => x.id === st.activeId)
   if (act?.points?.length) useStore.setState({ measure: { pts: act.points.map((p) => p.c), sel: null } })
+}
+
+try {
+  if (!localStorage.getItem('calwizard.explained')) {
+    localStorage.setItem('calwizard.explained', '1')
+    useStore.setState((st) => ({ ui: { ...st.ui, explain: true } }))
+  }
+} catch {
+  /* storage unavailable */
 }
