@@ -650,6 +650,15 @@ concentration. `calwizard import FILE [--conc COL --signal COL[,COL…] --name N
 
 ## 21. Workspaces (GUI v3)
 
+> **v4 (branch `core-screen`): one screen replaces the workspace tabs in the GUI**, as laid out in
+> `ideation/CORE_DESIGN.md`. Left: define the curve (Data | Stats | Function) and adjust it (background, top, midpoint,
+> noise). Middle: the curve with ±1/2/3 SD lines, points from 0 (click to add, drag to slide, Fill places the
+> separable steps), Repeat (once / ×1 / ×100 / ×1000 simulated experiments from the curve as the truth, each rebuilt
+> by straight lines through its means), then below it the histograms or, with a point selected, that point against
+> the one below (gaussians, a settable threshold, ROC, rates per 1000), and one sentence. Right: values to
+> concentrations with range and flag; a row click shows its reading line. The workspace components below stay for
+> the report; their tabs, the What-if bar and Present are gone from the screen. Everything remains in the CLI and API.
+
 **User stories.** Each workspace serves one person at one moment and shows nothing they do not need then.
 
 | Who, when | Wants | Workspace | Sees |

@@ -6,7 +6,7 @@ import { kForError, kText, pctText, ruleError } from '../math/rule'
 import type { MetricKey } from '../math/types'
 import type { Derived } from '../state/derived'
 import { useActive, useStore, type Theme, type Workspace } from '../state/store'
-import { IconGrid, IconPlay, IconShare, IconWand } from './kit'
+import { IconGrid, IconShare } from './kit'
 import { copyShareLink, saveReportHtml } from './Present'
 import { IconGear, IconRedo, IconUndo, NumField, Popover, Row, Seg } from './ui'
 
@@ -241,11 +241,7 @@ export function TopBar({ d }: { d: Derived }) {
   const redo = useStore((x) => x.redo)
   const canUndo = useStore((x) => x.past.length > 0)
   const canRedo = useStore((x) => x.future.length > 0)
-  const ws = useStore((x) => x.ui.workspace)
-  const whatIf = useStore((x) => x.ui.whatIf)
-  const setUi = useStore((x) => x.setUi)
   const openDialog = useStore((x) => x.openDialog)
-  const setPresent = useStore((x) => x.setPresent)
   return (
     <header className="topbar flex h-11 shrink-0 items-center gap-1.5 border-b border-line px-3">
       <button className="btn ghost" onClick={() => openDialog('start')} title="Examples and your own data" style={{ padding: '0 6px' }}>
@@ -254,20 +250,9 @@ export function TopBar({ d }: { d: Derived }) {
       </button>
       <span className="text-faint">/</span>
       <Labels />
-      <nav className="tabs ml-2 flex items-center" role="tablist" aria-label="Workspace">
-        {WORKSPACES.map((w) => (
-          <button key={w.id} role="tab" aria-selected={ws === w.id} className="tab" data-soon={w.soon || undefined} title={w.tip} onClick={() => setUi({ workspace: w.id })}>
-            {w.label}
-          </button>
-        ))}
-      </nav>
       <div className="flex-1" />
       <Headline d={d} />
       <span className="mx-0.5 h-4 border-l border-line" />
-      <button className="btn" data-on={whatIf || d.model.adjusted} onClick={() => setUi({ whatIf: !whatIf })} title="What if: move the background, the top, the midpoint or the noise and watch every claim follow" style={d.model.adjusted ? { color: 'var(--accent)', borderColor: 'var(--accent)' } : undefined}>
-        <IconWand />
-        <span className="btn-text">What if</span>
-      </button>
       <button className="btn ghost" style={{ padding: '0 5px' }} disabled={!canUndo} onClick={undo} title="Undo (Ctrl+Z)" aria-label="Undo">
         <IconUndo />
       </button>
@@ -275,10 +260,6 @@ export function TopBar({ d }: { d: Derived }) {
         <IconRedo />
       </button>
       <ShareMenu d={d} />
-      <button className="btn" onClick={() => setPresent(true)} title="Present: the report full-screen, nothing editable (P)">
-        <IconPlay />
-        <span className="btn-text">Present</span>
-      </button>
       <Popover
         trigger={(open, toggle) => (
           <button className="btn ghost" data-on={open} onClick={toggle} title="Settings" style={{ padding: '0 6px' }}>

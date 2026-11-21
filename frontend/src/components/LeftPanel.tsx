@@ -7,6 +7,7 @@ import type { Derived } from '../state/derived'
 import { useStore } from '../state/store'
 import { EquationsEditor, ExprField } from './EquationsEditor'
 import { FitList, useAutoFit } from './FitPanel'
+import { CurveLevers } from './CurveLevers'
 import { StatsTable } from './StatsTable'
 import { TableEditor } from './TableEditor'
 import { IconChevron, Seg } from './ui'
@@ -133,6 +134,7 @@ export function LeftPanel({ d }: { d: Derived }) {
 
         {view === 'data' && <TableEditor d={d} onFocusChange={setWide} data={derivedTable ?? undefined} />}
         {view === 'stats' && <StatsTable d={d} />}
+        <CurveLevers d={d} />
         {(series.layers ?? []).some((l) => l.on) && (
           <button className="link mt-4 self-start text-[11.5px]" onClick={() => setUi({ workspace: 'variability' })} title="The spread shown includes these layers; open the Variability workspace to change them">
             + {(series.layers ?? []).filter((l) => l.on).map((l) => l.name).join(', ')} variability included

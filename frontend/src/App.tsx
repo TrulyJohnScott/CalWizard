@@ -1,22 +1,18 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { CalibrationChart, HistogramChart, useLinkedSignalAxis } from './components/Charts'
 import { LeftPanel } from './components/LeftPanel'
-import { LevelsSidebar } from './components/LevelsSidebar'
-import { LimitsWorkspace } from './components/LimitsWorkspace'
-import { Present } from './components/Present'
-import { ReadWorkspace } from './components/ReadWorkspace'
-import { SeparateWorkspace } from './components/SeparateWorkspace'
+import { PairPanel, selectedPair } from './components/PairPanel'
+import { ReadPanel } from './components/ReadPanel'
+import { Sentence } from './components/Sentence'
 import { ImportDialog, StartDialog } from './components/StartDialog'
-import { StripsWorkspace } from './components/StripsWorkspace'
-import { VariabilityWorkspace } from './components/VariabilityWorkspace'
 import { Toast } from './components/Toast'
-import { TopBar, WORKSPACES } from './components/TopBar'
-import { WhatIfBar } from './components/WhatIfBar'
+import { TopBar } from './components/TopBar'
 import { decodeShare, shareFromHash } from './share'
 import { undoKey } from './state/keys'
 import { importFile, importText } from './state/importData'
 import { useDerived, type Derived } from './state/derived'
-import { sanitizeSeries, useStore } from './state/store'
+import { repeatRuns } from './state/repeat'
+import { rulerPoints, sanitizeSeries, useStore } from './state/store'
 import './theme'
 
 const typing = (t: EventTarget | null) => {
@@ -24,31 +20,40 @@ const typing = (t: EventTarget | null) => {
   return !!el && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName))
 }
 
-/** The original three-pane view: inputs, the two linked charts, levels. */
+/**
+ * The one screen (ideation/CORE_DESIGN.md): left = make and adjust the curve, middle = understand its separation
+ * (curve, points, the selected pair or the histograms, one sentence), right = read values to concentrations.
+ */
 function CurveWorkspace({ d }: { d: Derived }) {
   const flip = useStore((s) => s.ui.flip)
+  const reps = useStore((s) => s.ui.repeat)
+  const measure = useStore((s) => s.measure)
   useLinkedSignalAxis(flip)
+  const pair = selectedPair(d, measure)
+  const repeat = useMemo(() => {
+    if (!reps) return null
+    const pts = rulerPoints(measure, null)
+    const concs = [...d.listed, ...pts]
+    const mid = pair?.hi ?? (pts.length > 1 ? pts[Math.ceil((pts.length - 1) / 2)] : d.listed[Math.floor(d.listed.length / 2)])
+    return repeatRuns(d.model, concs, Math.max(1, d.series.sim.n || 3), reps, mid > 0 ? mid : null)
+  }, [reps, d.model, d.listed, d.series.sim.n, measure, pair?.hi])
   return (
     <>
       <LeftPanel d={d} />
-      <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
-        <div className="relative min-h-[240px] flex-[2]">
-          <CalibrationChart d={d} />
+      <main className="flex min-w-0 flex-1 flex-col">
+        <div className="relative min-h-[260px] flex-[3]">
+          <CalibrationChart d={d} repeat={repeat} />
         </div>
-        <div className="relative min-h-[150px] flex-1 border-t border-line">
-          <HistogramChart d={d} />
-        </div>
+        <div className="relative min-h-[170px] flex-[2] border-t border-line">{pair ? <PairPanel d={d} pair={pair} /> : <HistogramChart d={d} />}</div>
+        <Sentence d={d} repeat={repeat} />
       </main>
-      <LevelsSidebar d={d} />
+      <ReadPanel d={d} />
     </>
   )
 }
 
 export default function App() {
   const d = useDerived()
-  const ws = useStore((s) => s.ui.workspace)
-  const whatIf = useStore((s) => s.ui.whatIf)
-  const present = useStore((s) => s.present)
   const dialog = useStore((s) => s.dialog)
 
   useEffect(() => {
@@ -61,14 +66,11 @@ export default function App() {
         return st.clearMeasure()
       }
       const busy = typing(e.target)
-      if ((e.key === 'Backspace' || e.key === 'Delete') && !busy && st.measure && st.ui.workspace === 'curve') {
+      if ((e.key === 'Backspace' || e.key === 'Delete') && !busy && st.measure) {
         e.preventDefault()
         return st.popMeasure()
       }
       if (!busy && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        const i = '123456789'.slice(0, WORKSPACES.length).indexOf(e.key)
-        if (i >= 0 && e.key.length === 1) return st.setUi({ workspace: WORKSPACES[i].id })
-        if (e.key === 'p' || e.key === 'P') return st.setPresent(true)
         if (e.key === 'w' || e.key === 'W') return st.setUi({ whatIf: !st.ui.whatIf })
       }
       const action = undoKey(e)
@@ -126,20 +128,13 @@ export default function App() {
     <>
       <div className="app-shell flex h-full flex-col">
         <TopBar d={d} />
-        {whatIf && <WhatIfBar d={d} />}
-        <div className="flex min-h-0 flex-1" key={ws}>
-          {ws === 'curve' && <CurveWorkspace d={d} />}
-          {ws === 'separate' && <SeparateWorkspace d={d} />}
-          {ws === 'limits' && <LimitsWorkspace d={d} />}
-          {ws === 'read' && <ReadWorkspace d={d} />}
-          {ws === 'variability' && <VariabilityWorkspace d={d} />}
-          {ws === 'strips' && <StripsWorkspace d={d} />}
+        <div className="flex min-h-0 flex-1">
+          <CurveWorkspace d={d} />
         </div>
         <Toast />
         {dialog === 'start' && <StartDialog />}
         {dialog === 'import' && <ImportDialog />}
       </div>
-      {present && <Present d={d} />}
     </>
   )
 }

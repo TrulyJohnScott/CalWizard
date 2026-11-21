@@ -8,6 +8,7 @@ import { inverse } from '../math/analysis'
 import { compileExpr } from '../math/expr'
 import { dragHandle, handles } from '../math/whatif'
 import type { Derived } from '../state/derived'
+import type { RepeatResult } from '../state/repeat'
 import { breakCoalescing, isPending, rulerPoints, useStore, type Measure } from '../state/store'
 import { usePalette } from '../theme'
 import { autoSpace } from '../state/autospace'
@@ -166,7 +167,7 @@ function dragTargets(d: Derived, editable: boolean, measure: { pts: number[] } |
   return out
 }
 
-export function CalibrationChart({ d }: { d: Derived }) {
+export function CalibrationChart({ d, repeat = null }: { d: Derived; repeat?: RepeatResult | null }) {
   const ui = useStore((s) => s.ui)
   const measure = useStore((s) => s.measure)
   const clickMeasure = useStore((s) => s.clickMeasure)
@@ -201,8 +202,8 @@ export function CalibrationChart({ d }: { d: Derived }) {
   const estimates = useMemo(() => d.exp?.first.levels.map((l) => ({ c: l.c, mean: l.mean })) ?? null, [d.exp])
   const limitTicks = useMemo(() => (ui.showLimits && d.limits ? { lod: d.limits.lod?.c ?? null, loq: d.limits.loq?.c ?? null } : null), [ui.showLimits, d.limits])
   const spec = useMemo(
-    () => buildCalibration({ series, model, dots, listed, flip: ui.flip, jitter: ui.jitter, measure, live, range, focus, viewRev, reading, probe: null, onCurve: ui.marginal, estimates, ghost, ladderTicks: d.resolvable, whatIf: ui.whatIf, limitTicks, pal }),
-    [series, model, dots, listed, ui.flip, ui.jitter, measure, live, range, focus, viewRev, reading, ui.marginal, estimates, ghost, d.resolvable, ui.whatIf, limitTicks, pal],
+    () => buildCalibration({ repeat, series, model, dots, listed, flip: ui.flip, jitter: ui.jitter, measure, live, range, focus, viewRev, reading, probe: null, onCurve: ui.marginal, estimates, ghost, ladderTicks: d.resolvable, whatIf: ui.whatIf, limitTicks, pal }),
+    [repeat, series, model, dots, listed, ui.flip, ui.jitter, measure, live, range, focus, viewRev, reading, ui.marginal, estimates, ghost, d.resolvable, ui.whatIf, limitTicks, pal],
   )
   const ref = usePlot(spec)
   const down = useRef<{ x: number; y: number } | null>(null)
@@ -364,25 +365,26 @@ export function CalibrationChart({ d }: { d: Derived }) {
           title={`Place anchors one ${series.metric === 'dsum' ? 'Δμ/Σσ' : series.metric === 'ssmd' ? 'SSMD' : 'Z′'} target apart, from the selected anchor (or 0) to the end of the range`}
           onClick={() => autoSpace(d)}
         >
-          Auto-space
+          Fill
         </button>
+        <Seg
+          value={String(ui.repeat) as '0' | '1' | '100' | '1000'}
+          options={[
+            ['0', 'Once', 'The curve as given (no simulated repeats)'],
+            ['1', '×1', 'One simulated repeat of the experiment: the same strips per point, drawn from this curve as the truth'],
+            ['100', '×100', '100 simulated repeats: how much a calibration could differ by chance'],
+            ['1000', '×1000', '1000 simulated repeats'],
+          ]}
+          onChange={(v) => setUi({ repeat: Number(v) as 0 | 1 | 100 | 1000 })}
+        />
         {measure && (
           <button className="btn" style={{ height: 24, fontSize: 11.5 }} title="Remove all anchors (Esc)" onClick={() => useStore.getState().clearMeasure()}>
             Clear
           </button>
         )}
-        {reading === null ? (
-          <button
-            className="btn"
-            style={{ height: 24, fontSize: 11.5 }}
-            title="Place a signal line and read back its concentration (drag the line to move it)"
-            onClick={() => setReading(+(0.5 * (range[0] + range[1])).toPrecision(4))}
-          >
-            Read signal
-          </button>
-        ) : (
-          <button className="btn" style={{ height: 24, fontSize: 11.5 }} title="Remove the signal line (Esc)" onClick={() => setReading(null)}>
-            Read signal ×
+        {reading !== null && (
+          <button className="btn" style={{ height: 24, fontSize: 11.5 }} title="Remove the reading line (Esc)" onClick={() => setReading(null)}>
+            Reading ×
           </button>
         )}
       </div>

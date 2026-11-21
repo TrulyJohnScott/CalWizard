@@ -26,6 +26,8 @@ export interface Ui {
   workspace: Workspace
   /** what-if bar and the drag handles on the curve */
   whatIf: boolean
+  /** repeat the experiment this many times from the true curve (0 = off; core design) */
+  repeat: 0 | 1 | 100 | 1000
   /** LoD / LoQ ticks on the curve's concentration axis */
   showLimits: boolean
   /** Separate workspace: the two concentrations compared (null = first two positive levels) and n per side */
@@ -181,6 +183,7 @@ const defaultUi = (): Ui => ({
   theme: 'system',
   workspace: 'curve',
   whatIf: false,
+  repeat: 0,
   showLimits: true,
   sep: null,
   sepN: 3,

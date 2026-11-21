@@ -13,6 +13,8 @@ import { axisStyle, baseLayout, concRange, linspace, MARGIN, nn } from './common
 import type { PlotSpec } from './usePlot'
 
 export interface CalibrationIn {
+  /** simulated repeat experiments: one curve per run through the run's mean signals */
+  repeat?: { concs: number[]; runs: number[][] } | null
   series: Series
   model: Model
   dots: LevelDots[]
@@ -77,6 +79,22 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
         line: { color: withAlpha(pal.accent, st.alpha), width: st.width },
         hoverinfo: 'skip',
       } as Data)
+
+  // repeat experiments: a faint fan of calibration curves behind the true one
+  if (x.repeat && x.repeat.runs.length) {
+    const cx: (number | null)[] = []
+    const sy: (number | null)[] = []
+    for (const ys of x.repeat.runs) {
+      x.repeat.concs.forEach((c, i) => {
+        cx.push(c)
+        sy.push(nn(ys[i]))
+      })
+      cx.push(null)
+      sy.push(null)
+    }
+    const n = x.repeat.runs.length
+    traces.push({ type: 'scatter', mode: 'lines', ...xy(cx, sy), line: { color: withAlpha(pal.fg, n === 1 ? 0.6 : n <= 100 ? 0.14 : 0.045), width: 1 }, hoverinfo: 'skip', connectgaps: false } as Data)
+  }
 
   // mean curve
   const u = s.units ? ` ${s.units}` : ''
