@@ -173,3 +173,27 @@ def to_series(parsed: dict, base: dict | None = None) -> dict:
     if parsed["signalLabel"]:
         out["signalLabel"] = parsed["signalLabel"]
     return out
+
+
+def xlsx_text(data: bytes) -> str:
+    """The most table-like sheet of an Excel workbook as tab-separated text (core design: load data from Excel).
+    The sheet with the most numeric cells wins; empty rows are dropped; values are written as Excel shows them."""
+    import io
+
+    from openpyxl import load_workbook
+
+    wb = load_workbook(io.BytesIO(data), read_only=True, data_only=True)
+    best, score = "", -1
+    for ws in wb.worksheets:
+        lines, nums = [], 0
+        for row in ws.iter_rows(values_only=True):
+            cells = ["" if v is None else (repr(v) if isinstance(v, float) else str(v)) for v in row]
+            nums += sum(isinstance(v, (int, float)) and not isinstance(v, bool) for v in row)
+            while cells and cells[-1] == "":
+                cells.pop()
+            if any(c.strip() for c in cells):
+                lines.append("\t".join(cells))
+        if nums > score:
+            best, score = "\n".join(lines) + "\n", nums
+    wb.close()
+    return best

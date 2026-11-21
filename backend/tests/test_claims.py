@@ -554,3 +554,19 @@ def test_split_noise_scales_the_floor_and_the_cv_part_separately(fs, gs):
         assert float(m.sd(c)) == pytest.approx(math.sqrt((fs * s0) ** 2 + gs**2 * (float(m0.sd(c)) ** 2 - s0**2)))
     b = compile_series(bake(Series.model_validate({**body, "adjust": {"floorScale": fs, "cvScale": gs}})))
     assert np.allclose(b.sd([0, 10, 80]), m.sd([0, 10, 80]), rtol=1e-9)
+
+
+def test_import_from_excel_picks_the_data_sheet(tmp_path, capsys):
+    from openpyxl import Workbook
+    wb = Workbook()
+    wb.active.title = "Notes"
+    wb.active.append(["Run 12, reader B"])
+    ws = wb.create_sheet("Plate")
+    for row in (["Conc (ng/mL)", "Rep 1", "Rep 2"], [0, 48, 52], [5, 90, 101], [25, 400, 410]):
+        ws.append(row)
+    f = tmp_path / "plate.xlsx"
+    wb.save(f)
+    r = IM.parse_reader(IM.xlsx_text(f.read_bytes()))
+    assert r["units"] == "ng/mL" and r["cells"][1] == [90, 101]
+    assert cli.main(["import", str(f)]) == 0
+    assert json.loads(capsys.readouterr().out)["series"]["replicates"]["concs"] == [0, 5, 25]

@@ -70,8 +70,24 @@ export function importText(text: string, name?: string): boolean {
   return false
 }
 
+/** An Excel workbook becomes its most table-like sheet as tab-separated text (read on the server). */
+async function excelText(f: File): Promise<string | null> {
+  try {
+    const r = await fetch('/api/import/xlsx', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: await f.arrayBuffer() })
+    const j = (await r.json()) as { ok: boolean; text?: string }
+    return j.ok && j.text ? j.text : null
+  } catch {
+    return null
+  }
+}
+
 export async function importFile(f: File): Promise<boolean> {
-  const text = await f.text()
+  const excel = /\.xls[xm]$/i.test(f.name)
+  const text = excel ? await excelText(f) : await f.text()
+  if (text === null) {
+    useStore.getState().notify(`Could not read ${f.name}: Excel files need the API server (port 8000)`, false)
+    return false
+  }
   const ok = importText(text, f.name.replace(/\.[^.]+$/, '').replace(/\.calwizard$/, ''))
   if (!ok) useStore.getState().notify(`Could not find a table or a saved assay in ${f.name}`, false)
   return ok

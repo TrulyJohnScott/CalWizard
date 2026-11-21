@@ -369,6 +369,15 @@ def import_reader(req: ImportRequest):
     return ok({"ok": True, **parsed})
 
 
+@router.post("/import/xlsx")
+async def import_xlsx(request: Request):
+    """An Excel workbook (raw bytes) -> its most table-like sheet as tab-separated text, for the reader import."""
+    try:
+        return {"ok": True, "text": IM.xlsx_text(await request.body())}
+    except Exception:  # noqa: BLE001
+        return {"ok": False, "error": "not a readable Excel workbook (.xlsx)"}
+
+
 @router.post("/bake")
 def bake_series(req: SeriesRequest):
     _compile(req.series)

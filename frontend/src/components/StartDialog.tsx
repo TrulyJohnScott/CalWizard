@@ -94,7 +94,7 @@ export function StartDialog() {
           <input
             ref={file}
             type="file"
-            accept=".csv,.tsv,.txt,.json,.html,text/csv,text/plain,application/json,text/html"
+            accept=".csv,.tsv,.txt,.json,.html,.xlsx,.xlsm"
             hidden
             onChange={(e) => {
               const f = e.target.files?.[0]

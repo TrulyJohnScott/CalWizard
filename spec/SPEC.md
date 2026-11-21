@@ -666,7 +666,10 @@ concentrations. Concentration cells accept numbers, numbers with a unit suffix, 
 (`C line`), else the first column
 matching `T/C|ratio`, else `test|signal|intensity|peak|area…`, else the first numeric column. Units come from
 `(…)`/`[…]` in the concentration header. Returns `null` for anything else (concentrations-across-the-top tables keep
-using §11's paste). `signal` may name several columns separated by commas (`"Rep 1,Rep 2"`). The series gets `cMax` = the highest
+using §11's paste). Excel (v4): `xlsx_text(bytes)` turns the workbook's most table-like sheet (the one with the most numeric cells) into
+tab-separated text, which the parser above then reads; `calwizard import FILE.xlsx` and `POST /api/import/xlsx` (raw
+bytes → `{ok, text}`). The GUI has "Load data from a file…" (CSV, TSV, Excel) in the Data and Stats views; files can
+also be pasted or dropped anywhere. `signal` may name several columns separated by commas (`"Rep 1,Rep 2"`). The series gets `cMax` = the highest
 concentration. `calwizard import FILE [--conc COL --signal COL[,COL…] --name N]` → `{series, columns, …}`;
 `POST /api/import`.
 

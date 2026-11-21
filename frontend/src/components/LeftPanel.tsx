@@ -7,6 +7,7 @@ import type { Derived } from '../state/derived'
 import { useStore } from '../state/store'
 import { EquationsEditor, ExprField } from './EquationsEditor'
 import { FitList, useAutoFit } from './FitPanel'
+import { importFile } from '../state/importData'
 import { CurveLevers } from './CurveLevers'
 import { StatsTable } from './StatsTable'
 import { TableEditor } from './TableEditor'
@@ -147,6 +148,21 @@ export function LeftPanel({ d }: { d: Derived }) {
             </div>
           ))}
 
+        {view !== 'function' && (
+          <label className="btn mb-2 self-start" title="CSV, TSV or Excel: a column of concentrations and one or more of readings (or mean and SD); you can also paste or drop a file anywhere">
+            Load data from a file…
+            <input
+              type="file"
+              accept=".csv,.tsv,.txt,.xlsx,.xlsm"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                e.target.value = ''
+                if (f) void importFile(f)
+              }}
+            />
+          </label>
+        )}
         {view === 'data' && <TableEditor d={d} onFocusChange={setWide} data={derivedTable ?? undefined} />}
         {view === 'stats' && <StatsTable d={d} />}
         <CurveLevers d={d} />

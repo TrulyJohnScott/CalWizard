@@ -69,7 +69,7 @@ JSON on stderr, exit 1 (invalid expression/model) or 2 (bad input).
 | `calwizard points SERIES [--metric M --k K]` | your concentrations (`points`, with strips): each against the one below, apart or not, misread rate |
 | `calwizard requirements SERIES` | the series' requirements: met or not, measured value, SD factor needed (§17) |
 | `calwizard read SERIES [S...] [--conf P] [-o file.xlsx]` | signals → concentrations with range, CV and flag; optional Excel sheet (§18) |
-| `calwizard import FILE [--conc COL --signal COL[,COL...] --name N]` | reader export (CSV / TSV) → Series (§19) |
+| `calwizard import FILE [--conc COL --signal COL[,COL...] --name N]` | reader export (CSV / TSV / Excel .xlsx) → Series (§19) |
 | `calwizard bake SERIES` | fold the what-if layer into the equations / table (§14) |
 | `calwizard compare A B [...] [-c C...]` | conditions: several series against the first (bias per level, claims, spread as a layer; §23) |
 | `calwizard tolerance SERIES [-c C... --k K --tea T]` | error budget per level: bias + k·SD of every source, total and worst-case stack (§24) |

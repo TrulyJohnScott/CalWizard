@@ -297,7 +297,10 @@ def cmd_read(args) -> None:
 
 def cmd_import(args) -> None:
     try:
-        text = sys.stdin.read() if args.input == "-" else Path(args.input).read_text(encoding="utf-8-sig")
+        if args.input != "-" and Path(args.input).suffix.lower() in (".xlsx", ".xlsm"):
+            text = IM.xlsx_text(Path(args.input).read_bytes())  # Excel: the most table-like sheet
+        else:
+            text = sys.stdin.read() if args.input == "-" else Path(args.input).read_text(encoding="utf-8-sig")
     except OSError as e:
         raise CliError(f"cannot read {args.input!r}: {e.strerror or e}") from e
 
