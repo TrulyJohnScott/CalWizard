@@ -41,7 +41,7 @@ export function ReadPanel({ d }: { d: Derived }) {
   const u = s.units
 
   return (
-    <aside className="flex w-[260px] shrink-0 flex-col gap-2 overflow-y-auto border-l border-line p-3">
+    <aside className="flex w-1/4 min-w-[220px] shrink-0 flex-col gap-2 overflow-y-auto border-l border-line p-3">
       <span className="label">Read values</span>
       <textarea
         className="mono w-full resize-y rounded border border-line bg-transparent p-2 text-[12px]"

@@ -41,11 +41,14 @@ function CurveWorkspace({ d }: { d: Derived }) {
     <>
       <LeftPanel d={d} />
       <main className="flex min-w-0 flex-1 flex-col">
-        <div className="relative min-h-[260px] flex-[3]">
+        <div className="relative min-h-[260px] flex-[3] basis-0">
           <CalibrationChart d={d} repeat={repeat} />
         </div>
-        <div className="relative min-h-[170px] flex-[2] border-t border-line">{pair ? <PairPanel d={d} pair={pair} /> : <HistogramChart d={d} />}</div>
-        <Sentence d={d} repeat={repeat} />
+        {/* bottom quarter: the histograms or the selected pair, and the sentence */}
+        <div className="flex min-h-[170px] flex-1 basis-0 flex-col border-t border-line">
+          <div className="relative min-h-0 flex-1">{pair ? <PairPanel d={d} pair={pair} /> : <HistogramChart d={d} />}</div>
+          <Sentence d={d} repeat={repeat} />
+        </div>
       </main>
       <ReadPanel d={d} />
     </>

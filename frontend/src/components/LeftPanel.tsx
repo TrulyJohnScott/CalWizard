@@ -71,7 +71,7 @@ export function LeftPanel({ d }: { d: Derived }) {
   const bestSd = fit.res?.sdFits.find((f) => f.ok && f.expr)
 
   return (
-    <aside className="relative w-[304px] shrink-0">
+    <aside className="relative w-1/4 min-w-[260px] shrink-0">
       <div
         className="absolute inset-y-0 left-0 z-20 flex flex-col overflow-y-auto border-r border-line bg-bg p-3"
         style={{ width: wide ? 'min(60vw, 900px)' : '100%', transition: 'width 120ms ease-out' }}
