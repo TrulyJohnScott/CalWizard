@@ -263,6 +263,16 @@ def cmd_separate(args) -> None:
         raise CliError(str(e)) from e
 
 
+def cmd_points(args) -> None:
+    from . import points as P
+
+    s = _load_series(args.series)
+    try:
+        _out(P.steps(_compile(s), args.metric, args.k))
+    except ValueError as e:
+        raise CliError(str(e)) from e
+
+
 def cmd_requirements(args) -> None:
     _out(R.check(_compile(_load_series(args.series))))
 
@@ -430,6 +440,8 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--alpha", type=float, default=0.05)
     sp.add_argument("--threshold", type=float, default=None,
                     help="also give sensitivity / specificity at this fixed signal threshold (the shipped cut-off)")
+    sp = add("points", cmd_points, "your concentrations (Series.points): each against the one below, with its strips: apart or not")
+    metric_opts(sp)
     add("requirements", cmd_requirements, "check the series' requirements: met or not, measured value, SD factor needed")
     sp = add("read", cmd_read, "read signals back to concentrations (the series' samples, or the signals given)")
     sp.add_argument("signals", type=float, nargs="*", metavar="S")

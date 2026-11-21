@@ -66,6 +66,7 @@ JSON on stderr, exit 1 (invalid expression/model) or 2 (bad input).
 | `calwizard limits SERIES [--alpha A --beta B --cv CV --reads N --low C... --no-profile]` | LoB / LoD / LoQ, precision profile; `data` = classical estimate from blank + low replicates (spec §15) |
 | `calwizard plan SERIES [--n-blank N --n-low N --low C... --runs R --seed S --conf P]` | simulated LoB / LoD verification experiment: design and how widely the estimates scatter |
 | `calwizard separate SERIES C1 C2 [--metric M --k K --n N --runs R --seed S --threshold T]` | two concentrations in depth: cut-off, sensitivity, AUC, replicates needed, power (§16) |
+| `calwizard points SERIES [--metric M --k K]` | your concentrations (`points`, with strips): each against the one below, apart or not, misread rate |
 | `calwizard requirements SERIES` | the series' requirements: met or not, measured value, SD factor needed (§17) |
 | `calwizard read SERIES [S...] [--conf P] [-o file.xlsx]` | signals → concentrations with range, CV and flag; optional Excel sheet (§18) |
 | `calwizard import FILE [--conc COL --signal COL[,COL...] --name N]` | reader export (CSV / TSV) → Series (§19) |

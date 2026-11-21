@@ -524,3 +524,22 @@ def test_the_data_curve_is_4pl_unless_another_is_clearly_better_and_it_defines_t
     assert F.choose([four, {**lin, "aicc": 7.0}])["kind"] == "linear"
     m = model(**TABLE, dataFit={"meanExpr": "5 + 2*c", "label": "Linear"})
     assert float(m.mean(3)) == pytest.approx(11)
+
+
+def test_points_each_against_the_one_below_with_their_strips():
+    from app import points as P
+    # LINE: slope 20, sd 10; classify (dsum): 0 -> 2 is a gap of 40 over 20 = 2.0; 4 strips at 2 make it 40/(10+5)
+    m = model(**LINE, metric="dsum", kTarget=2, points=[{"c": 2}, {"c": 4, "strips": 4}])
+    r = P.steps(m)
+    assert [x["n"] for x in r["steps"]] == pytest.approx([2.0, 40 / (5 + 10)])
+    assert r["points"][2]["sd"] == pytest.approx(5) and r["apart"] == 2
+
+
+def test_cli_points_and_excel_sheets(capsys, tmp_path):
+    body = {**LINE, "points": [{"c": 2}, {"c": 4}], "samples": [{"id": "a", "signal": 600}]}
+    f = tmp_path / "s.json"
+    f.write_text(json.dumps(body))
+    assert cli.main(["points", str(f)]) == 0
+    assert json.loads(capsys.readouterr().out)["total"] == 2
+    wb = build_workbook(Series.model_validate(body))
+    assert {"Points", "Limits", "Read-back"} <= set(wb.sheetnames)

@@ -610,6 +610,14 @@ passes the measured curve's threshold while a what-if is on); `--threshold T` on
 `stepsBetween`, `whyNot`, `readback` (§12 recover of each mean) and `power` (§13 simulate on the two concentrations with
 `n` each: `pSig`, `pPass`). Headless: `calwizard separate SERIES C1 C2 [...]`, `POST /api/separate`.
 
+## 16.5 Your concentrations (v4, core design)
+
+`Series.points = [{c, strips}]` (strips null = `limits.reads`): the concentrations being evaluated, separate from the
+calibration data; 0 is always first and not stored. `steps(model)` judges each against the one below on the SD of one
+result (`sd_r(c, strips)`, §15): `{metric, k, points: [{c, strips, mean, sd}], steps: [{a, b, value, n, q, apart, misread}],
+apart, total}` with `n = q·k` the gap in units of the rule's spread. Headless: `calwizard points SERIES`,
+`POST /api/points`. The Excel workbook adds `Points`, `Limits` and (with samples) `Read-back` sheets.
+
 ## 17. Requirements
 
 `requirements: [{kind, c?, c2?, cv?, n?, label?}]`, checked by `check(model)` → `{results, met, total}`:

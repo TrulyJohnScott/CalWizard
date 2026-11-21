@@ -319,6 +319,13 @@ def separate(req: SeparateRequest):
                                      req.conf, req.alpha, req.threshold))
 
 
+@router.post("/points")
+def points(req: SeriesRequest):
+    from . import points as P
+
+    return _guard(lambda: P.steps(_compile(req.series)))
+
+
 @router.post("/requirements")
 def requirements(req: SeriesRequest):
     return ok(R.check(_compile(req.series)))

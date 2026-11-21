@@ -11,6 +11,7 @@ from openpyxl.chart import Reference, ScatterChart, Series as XlSeries
 from openpyxl.styles import Font, PatternFill
 
 from . import expr as E
+from . import limits as L
 from . import metrics as K
 from .series import bake, Model, Series, compile_series
 
@@ -228,7 +229,53 @@ def build_workbook(series: Series) -> Workbook:
     _grid(wb, series, model)
     _levels(wb, series, model, rows)
     _data(wb, series)
+    _points(wb, series, model)
+    _limits(wb, series, model)
+    _readback(wb, series, model)
     return wb
+
+
+def _points(wb: Workbook, series: Series, model: Model) -> None:
+    """Your concentrations (core design): each with its strips, signal, SD of one result and its verdict."""
+    from . import points as P
+
+    r = P.steps(model)
+    ws = wb.create_sheet("Points")
+    _head(ws, 1, [f"c ({series.units})", "strips", "mean", "SD of one result", "N vs the one below", "apart", "misread"])
+    for i, p in enumerate(r["points"]):
+        st = r["steps"][i - 1] if i > 0 else None
+        ws.append([p["c"], p["strips"], p["mean"], p["sd"], None if st is None else _num(st["n"]),
+                   None if st is None else ("yes" if st["apart"] else "no"), None if st is None else _num(st["misread"])])
+    ws.append([])
+    ws.append([f"rule: {r['metric']} with N = {r['k']}", None, None, None, None, f"{r['apart']} of {r['total']} apart"])
+
+
+def _limits(wb: Workbook, series: Series, model: Model) -> None:
+    lim = series.limits
+    res = L.limits(model, lim.alpha, lim.beta, lim.cv, lim.reads, profile=False)
+    ws = wb.create_sheet("Limits")
+    _head(ws, 1, ["", f"c ({series.units})", "signal"])
+    ws.append(["LoB", _num(res["lob"]["c"]), _num(res["lob"]["signal"])])
+    for key, name in (("lod", "LoD"), ("loq", "LoQ"), ("uloq", "upper LoQ")):
+        x = res[key]
+        ws.append([name, None if x is None else _num(x["c"]), None if x is None else _num(x["signal"])])
+    ws.append([])
+    ws.append(["alpha", lim.alpha])
+    ws.append(["beta", lim.beta])
+    ws.append(["CV target", lim.cv])
+    ws.append(["strips per result", lim.reads])
+
+
+def _readback(wb: Workbook, series: Series, model: Model) -> None:
+    if not series.samples:
+        return
+    from . import readback as RB
+
+    out = RB.readback(model)
+    ws = wb.create_sheet("Read-back")
+    _head(ws, 1, ["id", "signal", "strips", f"c ({series.units})", "low", "high", "flag"])
+    for x, r in zip(series.samples, out["rows"]):
+        ws.append([x.id, _num(x.signal), x.strips, _num(r["result"]), _num(r["resultLo"]), _num(r["resultHi"]), RB.FLAGS[r["flag"]]])
 
 
 def export_bytes(series: Series) -> bytes:

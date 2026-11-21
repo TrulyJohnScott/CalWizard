@@ -164,7 +164,7 @@ def test_export_endpoint_headers():
     assert r.status_code == 200
     assert "calwizard_My Assay.xlsx" in r.headers["content-disposition"]
     wb = load_workbook(io.BytesIO(r.content))
-    assert wb.sheetnames == ["Inputs", "Calculator", "Grid", "Levels", "Data"]
+    assert wb.sheetnames == ["Inputs", "Calculator", "Grid", "Levels", "Data", "Points", "Limits"]
     assert len(wb["Grid"]._charts) == 1
     assert wb["Grid"].max_row == 502
 
