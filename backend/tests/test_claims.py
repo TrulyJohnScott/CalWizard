@@ -505,3 +505,11 @@ def test_separate_rates_at_a_fixed_threshold():
     # LINE: 1 -> 120, 2 -> 140, sd 10; a cut-off left at 125 by an earlier curve
     at = A.separate(model(**LINE), 2, 1, "ssmd", 3, runs=10, threshold=125)["at"]
     assert at["sensitivity"] == pytest.approx(norm.sf(-1.5)) and at["specificity"] == pytest.approx(norm.cdf(0.5))
+
+
+def test_a_read_value_averaged_over_strips_has_a_narrower_range():
+    m = model(**LINE)  # sd 10, slope 20: one reading at 25 ng/mL reads back within ±z·10/20
+    one, four = (RB.readback(m, [Sample(id="x", signal=600, strips=n)])["rows"][0] for n in (1, 4))
+    z = norm.ppf(0.975)
+    assert one["hi"] - one["lo"] == pytest.approx(2 * z * 10 / 20, rel=1e-3)
+    assert four["hi"] - four["lo"] == pytest.approx(2 * z * 5 / 20, rel=1e-3) and four["cv"] == pytest.approx(one["cv"] / 2)

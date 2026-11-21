@@ -63,7 +63,8 @@ def test_replicates_ragged_null_and_single_value_column():
     # SD only from columns 0 and 1 (the 1-value and empty columns are excluded); sample SD (n-1)
     np.testing.assert_allclose(m.sd([0]), [np.std([48, 52], ddof=1)])
     np.testing.assert_allclose(m.sd([1]), [np.std([55, 58, 53, 56], ddof=1)])
-    np.testing.assert_allclose(m.sd([100]), m.sd([1]))  # SD held flat beyond the last SD point
+    cv = lambda c: m.sd([c])[0] / m.mean([c])[0]  # noqa: E731
+    assert cv(5) == pytest.approx(cv(1)) and cv(100) == pytest.approx(cv(1))  # the 1-reading column and beyond borrow the CV
     assert m.mean([40])[0] > m.mean([20])[0] > m.mean([5])[0]  # the mean continues past the last column
     assert not m.sd_missing
 

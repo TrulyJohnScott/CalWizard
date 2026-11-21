@@ -77,6 +77,10 @@ levels `0, 1, 5, 25, 100, 500`, cMax = 500.
   `(c_i, mean_i)` and separately `(c_i, sd_i)`. 1 point ⇒ constant; 2 points ⇒ linear.
 - Below c_first: hold flat. Above c_last: the **mean continues as a straight line** with the PCHIP end
   slope (`d_n`, scipy's `derivative()(c_last)`; 2 points ⇒ the line continues); the **SD holds** its last value.
+- **SD in CV (v4, core design):** when every concentration with an SD has a non-zero mean, the table SD is
+  `sd(c) = CV(c) · |mean(c)|` with `CV` = PCHIP through `SD_i / |mean_i|` (held flat beyond the ends). A
+  concentration with a single reading (no SD) therefore borrows its neighbours' CV, and beyond the last calibrator
+  the CV, not the SD, holds. With a zero mean among them the SD itself is interpolated as above.
   So the curve can be measured and read past the highest concentration (v2.4).
 - `replicates` mode: column mean and **sample SD (n−1)**; columns with < 2 numeric cells have no SD
   → that column is excluded from the SD interpolation (if none have SD, sd = 0 and the UI says so).
@@ -526,14 +530,16 @@ With `f`, `g` the unadjusted mean and SD, `B = f(0)`, `T = f(cMax)`, `B' = botto
 - `mean'(c) = B' + (f(c/xs) − B)·gain` — background and top move the two ends, `cScale` stretches the concentration axis
   (`< 1`: the curve responds at lower concentrations);
 - equations: `sd'(c) = sdScale · sdExpr(mean'(c))` (the noise model follows the new signal);
-  tables: `sd'(c) = sdScale · g(c/xs)`.
+  tables: `sd'(c) = sdScale · g(c/xs)`; with the SD in CV (§3): `sd'(c) = sdScale · CV(c/xs) · |mean'(c)|` (the
+  noise follows the new signal, as in equations).
 
 `cMax` and the levels do not change. Everything downstream (rows, ladder, limits, read-back, export) uses the adjusted
 curve. Validation: `cScale > 0`, `sdScale ≥ 0`, both finite.
 
 **Bake.** `bake(series)` returns the same curve with the layer folded into the source and `adjust: null`: equations get
 `(B') + (f(c/(xs)) − (B))·(gain)` and `(sdScale)·(sdExpr)` as fully parenthesised expression text; tables get
-`c → c·xs`, each reading `y → y(mean) + (y − mean)·sdScale` with `y(v) = B' + (v − B)·gain`, typed rows likewise. It is exact
+`c → c·xs`, each reading `y → y(mean) + (y − mean)·s(mean)` with `y(v) = B' + (v − B)·gain` and `s(μ) = sdScale`
+(`sdScale · |y(μ)|/|μ|` with the SD in CV), typed rows likewise. It is exact
 (PCHIP is affine-equivariant). Excel export bakes first. Headless: `calwizard bake SERIES`, `POST /api/bake`.
 
 **GUI.** `What if` in the top bar (key `W`) shows a bar with four scrub fields (type, arrow keys, or drag the label;
@@ -620,7 +626,8 @@ for them and shows them only in the report (§20) when a series carries any. Eac
 
 ## 18. Read-back sheet
 
-`samples: [{id, signal, dilution}]`. `readback(model, samples?, conf = 0.95)` → per row `c`, `lo`, `hi` (§12 recover),
+`samples: [{id, signal, dilution, strips}]` (`strips` = the value is the mean of that many strips, default 1: its
+range and CV use the SD of `strips` averaged readings, §15 `sd_r`; v4). `readback(model, samples?, conf = 0.95)` → per row `c`, `lo`, `hi` (§12 recover),
 `result = c·dilution` (and its range), `cv` (§15) and `flag`: `invalid` (no signal), `below` (beyond the blank),
 `above` (beyond the top), `hook` (the signal also occurs above the hook's peak, §15.4), `belowLod`, `belowLoq`,
 `aboveLoq`, `ok`. `calwizard read SERIES [S...] [--conf] [-o file.xlsx]`

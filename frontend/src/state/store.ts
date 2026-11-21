@@ -231,7 +231,7 @@ export function sanitizeSeries(raw: unknown): Series {
         .map((x) => ({ kind: x.kind as RequirementKind, c: numOrNull(x.c), c2: numOrNull(x.c2), cv: numOrNull(x.cv), n: isNum(x.n) ? Math.round(x.n) : null, label: str(x.label, '') }))
     : []
   const samples: Sample[] = Array.isArray(r.samples)
-    ? (r.samples as Record<string, unknown>[]).filter((x) => x && typeof x === 'object').map((x) => ({ id: str(x.id, ''), signal: numOrNull(x.signal), dilution: isNum(x.dilution) && x.dilution > 0 ? x.dilution : 1 }))
+    ? (r.samples as Record<string, unknown>[]).filter((x) => x && typeof x === 'object').map((x) => ({ id: str(x.id, ''), signal: numOrNull(x.signal), dilution: isNum(x.dilution) && x.dilution > 0 ? x.dilution : 1, strips: isNum(x.strips) && x.strips >= 1 ? Math.round(x.strips) : 1 }))
     : []
   return {
     name: str(r.name, d.name),

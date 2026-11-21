@@ -36,6 +36,8 @@ export interface Model {
   adjusted: boolean
   adjust?: AdjustParams
   base?: { mean: (c: number) => number; sd: (c: number) => number }
+  /** table modes: the interpolated CV (SD / |mean|), when the SD is interpolated that way (core design) */
+  cv?: (c: number) => number
 }
 
 function compileBase(s: Series): Model & { sdOfSignal?: (S: number) => number } {
@@ -69,9 +71,15 @@ function compileBase(s: Series): Model & { sdOfSignal?: (S: number) => number } 
   }
   else pts = summaryPoints(s.summary)
   const mean = makeInterp(pts.map((p) => [p.c, p.mean]), true)
-  const sdPts = pts.filter((p) => p.sd !== null).map((p): [number, number] => [p.c, p.sd as number])
+  const withSd = pts.filter((p) => p.sd !== null)
+  const sdPts = withSd.map((p): [number, number] => [p.c, p.sd as number])
   const noSd = sdPts.length === 0
-  const sd = noSd ? () => 0 : makeInterp(sdPts)
+  // core design: interpolate the CV (SD / |mean|), so a concentration without an SD borrows its neighbours' CV;
+  // with a zero mean among them, interpolate the SD itself (port of series.Model)
+  const byCv = !noSd && withSd.every((p) => Math.abs(p.mean) > 0)
+  const cvF = byCv ? makeInterp(withSd.map((p): [number, number] => [p.c, (p.sd as number) / Math.abs(p.mean)])) : null
+  const sd = noSd ? () => 0 : cvF ? (c: number) => cvF(c) * Math.abs(mean(c)) : makeInterp(sdPts)
+  const cvOf = cvF ?? undefined
   const extra = (s.extraLevels ?? []).filter((c) => Number.isFinite(c) && c >= 0)
   const levels = [...new Set([...pts.map((p) => p.c), ...extra])].sort((a, b) => a - b)
   const cMax = levels.length ? levels[levels.length - 1] : 1
@@ -84,6 +92,7 @@ function compileBase(s: Series): Model & { sdOfSignal?: (S: number) => number } 
     noSd,
     extrapolates: true,
     adjusted: false,
+    cv: cvOf,
   }
 }
 
@@ -111,7 +120,8 @@ function applyAdjust(s: Series, base: Model, sdOfSignal?: (S: number) => number)
   const t1 = adj.top === null ? t0 : adj.top
   const gain = Number.isFinite(t0 - b0) && t0 !== b0 ? (t1 - b1) / (t0 - b0) : 1
   const mean = (c: number) => b1 + (f(c / xs) - b0) * gain
-  const sd = s.mode === 'equations' ? (sdOfSignal ? (c: number) => ss * sdOfSignal(mean(c)) : () => NaN) : (c: number) => ss * g(c / xs)
+  const cv = base.cv
+  const sd = s.mode === 'equations' ? (sdOfSignal ? (c: number) => ss * sdOfSignal(mean(c)) : () => NaN) : cv ? (c: number) => ss * cv(c / xs) * Math.abs(mean(c)) : (c: number) => ss * g(c / xs)
   return { ...base, mean, sd, adjusted: true, adjust: { b0, t0, b1, t1, gain, cScale: xs, sdScale: ss }, base: { mean: f, sd: g } }
 }
 

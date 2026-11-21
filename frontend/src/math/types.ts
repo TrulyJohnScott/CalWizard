@@ -53,6 +53,8 @@ export interface Sample {
   id: string
   signal: number | null
   dilution: number
+  /** the value is the mean of this many strips (core design) */
+  strips?: number
 }
 
 /** Spec section 4. */

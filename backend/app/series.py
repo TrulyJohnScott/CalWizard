@@ -126,6 +126,8 @@ class Sample(Camel):
     id: str = ""
     signal: float | None = None
     dilution: float = 1.0
+    #: the value is the mean of this many strips (core design): only within-run noise averages
+    strips: int = 1
 
 
 class Layer(Camel):
@@ -295,9 +297,18 @@ class Model:
             top = float(self.levels.max())
             self.c_max = top if top > 0 else 1.0
             mean_t = Table([p[0] for p in pts], [p[1] for p in pts], extend=True)
-            sd_pts = [(p[0], p[2]) for p in pts if p[2] is not None and math.isfinite(p[2])]
+            sd_pts = [(p[0], p[2], p[1]) for p in pts if p[2] is not None and math.isfinite(p[2])]
             self.sd_missing = not sd_pts
-            sd_t = Table([p[0] for p in sd_pts], [p[1] for p in sd_pts])
+            if sd_pts and all(abs(p[2]) > 0 for p in sd_pts):
+                # core design: interpolate the CV (SD / |mean|) between concentrations, so a concentration without an
+                # SD (a single reading) borrows its neighbours' CV; beyond the ends the CV holds
+                cv_t = Table([p[0] for p in sd_pts], [p[1] / abs(p[2]) for p in sd_pts])
+                self._cv = cv_t
+
+                def sd_t(c, cv_t=cv_t, mean_t=mean_t):
+                    return cv_t(c) * np.abs(mean_t(c))
+            else:  # a zero mean among them: interpolate the SD itself
+                sd_t = Table([p[0] for p in sd_pts], [p[1] for p in sd_pts])
             self._mean, self._sd = mean_t, sd_t
         self.adjusted = bool(series.adjust and series.adjust.active)
         self.adjust_params: dict | None = None
@@ -336,6 +347,11 @@ class Model:
 
             def sd(c):
                 return ss * E.evaluate(sd_ast, mean(c))
+        elif getattr(self, "_cv", None) is not None:  # CV-interpolated table: the noise follows the new signal
+            cv = self._cv
+
+            def sd(c):
+                return ss * cv(c / xs) * np.abs(mean(c))
         else:
             def sd(c):
                 return ss * g(c / xs)
@@ -473,13 +489,19 @@ def bake(series: Series) -> Series:
     def y(v):
         return b1 + (v - b0) * gain
 
+    # with the SD interpolated in CV the noise follows the new signal: a deviation scales by ss·|y(μ)|/|μ|
+    by_cv = getattr(compile_series(series.model_copy(update={"adjust": None})), "_cv", None) is not None
+
+    def spread(mu):
+        return ss * (abs(y(mu)) / abs(mu) if by_cv and mu != 0 else 1.0)
+
     concs, cells = [], []
     for c, col in zip(series.replicates.concs, series.replicates.cells):
         v = [x for x in col if x is not None and math.isfinite(x)]
         mu = sum(v) / len(v) if v else 0.0
         concs.append(c * xs)
-        cells.append([None if (x is None or not math.isfinite(x)) else y(mu) + (x - mu) * ss for x in col])
-    summary = [SummaryRow(c=r.c * xs, mean=y(r.mean), sd=None if r.sd is None else r.sd * ss) for r in series.summary]
+        cells.append([None if (x is None or not math.isfinite(x)) else y(mu) + (x - mu) * spread(mu) for x in col])
+    summary = [SummaryRow(c=r.c * xs, mean=y(r.mean), sd=None if r.sd is None else r.sd * (spread(r.mean) if r.mean is not None else ss)) for r in series.summary]
     return series.model_copy(update={
         "adjust": None, "replicates": Replicates(concs=concs, cells=cells), "summary": summary,
         "extra_levels": [c * xs for c in series.extra_levels]})

@@ -33,21 +33,24 @@ def readback(model: Model, samples: list[Sample] | None = None, conf: float = 0.
     lod, loq, uloq = (None if res[k] is None else res[k]["c"] for k in ("lod", "loq", "uloq"))
     d = res["direction"]
     mu0 = res["blank"]["mean"]
-    valid = [x for x in samples if x.signal is not None and math.isfinite(x.signal)]
-    rec = iter(A.recover(model, [x.signal for x in valid], conf)) if valid else iter(())
+    from .requirements import _PerResult  # local: requirements imports limits, which this module also uses
+
+    def view(x):
+        n = max(1, int(getattr(x, 'strips', 1) or 1))
+        return model if n == 1 else _PerResult(model, n)
     rows = []
     for x in samples:
         dil = x.dilution if (math.isfinite(x.dilution) and x.dilution > 0) else 1.0
         row = {"id": x.id, "signal": x.signal, "dilution": dil, "c": None, "lo": None, "hi": None, "result": None,
                "resultLo": None, "resultHi": None, "cv": None, "flag": "invalid"}
         if x.signal is not None and math.isfinite(x.signal):
-            r = next(rec)
+            r = A.recover(view(x), [x.signal], conf)[0]
             c = r["c"]
             row.update(c=c, lo=r["lo"], hi=r["hi"])
             if c is None:
                 row["flag"] = "below" if d * (x.signal - mu0) < 0 else "above"
             else:
-                row.update(result=c * dil, cv=L.conc_cv(model, c, lim.reads),
+                row.update(result=c * dil, cv=L.conc_cv(model, c, max(1, int(x.strips or 1))),
                            resultLo=None if r["lo"] is None else r["lo"] * dil,
                            resultHi=None if r["hi"] is None else r["hi"] * dil)
                 if r["hook"]:

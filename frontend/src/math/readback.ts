@@ -2,7 +2,7 @@
  * Spec §18: the read-back sheet (signals → concentrations with a range, a CV and a flag). Port of backend readback.py.
  */
 import { recover } from './analysis'
-import { concCv, limits } from './limits'
+import { concCv, limits, sdOfReads } from './limits'
 import type { Model } from './model'
 import type { LimitSettings, Sample } from './types'
 
@@ -41,7 +41,7 @@ export interface Readback {
   rows: ReadRow[]
 }
 
-export function readback(m: Pick<Model, 'mean' | 'sd' | 'cMax'>, samples: Sample[], lim: LimitSettings, conf = 0.95): Readback {
+export function readback(m: Pick<Model, 'mean' | 'sd' | 'cMax' | 'sdReads'>, samples: Sample[], lim: LimitSettings, conf = 0.95): Readback {
   const res = limits(m, { ...lim, profile: false })
   const lod = res.lod ? res.lod.c : null
   const loq = res.loq ? res.loq.c : null
@@ -52,7 +52,9 @@ export function readback(m: Pick<Model, 'mean' | 'sd' | 'cMax'>, samples: Sample
     const dil = Number.isFinite(x.dilution) && x.dilution > 0 ? x.dilution : 1
     const row: ReadRow = { id: x.id, signal: x.signal, dilution: dil, c: null, lo: null, hi: null, result: null, resultLo: null, resultHi: null, cv: null, flag: 'invalid' }
     if (x.signal === null || !Number.isFinite(x.signal)) return row
-    const r = recover(m, x.signal, conf)
+    const n = Math.max(1, Math.round(x.strips ?? 1))
+    const view = n === 1 ? m : { mean: m.mean, cMax: m.cMax, sd: (c: number) => sdOfReads(m, c, n) }
+    const r = recover(view, x.signal, conf)
     row.c = r.c
     row.lo = r.lo
     row.hi = r.hi
@@ -61,7 +63,7 @@ export function readback(m: Pick<Model, 'mean' | 'sd' | 'cMax'>, samples: Sample
       return row
     }
     row.result = r.c * dil
-    row.cv = concCv(m, r.c, lim.reads)
+    row.cv = concCv(m, r.c, n)
     row.resultLo = r.lo === null ? null : r.lo * dil
     row.resultHi = r.hi === null ? null : r.hi * dil
     row.flag = r.hook ? 'hook' : lod !== null && r.c < lod ? 'belowLod' : loq !== null && r.c < loq ? 'belowLoq' : uloq !== null && r.c > uloq ? 'aboveLoq' : 'ok'

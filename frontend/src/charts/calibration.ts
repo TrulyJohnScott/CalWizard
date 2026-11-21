@@ -43,7 +43,9 @@ export interface CalibrationIn {
   /** what-if handles drawn on the curve (diamonds) */
   whatIf: boolean
   /** LoD / LoQ marked on the concentration axis, or null */
-  limitTicks: { lod: number | null; loq: number | null } | null
+  limitTicks: { lod: number | null; loq: number | null; lob?: number | null } | null
+  /** the curve as your points see it (each point's strips); brackets use it (core design) */
+  pointCurve?: { mean: (c: number) => number; sd: (c: number) => number }
   /** simulated experiment: this run's estimated mean per concentration (short dashes), or null */
   estimates: { c: number; mean: number }[] | null
   pal: Palette
@@ -227,6 +229,18 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
       )
       Object.assign(notes[notes.length - 1], { text, showarrow: false, font: { size: 10, color } })
     })
+    // LoB: the signal a blank stays under (1 − α of the time), as a line across the signal axis
+    const lob = x.limitTicks.lob
+    if (lob !== null && lob !== undefined && Number.isFinite(lob)) {
+      const line = { color: pal.muted, width: 1, dash: 'dot' as const }
+      shapes.push(flip ? { type: 'line', xref: 'x', yref: 'paper', x0: lob, x1: lob, y0: 0, y1: 1, line } : { type: 'line', xref: 'paper', yref: 'y', x0: 0, x1: 1, y0: lob, y1: lob, line })
+      notes.push({
+        ...(flip ? { xref: 'x', yref: 'paper', x: lob, y: 1, xanchor: 'left', yanchor: 'top' } : { xref: 'paper', yref: 'y', x: 1, y: lob, xanchor: 'right', yanchor: 'bottom' }),
+        text: 'LoB',
+        showarrow: false,
+        font: { size: 10, color: pal.muted },
+      } as Partial<Layout['annotations'][number]>)
+    }
   }
 
   // what-if: today's curve stays in view as a dashed line under the adjusted one
@@ -289,7 +303,7 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
       const [c1, c2] = [cs[i], cs[i + 1]]
       const [m1, m2] = [m.mean(c1), m.mean(c2)]
       const off = 0.04 * (sHi - sLo) * (m2 >= m1 ? -1 : 1)
-      const row = pairRow(m, c1, c2, s.metric, s.kTarget)
+      const row = pairRow(x.pointCurve ?? m, c1, c2, s.metric, s.kTarget)
       const col = closenessColor(closenessQ(row, s.metric, s.kTarget))
       const mid = 0.5 * (c1 + c2)
       notes.push({

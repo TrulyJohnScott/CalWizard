@@ -13,6 +13,7 @@ import { breakCoalescing, isPending, rulerPoints, useStore, type Measure } from 
 import { usePalette } from '../theme'
 import { autoSpace } from '../state/autospace'
 import { PointsField } from './PointsField'
+import { evalCurve } from '../state/points'
 import { HistHover, ScatterHover, StepRulers } from './HoverOverlay'
 import { Seg } from './ui'
 
@@ -199,10 +200,11 @@ export function CalibrationChart({ d, repeat = null }: { d: Derived; repeat?: Re
     [listed, measure],
   )
   const estimates = useMemo(() => d.exp?.first.levels.map((l) => ({ c: l.c, mean: l.mean })) ?? null, [d.exp])
-  const limitTicks = useMemo(() => (ui.showLimits && d.limits ? { lod: d.limits.lod?.c ?? null, loq: d.limits.loq?.c ?? null } : null), [ui.showLimits, d.limits])
+  const limitTicks = useMemo(() => (ui.showLimits && d.limits ? { lod: d.limits.lod?.c ?? null, loq: d.limits.loq?.c ?? null, lob: d.limits.lob.signal } : null), [ui.showLimits, d.limits])
+  const pointCurve = useMemo(() => evalCurve(series, model), [series, model])
   const spec = useMemo(
-    () => buildCalibration({ repeat, series, model, dots, listed, flip: ui.flip, jitter: ui.jitter, measure, live, range, focus, viewRev, reading, probe: null, onCurve: ui.marginal, estimates, ghost, ladderTicks: d.resolvable, whatIf: ui.whatIf, limitTicks, pal }),
-    [repeat, series, model, dots, listed, ui.flip, ui.jitter, measure, live, range, focus, viewRev, reading, ui.marginal, estimates, ghost, d.resolvable, ui.whatIf, limitTicks, pal],
+    () => buildCalibration({ pointCurve, repeat, series, model, dots, listed, flip: ui.flip, jitter: ui.jitter, measure, live, range, focus, viewRev, reading, probe: null, onCurve: ui.marginal, estimates, ghost, ladderTicks: d.resolvable, whatIf: ui.whatIf, limitTicks, pal }),
+    [pointCurve, repeat, series, model, dots, listed, ui.flip, ui.jitter, measure, live, range, focus, viewRev, reading, ui.marginal, estimates, ghost, d.resolvable, ui.whatIf, limitTicks, pal],
   )
   const ref = usePlot(spec)
   const down = useRef<{ x: number; y: number } | null>(null)
@@ -387,11 +389,11 @@ export function CalibrationChart({ d, repeat = null }: { d: Derived; repeat?: Re
           </button>
         )}
       </div>
-      <div className="absolute z-10" style={{ left: 66, top: 8 }}>
+      <div className="absolute z-10" style={{ left: 66, top: 36 }}>
         <PointsField d={d} />
       </div>
       {focus && (
-        <button className="btn absolute z-10" style={{ left: 66, top: 34, height: 22, fontSize: 11 }} onClick={resetView} title="Back to the whole range (or double-click the chart)">
+        <button className="btn absolute z-10" style={{ left: 66, top: 62, height: 22, fontSize: 11 }} onClick={resetView} title="Back to the whole range (or double-click the chart)">
           {fmt(focus[0], 3)}–{fmt(focus[1], 3)}
           {series.units ? ` ${series.units}` : ''} · Show all
         </button>

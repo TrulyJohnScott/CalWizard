@@ -42,13 +42,16 @@ export function bake(s: Series): Series {
   }
   const y = (v: number) => b1 + (v - b0) * gain
   const concs = s.replicates.concs.map((c) => (num(c) ? c * xs : c))
+  // with the SD interpolated in CV the noise follows the new signal: a deviation scales by ss·|y(μ)|/|μ| (port of bake)
+  const byCv = compileModel({ ...s, adjust: null }).cv !== undefined
+  const spread = (mu: number) => ss * (byCv && mu !== 0 ? Math.abs(y(mu)) / Math.abs(mu) : 1)
   const cells = s.replicates.concs.map((_, j) => {
     const col = s.replicates.cells[j] ?? []
     const vals = col.filter(num)
     const mu = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0
-    return col.map((x) => (num(x) ? y(mu) + (x - mu) * ss : null))
+    return col.map((x) => (num(x) ? y(mu) + (x - mu) * spread(mu) : null))
   })
-  const summary = s.summary.map((r) => ({ c: num(r.c) ? r.c * xs : r.c, mean: num(r.mean) ? y(r.mean) : r.mean, sd: num(r.sd) ? r.sd * ss : r.sd }))
+  const summary = s.summary.map((r) => ({ c: num(r.c) ? r.c * xs : r.c, mean: num(r.mean) ? y(r.mean) : r.mean, sd: num(r.sd) ? r.sd * (num(r.mean) ? spread(r.mean) : ss) : r.sd }))
   return { ...s, adjust: null, replicates: { concs, cells }, summary, extraLevels: (s.extraLevels ?? []).map((c) => c * xs) }
 }
 

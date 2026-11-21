@@ -30,12 +30,16 @@ export function ReadPanel({ d }: { d: Derived }) {
   const add = () => {
     const vals = text
       .split(/[\n\r\t,;]+/)
-      .map((x) => parseNum(x.trim()))
-      .filter((v): v is number => v !== null && Number.isFinite(v))
+      .map((x) => {
+        const m = /^\s*([^x×*]+?)\s*(?:[x×*]\s*(\d+))?\s*$/i.exec(x)
+        const signal = m ? parseNum(m[1]) : null
+        return signal !== null && Number.isFinite(signal) ? { id: '', signal, dilution: 1, strips: m?.[2] ? Math.max(1, Number(m[2])) : 1 } : null
+      })
+      .filter((v): v is { id: string; signal: number; dilution: number; strips: number } => v !== null)
     if (!vals.length) return
-    patch({ samples: [...samples, ...vals.map((signal) => ({ id: '', signal, dilution: 1 }))] })
+    patch({ samples: [...samples, ...vals] })
     setText('')
-    setReading(vals[vals.length - 1])
+    setReading(vals[vals.length - 1].signal)
   }
   const remove = (i: number) => patch({ samples: samples.filter((_, j) => j !== i) })
   const u = s.units
@@ -46,7 +50,7 @@ export function ReadPanel({ d }: { d: Derived }) {
       <textarea
         className="mono w-full resize-y rounded border border-line bg-transparent p-2 text-[12px]"
         rows={2}
-        placeholder={`${s.signalLabel || 'signal'} values, one per line`}
+        placeholder={`${s.signalLabel || 'signal'} values, one per line (720×3 = mean of 3 strips)`}
         aria-label="Signals to read back"
         value={text}
         onChange={(e) => setText(e.target.value)}
@@ -77,7 +81,10 @@ export function ReadPanel({ d }: { d: Derived }) {
               const warn = r.flag === 'hook' || r.flag === 'above' || r.flag === 'below' || r.flag === 'invalid'
               return (
                 <tr key={i} className="group cursor-pointer border-t border-line align-top" style={on ? { background: 'var(--hover)' } : undefined} onClick={() => setReading(r.signal)} title="Show this reading on the curve">
-                  <td className="py-1 pr-2">{fmt(r.signal, 4)}</td>
+                  <td className="py-1 pr-2">
+                    {fmt(r.signal, 4)}
+                    {(samples[i]?.strips ?? 1) > 1 && <span className="text-muted"> ×{samples[i].strips}</span>}
+                  </td>
                   <td className="py-1 text-right">
                     <b>{r.c === null ? '–' : fmt(r.c)}</b>
                     {rangeOf(r.lo, r.hi) && <div className="text-[11px] text-muted">{rangeOf(r.lo, r.hi)}</div>}
