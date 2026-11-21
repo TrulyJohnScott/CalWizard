@@ -64,7 +64,13 @@ export function ReadPanel({ d }: { d: Derived }) {
           e.stopPropagation() // a pasted column lands here, not in the curve's data
         }}
       />
-      <span className="text-[11px] text-muted">Enter adds them. Paste a column from a spreadsheet.</span>
+      {samples.length === 0 ? (
+        <p className="m-0 text-[12px] leading-relaxed text-muted">
+          Type a measured signal and press Enter: you get the concentration, the range it could really be, and a warning when it can’t be trusted (below the LoD, above the range, past the hook). Paste a whole column at once; <span className="mono">720×3</span> means the mean of 3 strips.
+        </p>
+      ) : (
+        <span className="text-[11px] text-muted">Click a value to see it on the curve.</span>
+      )}
       {res && res.rows.length > 0 && (
         <table className="w-full border-collapse text-[12px]">
           <thead>

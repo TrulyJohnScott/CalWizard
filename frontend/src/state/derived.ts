@@ -53,7 +53,10 @@ export function useDerived(): Derived {
   const lad = useStore((s) => s.ladder)
   const model = useMemo(() => compileModel(series), [series])
   const dots = useMemo(() => levelDots(series, model), [series, model])
-  const focus = useStore((s) => s.focus)
+  const manual = useStore((s) => s.focus)
+  const top = useStore((s) => Math.max(0, ...(s.measure?.pts ?? [])))
+  // core design: with your concentrations placed, the chart frames them (double-click shows the whole range)
+  const focus = useMemo<[number, number] | null>(() => manual ?? (top > 0 && top * 1.35 < (series.cMax ?? Infinity) * 0.9 ? [0, top * 1.35] : null), [manual, top, series.cMax])
   const hold = useStore((s) => s.hold)
   const fitted = useMemo(() => signalRange(model, dots, focus), [model, dots, focus])
   const range = hold ?? fitted

@@ -8,7 +8,7 @@ import { hashUnit, type LevelDots } from '../math/sim'
 import type { Series } from '../math/types'
 import { handles } from '../math/whatif'
 import { rulerPoints, type Measure } from '../state/store'
-import { levelColor, withAlpha, type Palette } from '../theme'
+import { withAlpha, type Palette } from '../theme'
 import { axisStyle, baseLayout, concRange, linspace, MARGIN, nn } from './common'
 import type { PlotSpec } from './usePlot'
 
@@ -119,20 +119,8 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
   const sym: string[] = []
   const hollow = s.mode !== 'equations' // in table modes, simulated draws (extra levels) are hollow; data filled
   let k = 0
-  const idxOf = (c: number) => {
-    let best = 0
-    let bd = Infinity
-    levels.forEach((l, i) => {
-      const d = Math.abs(l - c)
-      if (d < bd) {
-        bd = d
-        best = i
-      }
-    })
-    return best
-  }
   for (const lv of x.dots) {
-    const cc = levels.length ? levelColor(idxOf(lv.c), levels.length, pal.dark, 0.8) : withAlpha(pal.accent, 0.7)
+    const cc = levels.length ? withAlpha(pal.muted, 0.8) : withAlpha(pal.accent, 0.7)
     for (const y of lv.ys) {
       dc.push(lv.c + hashUnit(k++) * unit)
       dy.push(y)
@@ -161,7 +149,7 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
     return { cs: [c, ...cs, c], ys: [ys[0], ...ys, ys[ys.length - 1]] }
   }
   if (x.onCurve && Number.isFinite(sdRef))
-    levels.forEach((c, i) => {
+    levels.forEach((c) => {
       const g = gauss(c)
       if (!g) return
       const b = bump(c, g)
@@ -170,8 +158,8 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
         mode: 'lines',
         ...xy(b.cs, b.ys),
         fill: 'toself',
-        fillcolor: levelColor(i, levels.length, pal.dark, 0.1),
-        line: { color: levelColor(i, levels.length, pal.dark, 0.85), width: 1.1 },
+        fillcolor: withAlpha(pal.muted, 0.1),
+        line: { color: withAlpha(pal.muted, 0.85), width: 1.1 },
         hoverinfo: 'skip',
       } as Data)
       // ±1 SD marked on the bump (the bump itself is drawn out to ±3.5 SD, so it looks much wider than the SD)
@@ -180,7 +168,7 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
         type: 'scatter',
         mode: 'markers',
         ...xy([c + w1, c + w1], [g.mu - g.sd, g.mu + g.sd]),
-        marker: { size: 4.5, color: levelColor(i, levels.length, pal.dark, 1) },
+        marker: { size: 4.5, color: withAlpha(pal.muted, 1) },
         hovertemplate: `±1 SD: ${fmt(g.mu - g.sd, 4)} – ${fmt(g.mu + g.sd, 4)} (SD ${fmt(g.sd, 3)})<extra></extra>`,
       } as Data)
     })
@@ -272,7 +260,7 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
       type: 'scatter',
       mode: 'markers',
       ...xy(levels, levels.map((c) => nn(m.mean(c)))),
-      marker: { size: 8, color: pal.panel, line: { width: 1.6, color: levels.map((_, i) => levelColor(i, levels.length, pal.dark)) } },
+      marker: { size: 8, color: pal.panel, line: { width: 1.6, color: pal.muted } },
       text: levels.map((c) => `c ${fmt(c)}${u}<br>mean ${fmt(m.mean(c), 4)} · SD ${fmt(m.sd(c))}`),
       hovertemplate: '%{text}<extra></extra>',
     } as Data)
