@@ -56,8 +56,7 @@ One screen per job, so nobody looks at controls they do not need:
 | 2 | Separate | Can the assay tell these two concentrations apart, and what would it take? |
 | 3 | Limits | What are LoB, LoD and LoQ, and how many strips confirm them? |
 | 4 | Read | What concentration is this signal? (a sheet; exports to Excel) |
-| 5 | Requirements | Does the assay meet the spec, and what closes each gap? |
-| 6 | Variability | What do lots, readers and days cost, and what did the study measure? |
+| 5 | Variability | What do lots, readers and days cost, and what did the study measure? |
 | P | Present | The report, full-screen: print it, save it as one HTML file, or copy a link |
 
 `W` toggles **What if**: move the background, the top, the midpoint or the noise (type, or drag the diamonds on the

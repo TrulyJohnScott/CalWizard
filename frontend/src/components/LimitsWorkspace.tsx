@@ -317,7 +317,7 @@ export function LimitsWorkspace({ d }: { d: Derived }) {
         <Scrub label="false positives α" value={+(s.limits.alpha * 100).toPrecision(4)} step={0.05} min={0.01} max={49} width={46} suffix="%" onChange={(v) => set({ alpha: v / 100 })} title="Share of blanks allowed to read above the LoB" />
         <Scrub label="false negatives β" value={+(s.limits.beta * 100).toPrecision(4)} step={0.05} min={0.01} max={49} width={46} suffix="%" onChange={(v) => set({ beta: v / 100 })} title="Share of samples at the LoD allowed to read below the LoB" />
         <Scrub label="CV allowed at LoQ" value={+(s.limits.cv * 100).toPrecision(4)} step={0.1} min={0.5} max={200} width={46} suffix="%" onChange={(v) => set({ cv: v / 100 })} />
-        <Scrub label="strips averaged per result" value={s.limits.reads} step={0.03} min={1} max={100} width={40} onChange={(v) => set({ reads: Math.max(1, Math.round(v)) })} title="Report the mean of this many strips: within-run noise shrinks by its square root; lot, reader and day spread (layers) do not. Limits and requirements use it; the level count in the top bar is per single strip." />
+        <Scrub label="strips averaged per result" value={s.limits.reads} step={0.03} min={1} max={100} width={40} onChange={(v) => set({ reads: Math.max(1, Math.round(v)) })} title="Report the mean of this many strips: within-run noise shrinks by its square root; lot, reader and day spread (layers) do not. Limits use it; the level count in the top bar is per single strip." />
       </div>
 
       <div className="grid gap-x-8 gap-y-4" style={{ gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)' }}>

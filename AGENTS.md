@@ -37,7 +37,7 @@ Python: always `uv` (`uv add`, `uv run`), never bare `python`/`pip`.
 - Update `spec/SPEC.md` in the same change as any behaviour change.
 - Ladder, measure and closeness exist in both languages (`backend/app/analysis.py`, `frontend/src/math/`),
   parity-tested through the fixtures. New capabilities must be added to the CLI as well as the API.
-- The GUI is organised as workspaces, one per job (spec §21: Curve, Separate, Limits, Read, Requirements, Present). A new
+- The GUI is organised as workspaces, one per job (spec §21: Curve, Separate, Limits, Read, Variability, Present). A new
   capability gets a place in the workspace of the person who needs it, not a new control on every screen.
 - Figures outside the Curve workspace are plain SVG (`frontend/src/charts/svg.tsx`) so they also print and export; the
   report (`components/Report.tsx`) uses only its own `rp-` classes.

@@ -5,7 +5,7 @@ import { adjustActive, type Adjust, type MetricKey, type Mode, type Requirement,
 
 export type Theme = 'system' | 'light' | 'dark'
 /** One workspace per job (spec §21): each shows only what that job needs. */
-export type Workspace = 'curve' | 'separate' | 'limits' | 'read' | 'requirements' | 'variability' | 'strips'
+export type Workspace = 'curve' | 'separate' | 'limits' | 'read' | 'variability' | 'strips'
 export type Dialog = null | 'start' | 'import'
 
 export interface Ui {
@@ -294,7 +294,10 @@ function load(): { series: Stored[]; activeId: string; ui: Ui } {
     const series = (j.series ?? []).map((s) => ({ ...sanitizeSeries(s), id: String((s as { id?: string })?.id ?? uid()) }))
     if (!series.length) return fresh()
     const activeId = series.some((s) => s.id === j.activeId) ? (j.activeId as string) : series[0].id
-    return { series, activeId, ui: { ...defaultUi(), ...(j.ui ?? {}) } }
+    const ui: Ui = { ...defaultUi(), ...(j.ui ?? {}) }
+    // a workspace saved by an older version may no longer exist (Requirements was removed)
+    if (!(['curve', 'separate', 'limits', 'read', 'variability', 'strips'] as string[]).includes(ui.workspace)) ui.workspace = 'curve'
+    return { series, activeId, ui }
   } catch {
     return fresh()
   }

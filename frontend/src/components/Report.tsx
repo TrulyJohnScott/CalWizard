@@ -14,7 +14,7 @@ import { separate } from '../math/separate'
 import { adjustText } from '../math/whatif'
 import type { Derived } from '../state/derived'
 import { DetectPlot, limitsSentence, ProfilePlot } from './LimitsWorkspace'
-import { requirementFinding, requirementText } from './RequirementsWorkspace'
+import { requirementFinding, requirementText } from './requirementText'
 import { PairPlot, separationSentence } from './SeparateWorkspace'
 
 export const REPORT_CSS = `
