@@ -268,6 +268,30 @@ guesswork.
 
 ---
 
+## 2.13 The topics you named: coverage and whether the usability approach holds up
+
+My appraisal, not the agents'. "Holds up" means it fits the house rules (one workspace per job, defaults that just work,
+power on demand, no new control on every screen) and cuts the steps the click study counted.
+
+| Topic | Where it came up | Proposed approach | Holds up? |
+|---|---|---|---|
+| Whole calibration curve, resolvability by concentration | P6 act III, P7, click A | Annotated regions (blank-limited / working / plateau / past the hook) on the Curve chart, a "resolvable 0–77, plateau above" sentence, ladder in a popover (R-37, R-50) | **Yes.** Answers with zero clicks on a screen people already look at. The hook part is now built (v3.9). |
+| LoD: can we meet it, how sure | P1, P6, click B | Go/no-go line per claim with margin and P(verification shows it) (R-41, R-14); planner that solves for N (R-15) | **Yes, with care.** One line at the top of Present and Requirements, not a new panel. P(demonstrate) is the number the CEO asked for and can't get today. |
+| Two concentrations: separable and thresholdable | P2, P6, click C | A clinical cut-off saved once on the series, used everywhere, chip in the top bar (R-1); P(positive) S-curve with C5/C50/C95 in Separate (R-2); rates at the shipped threshold (R-3) | **Yes: the strongest case.** Four scripts and a click study asked for it independently. A cut-off you set once removes the "which threshold is this?" confusion (679 vs 754). The fixed-threshold part is built (v3.9). |
+| Thresholds, ROC, confusion matrices | P2, P6, P7, click C | ROC with the cut-off marked and a 2×2 per 1000 tests beside every threshold (R-8, R-9) | **Yes**, as long as they sit in Separate and the report, not on every screen. Per-1000 counts are the format executives read correctly. |
+| Disease conditions, prevalence, PPV/NPV | P6, P7, P8 | Population layer: healthy and diseased distributions plus prevalence; clinical error split into biology vs assay (R-8, S-4) | **Yes, and it changes decisions.** Three scripts found clinical error is mostly biological overlap, which reframes "fix the assay" vs "change the cut-off". Needs a sensible default (median + 99th percentile entry) or nobody will fill it in. |
+| Stacked variability budgets | P4, P7, P8, click D | Hybrid stack headline, fixed vs random per source, cancellation warning, tornado, printed dominant source (R-24, R-24b, R-32) | **Yes for the math, partly for the UI.** Printing "within-run dominates; Site takes 26% above 100" is a clear win. The tornado plus the error budget plus the stack table risk clutter: show one bar per level and the tornado on demand. |
+| 1 site × 3 readers × 5 days → 5 sites × 10 readers × 1 year | P6 act V, P7, click D | Nested layers (readers within site), site/lot/operator presets, study-size solver, stability as a time axis with `--age` (S-3, R-18, R-28) | **Yes, but it's the biggest build.** Nesting fixes a real modelling error (crossed = 6000 strips; nested is what people run). Presets cut "+ other at zero" to one click. |
+| Extending a clinical trial | P8 | P(trial success) from interim counts, cohorts and the analytical model, with break-even and a futility rule (R-24c) | **Promising, least certain.** It answered the question decisively in the script, but rests on assumed patient distributions. Ship it with the assumptions visible and editable, never as a bare probability. |
+| CEO/CSO guiding a scientist; clicks and steps before a task | click A–E, P6 | Ask in the room's words: risk language, a copyable headline, "what would it take" solver (R-42, R-44, R-21) | **Mostly yes.** Biggest step-savers: the cut-off (Q21–30 had 1–3 setup steps each), the paste box on Limits (4 → 1), dominant source printed (6 hovers → 0). Caveat: the agents knew the spec, so real discoverability is worse than counted. |
+
+Where the approach does **not** hold up as written:
+- **Too many new sections.** Taken literally, R-8, R-9, R-24b, R-33c, R-38 and R-41 would each add a panel. Each should replace or extend something already there, or open on demand, to keep the app uncluttered.
+- **Some items are math wearing a usability label** (R-19, R-20, R-21 solvers). They are valuable, but the usability is in how the answer appears ("met if proportional CV ≤ 7.2%" in the requirement row), not in a new solver screen.
+- **Executive outputs** (go/no-go, decision memo) must show which numbers are measured and which are guessed. Otherwise they will overclaim the way the hook example did.
+
+---
+
 ## 3. Software ideas (structures that several requirements share)
 
 **S-1 Claims as first-class objects.** Today requirements are checks against the model. Make a *claim* = statement +
