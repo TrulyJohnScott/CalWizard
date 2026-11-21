@@ -42,18 +42,4 @@ export function closenessColor(q: number): RGBA {
 
 export const rgbaCss = (c: RGBA, scale = 1): string => `rgba(${c[0]},${c[1]},${c[2]},${+(c[3] * scale).toFixed(3)})`
 
-const TEAL: [number, number, number] = [72, 170, 168]
 
-/**
- * Continuous version of the closeness ramp for backgrounds (no step at q = 1): red (q ≤ 0.25) → orange (0.6) →
- * yellow (1, the edge) → teal (1.5) → blue (≥ 2). Brackets and rows keep the pass/fail ramp of closenessColor.
- */
-export function closenessRgbSmooth(q: number): [number, number, number] {
-  if (!(q >= 0)) q = 0
-  if (q <= 0.25) return RED
-  if (q < 0.6) return mix(RED, ORANGE, (q - 0.25) / 0.35)
-  if (q < 1) return mix(ORANGE, YELLOW, (q - 0.6) / 0.4)
-  if (q < 1.5) return mix(YELLOW, TEAL, (q - 1) / 0.5)
-  if (q < 2) return mix(TEAL, BLUE, (q - 1.5) / 0.5)
-  return BLUE
-}

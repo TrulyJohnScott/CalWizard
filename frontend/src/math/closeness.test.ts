@@ -55,13 +55,3 @@ describe('closenessQ', () => {
     expect(closenessQ({ dsum: NaN, ssmd: NaN, zprime: NaN }, 'ssmd', 3)).toBe(0)
   })
 })
-
-describe('smooth background ramp', () => {
-  it('is continuous through the pass line (no jump at q = 1)', async () => {
-    const { closenessRgbSmooth } = await import('./closeness')
-    const d = (a: number[], b: number[]) => Math.max(...a.map((v, i) => Math.abs(v - b[i])))
-    for (const q of [0.25, 0.6, 1, 1.5, 2]) expect(d(closenessRgbSmooth(q - 1e-6), closenessRgbSmooth(q + 1e-6))).toBeLessThanOrEqual(1)
-    expect(closenessRgbSmooth(0)).toEqual([196, 32, 45])
-    expect(closenessRgbSmooth(5)).toEqual([64, 132, 205])
-  })
-})

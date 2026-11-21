@@ -21,7 +21,7 @@ export function applyReader(p: ReaderImport, name?: string): void {
   st.clearMeasure()
   st.setLadder(null)
   st.patch({ ...readerPatch(p), ...(name ? { name } : {}) })
-  st.setUi({ left: true, inputView: 'table' })
+  st.setUi({ left: true, inputView: 'data' })
   const n = p.cells.reduce((a, c) => a + c.length, 0)
   st.notify(`Imported ${n} readings at ${p.concs.filter((_, j) => p.cells[j].length).length} concentrations${p.signalLabel ? ` (${p.signalLabel})` : ''}`)
 }
@@ -62,7 +62,7 @@ export function importText(text: string, name?: string): boolean {
     st.clearMeasure()
     st.setLadder(null)
     st.patch({ ...fromTable(table), ...(name ? { name } : {}) })
-    st.setUi({ left: true, inputView: 'table' })
+    st.setUi({ left: true, inputView: 'data' })
     st.openDialog(null)
     st.notify(`Pasted a table with ${table.concs.filter((c) => c !== null).length} concentrations`)
     return true

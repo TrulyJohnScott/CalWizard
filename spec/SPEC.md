@@ -196,9 +196,13 @@ tooltip on a header. No cards-within-cards, no badges, no colourbars unless the 
   histogram, so moving the mouse along the curve visibly slides/widens the distribution.
 - **Right sidebar** (~280px, collapsible): the Levels sidebar (§11 item 3) — separability by points.
 
-**One truth, two views (v2.9) — supersedes the convert buttons below:** the curve (μ(c) and σ) has one *source*:
-the equations or the table (`mode`). The left panel's `Equations | Table` switch only picks the *view*; a marker
-says whether the view "● drives the curve" or is "○ fitted from the table / from the equations · edit to drive".
+**Three ways to define the curve (v4) — supersedes v2.9's two views:** the left panel's `Data | Stats | Function`
+switch picks the view; the curve has one *source* (`mode`: `replicates` = Data, `summary` = Stats, `equations` =
+Function). Data is the replicate grid (concentrations across, readings below, mean and SD computed); Stats is one row
+per concentration with its mean signal and SD (a spare last row adds one; clearing a concentration removes it);
+Function is signal(c) and σ(signal) as formulas. Every view shows the current curve; editing in a view makes it the
+source (one undo step). A marker says "● these … define the curve" or "○ shown from the current curve · editing here
+makes it define the curve". Quick entry and "fill with simulated readings" are gone.
 - Equations view while the table drives: the best fits of μ(c) and σ(S) (§8, refitted 400 ms after any table change)
   shown as editable formulas, plus the other ranked fits (hover previews dashed on the chart). Editing a formula,
   picking a fit, or **Drive from these fits** makes the equations drive (keeping the table's levels and range),
@@ -270,16 +274,10 @@ the input drawer) · Flip axes button (`c → S` / `S → c`) · small Settings 
   overlaps) or **Anchors** (placed or auto-spaced points, blank first, overlaps with % labels). A
   `Levels | Anchors` switch (top left) appears while anchors exist; placing anchors flips to Anchors, clearing flips
   back. **Auto-space** and **Clear** sit on the chart toolbar (next to Read signal), not in the sidebar.
-- **Colour (v2.7).** Two layers, one red→blue ramp. **Background** (Heat haze, Band wash/ribbon, Lines): the *local
-  resolution* at each concentration c, i.e. the smallest Δc > 0 with closeness q(c, c + Δc) = 1 under the series
-  metric and k (searched up to 3·max(cEnd, cMax); none → red), as r = Δc / max(c, c_ref) (c_ref = first positive
-  level) mapped to q = 0.5 / r on a continuous ramp (no step at the edge): red (q ≤ 0.25) → orange (0.6) → yellow
-  (1, the edge, ±50%) → teal (1.5) → blue (≥ 2, ±25% or better).
-  Intrinsic, continuous, independent of placed points. **Foreground** (ruler brackets, sidebar rows): the closeness
-  of that specific pair. Shading `Band | Heat | Lines`; **Lines** (Bollinger-style) = ±1σ solid, ±2σ dashed, ±3σ
-  dotted, coloured like the background.
-- **SD band always on**: the neutral ±1σ/±2σ band covers the whole curve; closeness wash and glow sit on top
-  between adjacent levels (no gap where a pair is comfortably resolved).
+- **The spread (v4) — supersedes v2.7's background colour and shading modes:** the mean curve, and ±1σ, ±2σ, ±3σ
+  as thinner, fainter lines in the curve's colour (widths 1.2 / 0.9 / 0.7 px, opacity 0.6 / 0.38 / 0.22). No haze,
+  wash or heat map. **Colour** stays only on the foreground: ruler brackets and sidebar rows show the closeness of
+  that specific pair.
 - **Double-click resets the view** to the ranges computed from the current data (whole `[0, cMax]`, signal
   range per §11) on both charts — never to a range remembered from an earlier series. Plotly's own
   double-click reset is off.
@@ -329,8 +327,7 @@ the input drawer) · Flip axes button (`c → S` / `S → c`) · small Settings 
 - `Fit equations` shows a short ranked list (kind · AICc · expr); clicking one switches to Equations
   mode with that expression filled in (mean and sd chosen independently).
 
-**Settings popover (gear):** (metric and k moved to the pass rule chip, v2.3) simulated replicates n and seed (number inputs), jitter % (number input, default 30), shading:
-`Band | Heat` (default Band), heat step ratio (number input, default 2). **No sliders anywhere.**
+**Settings popover (gear):** (metric and k moved to the pass rule chip, v2.3) simulated replicates n and seed (number inputs), jitter % (number input, default 30). **No sliders anywhere.**
 All number fields accept typing and arrow-key nudging.
 
 **Main area** (charts fill the width; everything below the top bar/drawer):

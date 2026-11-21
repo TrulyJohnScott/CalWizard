@@ -1,21 +1,22 @@
 import { useMemo, useState } from 'react'
 import type { Fit } from '../api'
 import { MEAN_PRESETS, SD_PRESETS } from '../math/presets'
-import { fromTable, tableFromEquations, toTable as tableOf } from '../math/table'
+import { tableFromEquations } from '../math/table'
 import { normLevels } from '../math/tables'
 import type { Derived } from '../state/derived'
 import { useStore } from '../state/store'
 import { EquationsEditor, ExprField } from './EquationsEditor'
 import { FitList, useAutoFit } from './FitPanel'
-import { QuickEntry, TableEditor } from './TableEditor'
+import { StatsTable } from './StatsTable'
+import { TableEditor } from './TableEditor'
 import { IconChevron, Seg } from './ui'
 
-type View = 'equations' | 'table'
+type View = 'data' | 'stats' | 'function'
 
 /**
- * Left panel: one truth, two views (spec §11 v2.9). The Equations | Table switch only changes the view. Whichever
- * side drives the curve is edited as before; the other is shown live (fits of μ(c) and σ(S) from the table, or the
- * equations' values in the table), and editing it makes it the driver (one undo step).
+ * Left panel: define the curve three ways (spec §11): Data (readings per concentration), Stats (mean and SD per
+ * concentration) or Function (signal(c) and σ(signal)). The switch only changes the view; each view shows the current
+ * curve, and editing in a view makes it define the curve (one undo step).
  */
 export function LeftPanel({ d }: { d: Derived }) {
   const open = useStore((s) => s.ui.left)
@@ -27,9 +28,9 @@ export function LeftPanel({ d }: { d: Derived }) {
   const notify = useStore((s) => s.notify)
   const [wide, setWide] = useState(false)
   const { series, model } = d
-  const source: View = series.mode === 'equations' ? 'equations' : 'table'
-  const fit = useAutoFit(series, model, source === 'table')
-  const derivedTable = useMemo(() => (source === 'equations' ? tableFromEquations(series, model, 0) : null), [source, series, model])
+  const source: View = series.mode === 'equations' ? 'function' : series.mode === 'summary' ? 'stats' : 'data'
+  const fit = useAutoFit(series, model, source !== 'function')
+  const derivedTable = useMemo(() => (source === 'function' ? tableFromEquations(series, model, 0) : null), [source, series, model])
 
   /** Drive the curve from equations (keeping the table's levels and range when coming from the table). */
   const driveFromEquations = (p: { meanExpr?: string; sdExpr?: string }, what: string) => {
@@ -58,15 +59,11 @@ export function LeftPanel({ d }: { d: Derived }) {
       </aside>
     )
 
-  const badge = (v: View) =>
-    v === source ? (
-      <span className="text-[10.5px] font-medium text-accent" title="This view defines the curve">
-        ● drives the curve
-      </span>
+  const note =
+    view === source ? (
+      <span className="text-[10.5px] font-medium text-accent">● {view === 'data' ? 'these readings define' : view === 'stats' ? 'these stats define' : 'these functions define'} the curve</span>
     ) : (
-      <span className="text-[10.5px] text-muted" title="Shown live from the other view; editing here makes this view drive the curve">
-        ○ {v === 'equations' ? 'fitted from the table' : 'from the equations'} · edit to drive
-      </span>
+      <span className="text-[10.5px] text-muted">○ shown from the current curve · editing here makes it define the curve</span>
     )
 
   const bestMean = fit.res?.meanFits.find((f) => f.ok && f.expr)
@@ -82,8 +79,9 @@ export function LeftPanel({ d }: { d: Derived }) {
           <Seg<View>
             value={view}
             options={[
-              ['equations', 'Equations', 'μ(c) and σ(S) as formulas'],
-              ['table', 'Table', 'concentrations across, readings (or mean / sd) below'],
+              ['data', 'Data', 'readings at each concentration'],
+              ['stats', 'Stats', 'mean signal and SD at each concentration'],
+              ['function', 'Function', 'signal(c) and σ(signal) as formulas'],
             ]}
             onChange={(v) => setUi({ inputView: v })}
           />
@@ -91,10 +89,10 @@ export function LeftPanel({ d }: { d: Derived }) {
             <IconChevron dir="left" />
           </button>
         </div>
-        <div className="mb-3">{badge(view)}</div>
+        <div className="mb-3">{note}</div>
 
-        {view === 'equations' &&
-          (source === 'equations' ? (
+        {view === 'function' &&
+          (source === 'function' ? (
             <EquationsEditor d={d} />
           ) : (
             // table drives: show the live fits; editing a formula (or picking a fit) makes the equations drive
@@ -133,34 +131,8 @@ export function LeftPanel({ d }: { d: Derived }) {
             </div>
           ))}
 
-        {view === 'table' && (
-          <div className="flex flex-col gap-1.5">
-            <QuickEntry
-              table={derivedTable ?? tableOf(series)}
-              onApply={(t, n) => {
-                clearMeasure()
-                setLadder(null)
-                patch(fromTable(t))
-                notify(`Added ${n} ${n === 1 ? 'column' : 'columns'}; the table now drives the curve`)
-              }}
-            />
-            <TableEditor d={d} onFocusChange={setWide} data={derivedTable ?? undefined} />
-            {source === 'equations' && series.sim.n > 0 && (
-              <button
-                className="link self-start text-[11px]"
-                title="Make the table drive the curve, filled with simulated replicate readings (n and seed in Settings)"
-                onClick={() => {
-                  clearMeasure()
-                  setLadder(null)
-                  patch(fromTable(tableFromEquations(series, model, series.sim.n)))
-                  notify(`Table filled with ${series.sim.n} simulated readings per level; the table now drives the curve`)
-                }}
-              >
-                fill with simulated readings (n = {series.sim.n})
-              </button>
-            )}
-          </div>
-        )}
+        {view === 'data' && <TableEditor d={d} onFocusChange={setWide} data={derivedTable ?? undefined} />}
+        {view === 'stats' && <StatsTable d={d} />}
         {(series.layers ?? []).some((l) => l.on) && (
           <button className="link mt-4 self-start text-[11.5px]" onClick={() => setUi({ workspace: 'variability' })} title="The spread shown includes these layers; open the Variability workspace to change them">
             + {(series.layers ?? []).filter((l) => l.on).map((l) => l.name).join(', ')} variability included

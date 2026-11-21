@@ -12,14 +12,14 @@ export interface Ui {
   left: boolean
   sidebar: boolean
   flip: boolean
-  shading: 'band' | 'heat' | 'lines'
   stepR: number
   jitter: number
   histBars: boolean
   /** sideways Gaussians at the right of the scatter (not when flipped) */
   marginal: boolean
   /** left panel shows the equations or the table (independent of which one drives the curve) */
-  inputView: 'equations' | 'table'
+  /** how the curve is defined in the input panel (spec §11): readings, mean and SD per concentration, or functions */
+  inputView: 'data' | 'stats' | 'function'
   /** distribution panel shows the levels or the anchors (flips to anchors when anchors are placed) */
   distView: 'levels' | 'anchors'
   theme: Theme
@@ -172,12 +172,11 @@ const defaultUi = (): Ui => ({
   left: true,
   sidebar: true,
   flip: false,
-  shading: 'band',
   stepR: 2,
   jitter: 30,
   histBars: false,
   marginal: true,
-  inputView: 'equations',
+  inputView: 'function',
   distView: 'levels',
   theme: 'system',
   workspace: 'curve',
@@ -297,6 +296,8 @@ function load(): { series: Stored[]; activeId: string; ui: Ui } {
     const ui: Ui = { ...defaultUi(), ...(j.ui ?? {}) }
     // a workspace saved by an older version may no longer exist (Requirements was removed)
     if (!(['curve', 'separate', 'limits', 'read', 'variability', 'strips'] as string[]).includes(ui.workspace)) ui.workspace = 'curve'
+    const iv = ui.inputView as string
+    ui.inputView = iv === 'table' ? 'data' : iv === 'data' || iv === 'stats' ? iv : 'function'
     return { series, activeId, ui }
   } catch {
     return fresh()

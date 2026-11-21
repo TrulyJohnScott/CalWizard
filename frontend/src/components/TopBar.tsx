@@ -43,9 +43,6 @@ function Settings() {
       <Row label="Jitter %">
         <NumField value={ui.jitter} min={0} max={100} step={5} onCommit={(jitter) => setUi({ jitter })} />
       </Row>
-      <Row label="Shading">
-        <Seg value={ui.shading} options={[['band', 'Band'], ['heat', 'Heat'], ['lines', 'Lines']]} onChange={(shading) => setUi({ shading })} />
-      </Row>
       <Row label="Gaussians on curve" title="each level's signal spread drawn sideways on the curve">
         <Seg value={ui.marginal ? 'on' : 'off'} options={[['off', 'Off'], ['on', 'On']]} onChange={(v) => setUi({ marginal: v === 'on' })} />
       </Row>

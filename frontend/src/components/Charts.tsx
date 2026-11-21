@@ -201,8 +201,8 @@ export function CalibrationChart({ d }: { d: Derived }) {
   const estimates = useMemo(() => d.exp?.first.levels.map((l) => ({ c: l.c, mean: l.mean })) ?? null, [d.exp])
   const limitTicks = useMemo(() => (ui.showLimits && d.limits ? { lod: d.limits.lod?.c ?? null, loq: d.limits.loq?.c ?? null } : null), [ui.showLimits, d.limits])
   const spec = useMemo(
-    () => buildCalibration({ series, model, dots, listed, flip: ui.flip, shading: ui.shading, jitter: ui.jitter, measure, live, range, focus, viewRev, reading, probe: null, onCurve: ui.marginal, estimates, ghost, ladderTicks: d.resolvable, whatIf: ui.whatIf, limitTicks, pal }),
-    [series, model, dots, listed, ui.flip, ui.shading, ui.jitter, measure, live, range, focus, viewRev, reading, ui.marginal, estimates, ghost, d.resolvable, ui.whatIf, limitTicks, pal],
+    () => buildCalibration({ series, model, dots, listed, flip: ui.flip, jitter: ui.jitter, measure, live, range, focus, viewRev, reading, probe: null, onCurve: ui.marginal, estimates, ghost, ladderTicks: d.resolvable, whatIf: ui.whatIf, limitTicks, pal }),
+    [series, model, dots, listed, ui.flip, ui.jitter, measure, live, range, focus, viewRev, reading, ui.marginal, estimates, ghost, d.resolvable, ui.whatIf, limitTicks, pal],
   )
   const ref = usePlot(spec)
   const down = useRef<{ x: number; y: number } | null>(null)

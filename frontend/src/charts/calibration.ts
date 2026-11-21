@@ -1,9 +1,8 @@
 import type { Data, Layout } from 'plotly.js'
 import { concLabel, fmt, recoveryText } from '../format'
-import { pairRow, recover, resolutionProfile } from '../math/analysis'
-import { closenessColor, closenessQ, closenessRgbSmooth, rgbaCss } from '../math/closeness'
+import { pairRow, recover } from '../math/analysis'
+import { closenessColor, closenessQ, rgbaCss } from '../math/closeness'
 import { METRIC_LABEL } from '../math/metrics'
-import { heatImage, type HeatImage } from '../math/heat'
 import type { Model } from '../math/model'
 import { hashUnit, type LevelDots } from '../math/sim'
 import type { Series } from '../math/types'
@@ -20,7 +19,6 @@ export interface CalibrationIn {
   /** levels drawn as markers on the curve (the sidebar list) */
   listed: number[]
   flip: boolean
-  shading: 'band' | 'heat' | 'lines'
   jitter: number
   measure: Measure | null
   /** hovered concentration while only one ruler point is placed (live preview of the next) */
@@ -49,7 +47,6 @@ export interface CalibrationIn {
   pal: Palette
 }
 
-const heatMemo = new WeakMap<object, { k: string; img: HeatImage }>()
 
 export function buildCalibration(x: CalibrationIn): PlotSpec {
   const { series: s, model: m, flip, pal } = x
@@ -65,63 +62,21 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
   const shapes: Partial<Layout['shapes'][number]>[] = []
   const notes: Partial<Layout['annotations'][number]>[] = []
 
-  // background colour (haze / wash / lines) = local resolution at each concentration: intrinsic to the curve, SD,
-  // metric and k, independent of placed points (spec §11 v2.7). Brackets and the sidebar stay pair-specific.
-  const prof = resolutionProfile(m, s.metric, s.kTarget, cEnd)
-  const resColourAt = (c: number): [number, number, number] => {
-    const i = Math.min(prof.c.length - 1, Math.max(0, Math.round((c / cEnd) * (prof.c.length - 1))))
-    return closenessRgbSmooth(prof.q[i])
-  }
-  const SEG = linspace(0, cEnd, 41)
-
-  if (x.shading === 'lines') {
-    // Bollinger-style: ±1σ solid, ±2σ dashed, ±3σ dotted; each stretch coloured by its pair's closeness, neutral beyond
-    const stretches = SEG.slice(1).map((b, i) => ({ a: SEG[i], b, rgb: resColourAt(0.5 * (SEG[i] + b)) }))
-    const styles = [
-      { k: 1, dash: 'solid', width: 1.6, alpha: 0.95 },
-      { k: 2, dash: 'dash', width: 1.1, alpha: 0.75 },
-      { k: 3, dash: 'dot', width: 1, alpha: 0.6 },
-    ] as const
-    for (const st of stretches) {
-      const cs = linspace(st.a, st.b, 10)
-      const colr = `rgba(${st.rgb[0]},${st.rgb[1]},${st.rgb[2]},`
-      for (const sty of styles)
-        for (const sign of [1, -1])
-          traces.push({
-            type: 'scatter',
-            mode: 'lines',
-            ...xy(cs, cs.map((c) => nn(m.mean(c) + sign * sty.k * m.sd(c)))),
-            line: { color: `${colr}${sty.alpha})`, width: sty.width, dash: sty.dash },
-            hoverinfo: 'skip',
-          } as Data)
-    }
-  } else if (x.shading === 'heat') {
-    const hk = `${flip}|${sLo}|${sHi}|${cEnd}|${s.metric}|${s.kTarget}`
-    let hm = heatMemo.get(m)
-    if (!hm || hm.k !== hk) {
-      hm = { k: hk, img: heatImage(m, { space: flip ? 's2c' : 'c2s', cMax: cEnd, sLo, sHi, nc: 400, ns: 260 }, resColourAt) }
-      heatMemo.set(m, hm)
-    }
-    const img = hm.img
-    traces.push({ type: 'image', colormodel: 'rgba', z: img.z, x0: img.x0, dx: img.dx, y0: img.y0, dy: img.dy, hoverinfo: 'skip' } as unknown as Data)
-  } else {
-    // coloured ±2σ wash + ±1σ ribbon in short segments, each in the local-resolution colour
-    SEG.slice(1).forEach((b, si) => {
-      const a = SEG[si]
-      const rgb = resColourAt(0.5 * (a + b))
-      const col: [number, number, number, number] = [rgb[0], rgb[1], rgb[2], 0.6]
-      const cs = linspace(a, b, 8)
-      const up = cs.map((c) => m.mean(c) + 2 * m.sd(c))
-      const dn = cs.map((c) => m.mean(c) - 2 * m.sd(c))
-      const cc = [...cs, ...cs.slice().reverse(), cs[0]]
-      const sg = [...up, ...dn.slice().reverse(), up[0]].map(nn)
-      const up1 = cs.map((c) => m.mean(c) + m.sd(c))
-      const dn1 = cs.map((c) => m.mean(c) - m.sd(c))
-      const s1 = [...up1, ...dn1.slice().reverse(), up1[0]].map(nn)
-      traces.push({ type: 'scatter', mode: 'lines', ...xy(cc, sg), line: { width: 0 }, fill: 'toself', fillcolor: rgbaCss(col, 0.18), hoverinfo: 'skip' } as Data)
-      traces.push({ type: 'scatter', mode: 'lines', ...xy(cc, s1), line: { width: 0 }, fill: 'toself', fillcolor: rgbaCss(col, 0.6), hoverinfo: 'skip' } as Data)
-    })
-  }
+  // the spread as lines (spec §11): mean in the middle, ±1, ±2, ±3 SD fading outward; no shading
+  const SPREAD = [
+    { k: 1, width: 1.2, alpha: 0.6 },
+    { k: 2, width: 0.9, alpha: 0.38 },
+    { k: 3, width: 0.7, alpha: 0.22 },
+  ] as const
+  for (const st of SPREAD)
+    for (const sign of [1, -1])
+      traces.push({
+        type: 'scatter',
+        mode: 'lines',
+        ...xy(grid, grid.map((_, i) => nn(mu[i] + sign * st.k * sd[i]))),
+        line: { color: withAlpha(pal.accent, st.alpha), width: st.width },
+        hoverinfo: 'skip',
+      } as Data)
 
   // mean curve
   const u = s.units ? ` ${s.units}` : ''
@@ -387,7 +342,7 @@ export function buildCalibration(x: CalibrationIn): PlotSpec {
     annotations: notes as Layout['annotations'],
     xaxis: { ...(flip ? sAxis : cAxis), constrain: 'range', scaleanchor: false } as unknown as Layout['xaxis'],
     yaxis: { ...(flip ? cAxis : sAxis), constrain: 'range', scaleanchor: false } as unknown as Layout['yaxis'],
-    uirevision: `${x.focus?.join('-') ?? 'all'}|${flip}|${m.cMax}|${sLo.toPrecision(4)}|${sHi.toPrecision(4)}|${x.shading}|${x.viewRev}`,
+    uirevision: `${x.focus?.join('-') ?? 'all'}|${flip}|${m.cMax}|${sLo.toPrecision(4)}|${sHi.toPrecision(4)}|${x.viewRev}`,
   }
   return { data: traces, layout, animateKey: flip ? 's2c' : 'c2s' }
 }

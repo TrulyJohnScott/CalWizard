@@ -296,23 +296,3 @@ export function resolutionQ(dc: number, c: number, cRef: number): number {
   return r > 0 ? 0.5 / r : 2
 }
 
-const profMemo = new WeakMap<object, { key: string; c: number[]; q: number[] }>()
-
-/** Local-resolution closeness across [0, cEnd] (201 points), memoised per model. */
-export function resolutionProfile(m: Curve & { levels?: number[]; cMax: number }, metric: MetricKey, k: number, cEnd: number): { c: number[]; q: number[] } {
-  const key = `${metric}|${k}|${cEnd}`
-  const hit = profMemo.get(m)
-  if (hit && hit.key === key) return hit
-  const cRef = (m.levels ?? []).find((l) => l > 0) ?? m.cMax / 100
-  const stop = Math.max(cEnd, m.cMax) * 3
-  const c: number[] = []
-  const q: number[] = []
-  for (let i = 0; i <= 200; i++) {
-    const x = (cEnd * i) / 200
-    c.push(x)
-    q.push(resolutionQ(resolutionAt(m, x, metric, k, stop, 300), x, cRef))
-  }
-  const out = { key, c, q }
-  profMemo.set(m, out)
-  return out
-}

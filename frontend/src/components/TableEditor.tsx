@@ -3,7 +3,7 @@ import '@glideapps/glide-data-grid/dist/index.css'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fmt } from '../format'
 import { parseNum } from '../math/tables'
-import { columnStats, fromTable, mergeQuick, parseQuick, pasteWhole, setTableCell, toTable, type CellRef, type TableData } from '../math/table'
+import { columnStats, fromTable, pasteWhole, setTableCell, toTable, type CellRef, type TableData } from '../math/table'
 import type { Derived } from '../state/derived'
 import { useStore } from '../state/store'
 import { usePalette, withAlpha } from '../theme'
@@ -212,34 +212,5 @@ export function TableEditor({ d, onFocusChange, data }: { d: Derived; onFocusCha
         scaleToRem={false}
       />
     </div>
-  )
-}
-
-/** One-line entry: `0:48,52,47  1:55±2.5  5:96` — Enter merges into the table (one undo step). */
-export function QuickEntry({ table, onApply }: { table: TableData; onApply: (t: TableData, n: number) => void }) {
-  const [text, setText] = useState('')
-  const [bad, setBad] = useState(false)
-  const apply = () => {
-    if (!text.trim()) return
-    const items = parseQuick(text)
-    if (!items) return setBad(true)
-    onApply(mergeQuick(table, items), items.length)
-    setText('')
-    setBad(false)
-  }
-  return (
-    <input
-      type="text"
-      className="bare mono w-full text-[11.5px]"
-      style={bad ? { color: 'var(--bad)' } : undefined}
-      placeholder="quick add: 0:48,52,47  1:55±2.5  5:96 ⏎"
-      title="c:readings,comma,separated  ·  c:mean±sd  ·  c:mean — Enter adds (or replaces) those columns"
-      value={text}
-      onChange={(e) => {
-        setText(e.target.value)
-        setBad(false)
-      }}
-      onKeyDown={(e) => e.key === 'Enter' && apply()}
-    />
   )
 }
