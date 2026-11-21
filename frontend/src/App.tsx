@@ -34,11 +34,10 @@ function CurveWorkspace({ d }: { d: Derived }) {
   const pair = selectedPair(d, measure)
   const repeat = useMemo(() => {
     if (!reps) return null
-    const pts = rulerPoints(measure, null)
-    const concs = [...d.listed, ...pts]
-    const mid = pair?.hi ?? (pts.length > 1 ? pts[Math.ceil((pts.length - 1) / 2)] : d.listed[Math.floor(d.listed.length / 2)])
-    return repeatRuns(d.model, concs, Math.max(1, d.series.sim.n || 3), reps, mid > 0 ? mid : null)
-  }, [reps, d.model, d.listed, d.series.sim.n, measure, pair?.hi])
+    const pts = rulerPoints(measure, null).filter((c) => c > 0)
+    const mid = pair?.hi ?? (pts.length ? pts[Math.floor((pts.length - 1) / 2)] : d.listed[Math.floor(d.listed.length / 2)])
+    return repeatRuns(d.series, d.model, pts, reps, mid > 0 ? mid : null)
+  }, [reps, d.series, d.model, d.listed, measure, pair?.hi])
   return (
     <>
       <LeftPanel d={d} />

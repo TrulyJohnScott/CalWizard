@@ -51,7 +51,13 @@ export function Sentence({ d, repeat }: { d: Derived; repeat: RepeatResult | nul
       )
     }
   }
-  if (repeat?.back && repeat.at !== null)
-    parts.push(`Across ${repeat.runs.length} repeats a sample at ${withUnits(repeat.at, u)} would read back between ${fmt(repeat.back[0])} and ${fmt(repeat.back[1])}.`)
+  if (repeat && repeat.runs.length > 1) {
+    const r: string[] = []
+    const shaky = repeat.stable.filter((x) => x.share < 0.95).sort((a, b) => a.share - b.share)
+    if (repeat.stable.length) r.push(shaky.length ? `${fmt(shaky[0].a)} → ${withUnits(shaky[0].b, u)} stays apart in only ${Math.round(100 * shaky[0].share)}% of calibrations` : 'every step stays apart in at least 95% of calibrations')
+    if (repeat.lod) r.push(`the LoD lands between ${fmt(repeat.lod[0])} and ${withUnits(repeat.lod[1], u)}`)
+    if (repeat.back && repeat.at !== null) r.push(`a sample at ${withUnits(repeat.at, u)} reads back between ${fmt(repeat.back[0])} and ${fmt(repeat.back[1])}`)
+    if (r.length) parts.push(`Across ${repeat.runs.length} repeated calibrations: ${r.join('; ')}.`)
+  }
   return <p className="m-0 shrink-0 border-t border-line px-4 py-2 text-[13px] leading-relaxed">{parts.join(' ')}</p>
 }
