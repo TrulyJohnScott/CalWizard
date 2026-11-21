@@ -222,9 +222,14 @@ export function SeparateWorkspace({ d }: { d: Derived }) {
         <div className="grid grid-cols-2 gap-x-6 gap-y-4 md:grid-cols-4">
           <Stat label="Misread, single reading" value={pct2(r.err)} tone={r.pass ? 'good' : 'bad'} title="Chance one reading lands on the wrong side of the cut-off" />
           <Stat label={`${METRIC_LABEL[r.metric]} (target ${kText(r.k)})`} value={fmt(r[r.metric])} tone={r.pass ? 'good' : 'bad'} sub={`Δμ/Σσ ${fmt(r.dsum)} · SSMD ${fmt(r.ssmd)} · Z′ ${fmt(r.zprime)}`} />
-          <Stat label="Overlap of the two spreads" value={pct2(r.ovl)} sub={`AUC ${fmt(r.auc, 4)} · d′ ${fmt(r.dprime)}`} title="Shared area of the two distributions; AUC = chance a B reading exceeds an A reading" />
+          <Stat label="Overlap of the two spreads" value={pct2(r.ovl)} sub={`AUC ${r.auc > 0.99995 && r.auc < 1 ? '> 0.9999' : fmt(r.auc, 4)} · d′ ${fmt(r.dprime)}`} title="Shared area of the two distributions; AUC = chance a B reading exceeds an A reading" />
           <Stat label="Resolvable steps between" value={r.stepsBetween} sub={r.fold !== null ? `${fmt(r.fold)}-fold apart` : 'from the blank'} />
-          <Stat label={`Best cut-off (${s.signalLabel || 'signal'})`} value={fmt(r.threshold, 4)} sub={`calls B correctly ${pct2(r.sensitivity)} · A ${pct2(r.specificity)}`} title="Where the two distributions cross: readings above it are called the higher one" />
+          <Stat
+            label={`Best cut-off (${s.signalLabel || 'signal'})`}
+            value={fmt(r.threshold, 4)}
+            sub={`sensitivity ${pct2(r.sensitivity)} (${r.c2 > r.c1 ? 'B' : 'A'}) · specificity ${pct2(r.specificity)} (${r.c2 > r.c1 ? 'A' : 'B'})`}
+            title="Where the two distributions cross. Sensitivity: the higher concentration called positive; specificity: the lower one called negative."
+          />
           <Stat label={`A · ${withUnits(r.c1, u)}`} value={`${fmt(r.mu1, 4)} ± ${fmt(r.sd1)}`} sub={`CV ${pct2(r.cv1)} · reads back ${rb(0)}`} />
           <Stat label={`B · ${withUnits(r.c2, u)}`} value={`${fmt(r.mu2, 4)} ± ${fmt(r.sd2)}`} sub={`CV ${pct2(r.cv2)} · reads back ${rb(1)}`} />
           <Stat label="Signal difference" value={fmt(Math.abs(r.dmu), 4)} sub={why.needDmu !== null ? `rule needs ${fmt(why.needDmu)}` : undefined} />

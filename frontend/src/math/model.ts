@@ -28,6 +28,8 @@ export interface Model {
   noSd: boolean
   /** within-run SD (the curve's own σ, before layers; spec §22) */
   sdWithin?: (c: number) => number
+  /** SD of `reads` averaged readings of one sample: only within-run noise averages (spec §15, §22.1); absent = sd/√reads */
+  sdReads?: (c: number, reads: number) => number
   /** mean(c)/sd(c) are defined beyond cMax (equations; tables continue the mean linearly, hold the SD) */
   extrapolates: boolean
   /** a what-if layer is applied; `base` is the curve without it */
@@ -128,5 +130,10 @@ export function compileModel(s: Series): Model {
     const { within, terms } = layerTerms(mu, base.sd(c), mu0, on)
     return Math.sqrt(within + terms.reduce((a, b) => a + b, 0))
   }
-  return { ...base, sd, sdWithin: base.sd }
+  const sdReads = (c: number, reads: number) => {
+    if (reads === 1) return sd(c)
+    const { within, terms } = layerTerms(base.mean(c), base.sd(c), mu0, on)
+    return Math.sqrt(within / reads + terms.reduce((a, b) => a + b, 0))
+  }
+  return { ...base, sd, sdWithin: base.sd, sdReads }
 }

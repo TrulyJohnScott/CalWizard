@@ -74,7 +74,7 @@ export function requirementFinding(r: RequirementResult, s: Pick<Series, 'units'
         : r.kind === 'precision'
           ? `CV there is ${pct2(r.value)}`
           : r.kind === 'range'
-            ? r.value === null ? 'never within that CV' : `quantifiable from ${withUnits(r.value, u)}`
+            ? r.value === null ? 'not quantifiable across it (flat curve or past the hook)' : `worst CV across it ${pct2(r.value)}`
             : `${fmt(r.value)} resolvable levels`
   const gap = r.ok ? null : r.sdScale === null ? 'tighter noise alone will not get there' : `met if the noise were ${fmt(r.sdScale, 2)}× of today`
   return { found, gap }

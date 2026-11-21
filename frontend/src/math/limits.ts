@@ -4,6 +4,7 @@
  * Port of backend/app/limits.py (parity via spec/fixtures/model_vectors.json).
  */
 import { inverse } from './analysis'
+import { cTop, directionOf, hookOf, type Hook } from './hook'
 import { summarise, type Q } from './experiment'
 import type { Model } from './model'
 import { makeNormal, mulberry32 } from './sim'
@@ -15,10 +16,13 @@ const BISECT = 60
 const PROFILE_N = 200
 const SLOPE_H = 1e-4
 
-type Curve = Pick<Model, 'mean' | 'sd' | 'cMax'>
+type Curve = Pick<Model, 'mean' | 'sd' | 'cMax' | 'sdReads'>
+
+/** SD of `reads` averaged readings at c: within-run noise averages, layer terms do not (Model.sdReads). */
+export const sdOfReads = (m: Curve, c: number, reads = 1): number => (m.sdReads ? m.sdReads(c, reads) : m.sd(c) / Math.sqrt(reads))
 
 /** +1 when the signal rises with concentration (sandwich), −1 when it falls (competitive). */
-export const direction = (m: Curve): 1 | -1 => (m.mean(m.cMax) >= m.mean(0) ? 1 : -1)
+export const direction = (m: Curve): 1 | -1 => directionOf(m)
 
 /** d mean / dc by a central difference (one-sided at 0), step 1e-4·cMax. */
 export function slope(m: Curve, c: number): number {
@@ -28,11 +32,11 @@ export function slope(m: Curve, c: number): number {
   return (m.mean(b) - m.mean(a)) / (b - a)
 }
 
-/** CV of the read-back concentration at c: sd(c) / √reads / (|slope|·c); ∞ at c = 0 or on a flat curve. */
+/** CV of the read-back concentration at c: SD of `reads` averaged readings / (|slope|·c); ∞ at c = 0 or on a flat curve. */
 export function concCv(m: Curve, c: number, reads = 1): number {
   const s = Math.abs(slope(m, c))
   if (!(c > 0 && s > 0)) return Infinity
-  return m.sd(c) / Math.sqrt(reads) / (s * c)
+  return sdOfReads(m, c, reads) / (s * c)
 }
 
 function first(pred: (c: number) => boolean, lo: number, hi: number): number | null {
@@ -92,6 +96,10 @@ export interface Limits {
   lod: LimitPoint | null
   loq: LimitPoint | null
   uloq: LimitPoint | null
+  /** the high-dose hook's peak (§15.4); limits stop there */
+  hook: Hook | null
+  /** the CV is still within target at the top of the usable range: the true upper limit lies beyond (§15.2) */
+  uloqOpen: boolean
   profile?: { c: number[]; cv: number[]; cvSignal: number[] }
 }
 
@@ -115,10 +123,9 @@ export function limits(m: Curve, a: LimitArgs = {}): Limits {
   const cv = a.cv ?? 0.2
   const reads = a.reads ?? 1
   check(alpha, beta, cv, reads)
-  const cMax = m.cMax
+  const cMax = cTop(m) // claims stop at a hook's peak (§15.4)
   const d = direction(m)
-  const rt = Math.sqrt(reads)
-  const sd = (c: number) => m.sd(c) / rt
+  const sd = (c: number) => sdOfReads(m, c, reads)
   const mu0 = m.mean(0)
   const sd0 = sd(0)
   const za = normQuantile(1 - alpha)
@@ -134,13 +141,13 @@ export function limits(m: Curve, a: LimitArgs = {}): Limits {
     if (loq !== null) uloq = last(ok, loq, cMax)
   }
   const at = (c: number | null): LimitPoint | null => (c === null ? null : { c, signal: m.mean(c), cv: concCv(m, c, reads) })
-  const out: Limits = { alpha, beta, cv, reads, direction: d, blank: { mean: mu0, sd: sd0 }, lob: { signal: lobS, c: lobC }, lod: at(lod), loq: at(loq), uloq: at(uloq) }
+  const out: Limits = { alpha, beta, cv, reads, direction: d, blank: { mean: mu0, sd: sd0 }, lob: { signal: lobS, c: lobC }, lod: at(lod), loq: at(loq), uloq: at(uloq), hook: hookOf(m), uloqOpen: uloq !== null && uloq >= cMax }
   if (a.profile ?? true) {
     const cs: number[] = []
     const cvs: number[] = []
     const cvSignal: number[] = []
     for (let i = 0; i <= PROFILE_N; i++) {
-      const c = (cMax * i) / PROFILE_N
+      const c = (m.cMax * i) / PROFILE_N
       cs.push(c)
       cvs.push(concCv(m, c, reads))
       const mu = m.mean(c)

@@ -13,6 +13,7 @@ from . import expr as E
 
 DEFAULT_MEAN = "4000 + (50 - 4000)/(1 + (c/40)^1.2)"
 DEFAULT_SD = "sqrt(15^2 + (0.08*S)^2)"
+HOOK_SCAN = 2001
 
 
 class Camel(BaseModel):
@@ -343,6 +344,61 @@ class Model:
 
     def sd(self, c) -> np.ndarray:
         return self._sd(np.asarray(c, dtype=float))
+
+    def direction(self) -> int:
+        """+1 when the signal rises with concentration (sandwich), -1 when it falls (competitive): the sign of the
+        largest excursion from the blank on a 2001-point grid (robust to a hook or a fit that dips at the far end)."""
+        if not hasattr(self, "_dir"):
+            cs = np.linspace(0.0, self.c_max, HOOK_SCAN)
+            with np.errstate(invalid="ignore"):
+                dev = self.mean(cs) - float(self.mean(np.float64(0.0)))
+            dev = np.where(np.isfinite(dev), dev, 0.0)
+            self._dir = 1 if dev[int(np.argmax(np.abs(dev)))] >= 0 else -1
+        return self._dir
+
+    def hook(self) -> dict | None:
+        """Spec 15.4: the high-dose hook. The extreme of direction * mean(c) on [0, cMax]; when it lies inside the range
+        and the signal turns back after it (by more than 1e-6 of the signal span), {c, signal} of the peak, else None.
+        Claims stop at the peak: above it a signal is also produced by a lower concentration."""
+        if not hasattr(self, "_hook"):
+            self._hook = None
+            d = self.direction()
+            cs = np.linspace(0.0, self.c_max, HOOK_SCAN)
+            with np.errstate(invalid="ignore"):
+                y = d * self.mean(cs)
+            if np.all(np.isfinite(y)):
+                i = int(np.argmax(y))
+                span = float(y.max() - y.min())
+                if i < HOOK_SCAN - 1 and span > 0 and y[i] - y[-1] > 1e-6 * span:
+                    a, b = float(cs[max(i - 1, 0)]), float(cs[i + 1])
+                    g = (math.sqrt(5) - 1) / 2
+                    for _ in range(60):  # golden-section search for the maximum
+                        x1, x2 = b - g * (b - a), a + g * (b - a)
+                        if d * float(self.mean(x1)) >= d * float(self.mean(x2)):
+                            b = x2
+                        else:
+                            a = x1
+                    c = 0.5 * (a + b)
+                    self._hook = {"c": c, "signal": float(self.mean(c))}
+        return self._hook
+
+    @property
+    def c_top(self) -> float:
+        """The top of the usable range: the hook's peak if there is one, else cMax."""
+        h = self.hook()
+        return self.c_max if h is None else h["c"]
+
+    def sd_reads(self, c, reads: int = 1) -> np.ndarray:
+        """SD of the average of `reads` readings of one sample (spec 15, 22.1): only within-run noise (with the layers'
+        noise CVs) averages; lot, reader, day and the other layer terms are shared by the reads and stay whole."""
+        c = np.asarray(c, dtype=float)
+        if reads == 1:
+            return self.sd(c)
+        on = [lay for lay in self.series.layers if lay.on]
+        if not on:
+            return self.sd(c) / math.sqrt(reads)
+        w, terms = layer_terms(self.mean(c), self.sd_within(c), float(self.mean(np.float64(0.0))), on)
+        return np.sqrt(w / reads + sum(terms))
 
     def grid(self, n: int = 501) -> np.ndarray:
         return np.linspace(0.0, self.c_max, n)

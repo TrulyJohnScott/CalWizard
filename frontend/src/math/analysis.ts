@@ -1,3 +1,4 @@
+import { cTop, hookOf } from './hook'
 import { normQuantile } from './specials'
 import { ovlErr } from './metrics'
 import type { Model } from './model'
@@ -101,17 +102,18 @@ export function metricValue(m: Curve, c1: number, c2: number, metric: MetricKey)
  * stops when none passes. Returns the list of levels including `from`. With `sig` > 0 levels are rounded
  * up to that many significant digits.
  */
-export function ladder(m: Curve & { cMax: number }, metric: MetricKey, k: number, sig = 0, maxLevels = 200, from = 0): number[] {
+export function ladder(m: Curve & { cMax: number }, metric: MetricKey, k: number, sig = 0, maxLevels = 200, from = 0, stop?: number): number[] {
   const out = [from]
+  const top = stop ?? cTop(m) // by default a hook's peak ends the ladder (§15.4)
   const N = 2000
   const ok = (a: number, b: number) => passes(metric, metricValue(m, a, b, metric), k)
   while (out.length < maxLevels) {
     const a = out[out.length - 1]
-    if (!(a < m.cMax)) break
+    if (!(a < top)) break
     let lo = a
     let hit = -1
     for (let j = 1; j <= N; j++) {
-      const c = a + ((m.cMax - a) * j) / N
+      const c = a + ((top - a) * j) / N
       if (ok(a, c)) {
         hit = c
         break
@@ -129,7 +131,7 @@ export function ladder(m: Curve & { cMax: number }, metric: MetricKey, k: number
       // round up to `sig` significant digits (keeps the pair passing) so the list reads cleanly
       const p = Math.pow(10, sig - 1 - Math.floor(Math.log10(hi)))
       const up = Math.ceil(hi * p - 1e-9) / p
-      if (up <= m.cMax && ok(a, up)) hi = up
+      if (up <= top && ok(a, up)) hi = up
     }
     if (!(hi > a)) break
     out.push(hi)
@@ -145,6 +147,8 @@ export interface Recovery {
   loOpen: boolean
   hiOpen: boolean
   conf: number
+  /** the signal is also produced above a hook's peak: the reading is ambiguous (§15.4) */
+  hook: boolean
 }
 
 /**
@@ -152,12 +156,15 @@ export interface Recovery {
  * z = Phi^-1(1 - (1 - conf)/2); 2001-point scan then 60 bisections at each end. Port of analysis.recover.
  */
 export function recover(m: Pick<Model, 'mean' | 'sd' | 'cMax'>, S: number, conf = 0.95): Recovery {
-  const row: Recovery = { signal: S, c: inverse(m, S), lo: null, hi: null, loOpen: false, hiOpen: false, conf }
+  const row: Recovery = { signal: S, c: inverse(m, S), lo: null, hi: null, loOpen: false, hiOpen: false, conf, hook: false }
   if (!Number.isFinite(S) || !(conf > 0 && conf < 1)) return row
   const z = normQuantile(1 - (1 - conf) / 2)
   const N = 2000
   const ok = (c: number) => Math.abs(S - m.mean(c)) <= z * m.sd(c)
-  const at = (j: number) => (m.cMax * j) / N
+  const hk = hookOf(m)
+  const top = hk ? hk.c : m.cMax // the usable range (§15.4)
+  if (hk) for (let j = 1; j <= N && !row.hook; j++) row.hook = ok(hk.c + ((m.cMax - hk.c) * j) / N)
+  const at = (j: number) => (top * j) / N
   let first = -1
   let last = -1
   for (let j = 0; j <= N; j++)

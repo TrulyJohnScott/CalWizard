@@ -20,6 +20,7 @@ FLAGS = {
     "belowLod": "not detected (< LoD)",
     "belowLoq": "detected, below LoQ",
     "aboveLoq": "above the quantifiable range",
+    "hook": "ambiguous: also above the hook peak",
 }
 
 
@@ -49,7 +50,9 @@ def readback(model: Model, samples: list[Sample] | None = None, conf: float = 0.
                 row.update(result=c * dil, cv=L.conc_cv(model, c, lim.reads),
                            resultLo=None if r["lo"] is None else r["lo"] * dil,
                            resultHi=None if r["hi"] is None else r["hi"] * dil)
-                if lod is not None and c < lod:
+                if r["hook"]:
+                    row["flag"] = "hook"
+                elif lod is not None and c < lod:
                     row["flag"] = "belowLod"
                 elif loq is not None and c < loq:
                     row["flag"] = "belowLoq"

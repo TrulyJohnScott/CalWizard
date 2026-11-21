@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import math
 
+import numpy as np
+
 from . import analysis as A
 from . import limits as L
 from . import metrics as K
@@ -11,6 +13,7 @@ from .series import Model, Requirement, Series
 
 KINDS = ("detect", "distinguish", "precision", "range", "levels")
 SD_BISECT = 40
+RANGE_N = 200
 SD_FLOOR = 0.01
 
 
@@ -27,8 +30,32 @@ class _Scaled:
     def sd(self, c):
         return self._s * self._m.sd(c)
 
+    def sd_reads(self, c, reads: int = 1):
+        return self._s * self._m.sd_reads(c, reads)
+
     def inverse(self, signals):
         return self._m.inverse(signals)
+
+    def direction(self):
+        return self._m.direction()
+
+    def hook(self):
+        return self._m.hook()
+
+    @property
+    def c_top(self):
+        return self._m.c_top
+
+
+class _PerResult(_Scaled):
+    """One result = the average of `reads` readings: sd is Model.sd_reads (spec 17)."""
+
+    def __init__(self, model, reads: int):
+        super().__init__(model, 1.0)
+        self._reads = reads
+
+    def sd(self, c):
+        return self._m.sd_reads(c, self._reads)
 
 
 def _valid(r: Requirement) -> str | None:
@@ -54,21 +81,22 @@ def _evaluate(model, r: Requirement, s: Series, quick: bool = False) -> tuple[bo
     if r.kind == "detect":
         lod = L.limits(model, lim.alpha, lim.beta, lim.cv, lim.reads, profile=False)["lod"]
         return (lod is not None and lod["c"] <= r.c), (None if lod is None else lod["c"])
+    per = model if lim.reads == 1 else _PerResult(model, lim.reads)
     if r.kind == "distinguish":
-        v = float(A.metric_value(model, r.c, r.c2, s.metric))
+        v = float(A.metric_value(per, r.c, r.c2, s.metric))
         return K.passes(s.metric, v, s.k_target), v
     if r.kind == "precision":
         v = L.conc_cv(model, r.c, lim.reads)
         return bool(v <= r.cv), v
-    if r.kind == "range":
+    if r.kind == "range":  # the worst CV across [c, c2] (RANGE_N + 1 points), within the usable range (17)
         cv = lim.cv if r.cv is None else r.cv
-        res = L.limits(model, lim.alpha, lim.beta, cv, lim.reads, profile=False)
-        loq, uloq = res["loq"], res["uloq"]
-        ok = loq is not None and uloq is not None and loq["c"] <= r.c and uloq["c"] >= r.c2
-        return ok, (None if loq is None else loq["c"])
+        if r.c2 > model.c_top:
+            return False, None
+        worst = float(np.max(L.conc_cv(model, np.linspace(r.c, r.c2, RANGE_N + 1), lim.reads)))
+        return bool(worst <= cv), (worst if math.isfinite(worst) else None)
     if quick:  # only "does it reach n levels": stop climbing the ladder there
-        return len(A.ladder(model, s.metric, s.k_target, max_levels=min(r.n, A.MAX_LEVELS))) >= r.n, None
-    n = len(A.ladder(model, s.metric, s.k_target))
+        return len(A.ladder(per, s.metric, s.k_target, max_levels=min(r.n, A.MAX_LEVELS))) >= r.n, None
+    n = len(A.ladder(per, s.metric, s.k_target))
     return n >= r.n, float(n)
 
 

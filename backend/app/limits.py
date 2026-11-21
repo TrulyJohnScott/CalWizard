@@ -21,7 +21,7 @@ SLOPE_H = 1e-4  # derivative step as a fraction of cMax
 
 def direction(model: Model) -> int:
     """+1 when the signal rises with concentration (sandwich), -1 when it falls (competitive)."""
-    return 1 if float(model.mean(model.c_max)) >= float(model.mean(0.0)) else -1
+    return model.direction()
 
 
 def slope(model: Model, c):
@@ -33,11 +33,12 @@ def slope(model: Model, c):
 
 
 def conc_cv(model: Model, c, reads: int = 1):
-    """CV of the read-back concentration at c: sd(c) / sqrt(reads) / (|slope| * c). inf at c = 0 or a flat curve."""
+    """CV of the read-back concentration at c: sd of `reads` averaged readings / (|slope| * c). inf at c = 0 or a flat
+    curve. Only within-run noise averages over reads (Model.sd_reads)."""
     c = np.asarray(c, dtype=float)
     with np.errstate(all="ignore"):
         s = np.abs(slope(model, c))
-        cv = model.sd(c) / math.sqrt(reads) / (s * c)
+        cv = model.sd_reads(c, reads) / (s * c)
     out = np.where((c > 0) & (s > 0), cv, np.inf)
     return float(out) if out.ndim == 0 else out
 
@@ -98,11 +99,10 @@ def limits(model: Model, alpha: float = 0.05, beta: float = 0.05, cv: float = 0.
            profile: bool = True) -> dict:
     """LoB, LoD, LoQ and the upper limit of quantitation from the curve (spec section 15)."""
     _check(alpha, beta, cv, reads)
-    c_max = model.c_max
+    c_max = model.c_top  # claims stop at a hook's peak (15.4)
     d = direction(model)
-    rt = math.sqrt(reads)
     mean = model.mean
-    sd = lambda c: model.sd(c) / rt  # noqa: E731
+    sd = lambda c: model.sd_reads(c, reads)  # noqa: E731
     mu0, sd0 = float(mean(0.0)), float(sd(0.0))
     za, zb = float(ndtri(1 - alpha)), float(ndtri(1 - beta))
     lob_s = mu0 + d * za * sd0
@@ -122,10 +122,12 @@ def limits(model: Model, alpha: float = 0.05, beta: float = 0.05, cv: float = 0.
         "alpha": alpha, "beta": beta, "cv": cv, "reads": int(reads), "direction": d,
         "blank": {"mean": mu0, "sd": sd0},
         "lob": {"signal": lob_s, "c": lob_c},
-        "lod": at(lod), "loq": at(loq), "uloq": at(uloq),
+        "lod": at(lod), "loq": at(loq), "uloq": at(uloq), "hook": model.hook(),
+        # the CV is still within target at the top of the usable range: the true upper limit lies beyond (15.2)
+        "uloqOpen": uloq is not None and uloq >= c_max,
     }
     if profile:
-        cs = c_max * np.arange(PROFILE_N + 1, dtype=float) / PROFILE_N
+        cs = model.c_max * np.arange(PROFILE_N + 1, dtype=float) / PROFILE_N
         with np.errstate(all="ignore"):
             cvs = np.where(mean(cs) != 0, sd(cs) / np.abs(mean(cs)), np.inf)
         out["profile"] = {"c": cs, "cv": conc_cv(model, cs, reads), "cvSignal": cvs}

@@ -80,7 +80,7 @@ suite(`parity with backend fixtures${fx ? '' : ` (${why})`}`, () => {
         for (const k of ['c1', 'c2', 'mu1', 'mu2', 'sd1', 'sd2', 'dmu', 'dsum', 'ssmd', 'zprime'] as const) close(row[k], w[k], `measure[${i}].${k}`)
         for (const k of ['ovl', 'err'] as const) close(row[k], w[k], `measure[${i}].${k}`, 1e-4, 1e-9)
         expect(row.pass, `measure[${i}].pass`).toBe(w.pass)
-        const steps = ladder({ mean: m.mean, sd: m.sd, cMax: Math.max(w.c1, w.c2) }, w.metric, w.k, 0, 200, Math.min(w.c1, w.c2)).length - 1
+        const steps = ladder(m, w.metric, w.k, 0, 200, Math.min(w.c1, w.c2), Math.max(w.c1, w.c2)).length - 1
         expect(steps, `measure[${i}].stepsBetween`).toBe(w.stepsBetween)
       }
       for (const [i, w] of (cs.recover ?? []).entries()) {
@@ -89,7 +89,7 @@ suite(`parity with backend fixtures${fx ? '' : ` (${why})`}`, () => {
           if (w[k] === null) expect(got[k], `recover[${i}].${k}`).toBeNull()
           else close(got[k] as number, w[k], `recover[${i}].${k}`)
         }
-        expect([got.loOpen, got.hiOpen], `recover[${i}] open ends`).toEqual([w.loOpen, w.hiOpen])
+        expect([got.loOpen, got.hiOpen, got.hook], `recover[${i}] open ends, hook`).toEqual([w.loOpen, w.hiOpen, w.hook])
       }
       const lp = (got: Json, want: Json, label: string) => {
         if (want === null) return expect(got, label).toBeNull()
@@ -105,6 +105,9 @@ suite(`parity with backend fixtures${fx ? '' : ` (${why})`}`, () => {
         if (w.lob.c === null) expect(got.lob.c).toBeNull()
         else close(got.lob.c as number, w.lob.c, `limits[${i}].lob.c`)
         for (const k of ['lod', 'loq', 'uloq'] as const) lp(got[k], w[k], `limits[${i}].${k}`)
+        expect(got.uloqOpen, `limits[${i}].uloqOpen`).toBe(w.uloqOpen)
+        if (w.hook === null) expect(got.hook, `limits[${i}].hook`).toBeNull()
+        else close(got.hook!.c, w.hook.c, `limits[${i}].hook.c`, 1e-6)
       }
       if (cs.cvAt) cs.cvAt.c.forEach((c: number, i: number) => close(concCv(m, c), cs.cvAt.cv[i], `cvAt[${i}]`))
       if (cs.limitsData !== undefined) {

@@ -66,7 +66,7 @@ def ladder(model: Model, metric: str = "ssmd", k: float = 3.0, start: float = 0.
     keeps the pair passing and does not exceed `stop`. Stops when nothing passes or at `max_levels`.
     """
     check_metric(metric)
-    stop = model.c_max if stop is None else float(stop)
+    stop = model.c_top if stop is None else float(stop)  # a hook's peak ends the ladder (15.4)
     out = [float(start)]
     j = np.arange(1, SCAN + 1, dtype=float)
     while len(out) < max_levels:
@@ -196,14 +196,22 @@ def recover(model: Model, signals, conf: float = 0.95) -> list[dict]:
     if not 0 < conf < 1:
         raise ValueError(f"conf must be between 0 and 1 (exclusive), got {conf!r}")
     z = float(ndtri(1 - (1 - conf) / 2))
-    c_max = model.c_max
+    c_max = model.c_top  # the usable range; beyond a hook's peak the same signal recurs (15.4)
     cs = c_max * np.arange(RECOVER_SCAN + 1, dtype=float) / RECOVER_SCAN
     mu, sd = model.mean(cs), model.sd(cs)
+    hk = model.hook()
+    if hk is not None:
+        cs_far = hk["c"] + (model.c_max - hk["c"]) * np.arange(1, RECOVER_SCAN + 1, dtype=float) / RECOVER_SCAN
+        mu_far, sd_far = model.mean(cs_far), model.sd(cs_far)
     cs_inv = model.inverse([float(v) for v in signals])
     out = []
     for S, c in zip(signals, cs_inv):
         S = float(S)
-        row = {"signal": S, "c": c, "lo": None, "hi": None, "loOpen": False, "hiOpen": False, "conf": conf}
+        row = {"signal": S, "c": c, "lo": None, "hi": None, "loOpen": False, "hiOpen": False, "conf": conf,
+               "hook": False}
+        if math.isfinite(S) and hk is not None:  # also produced above the peak: the reading is ambiguous
+            with np.errstate(invalid="ignore"):
+                row["hook"] = bool(np.any(np.abs(S - mu_far) <= z * sd_far))
         if math.isfinite(S):
             with np.errstate(invalid="ignore"):
                 inside = np.abs(S - mu) <= z * sd
@@ -291,8 +299,12 @@ def separate(model: Model, c1: float, c2: float, metric: str = "ssmd", k: float 
     t = K.crossing(mu1, s1, mu2, s2)
     var = s1 * s1 + s2 * s2
     with np.errstate(all="ignore"):
-        sens = float(1 - ndtr((t - mh) / sh)) if sh > 0 else (1.0 if mh > t else 0.5)
-        spec = float(ndtr((t - ml) / sl)) if sl > 0 else (1.0 if ml < t else 0.5)
+        # correct-call rates of the high- and low-signal groups; positive = the higher concentration, which on a
+        # falling (competitive) curve is the low-signal group
+        p_hi = float(1 - ndtr((t - mh) / sh)) if sh > 0 else (1.0 if mh > t else 0.5)
+        p_lo = float(ndtr((t - ml) / sl)) if sl > 0 else (1.0 if ml < t else 0.5)
+        rising = (c2 > c1) == (mu2 >= mu1)
+        sens, spec = (p_hi, p_lo) if rising else (p_lo, p_hi)
         auc = float(ndtr(abs(mu2 - mu1) / math.sqrt(var))) if var > 0 else (1.0 if mu1 != mu2 else 0.5)
         dprime = abs(mu2 - mu1) / math.sqrt(var / 2) if var > 0 else math.inf
     q = closeness_q(row, metric, k)

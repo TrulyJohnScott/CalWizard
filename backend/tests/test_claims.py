@@ -103,6 +103,34 @@ def test_limits_reads_and_rates():
     assert r["loq"]["c"] == pytest.approx(5, rel=1e-6)
 
 
+def test_hook_ends_every_claim_at_the_peak():
+    # 10 c exp(-c/100) peaks at c = 100; above it each signal recurs at a lower concentration
+    m = model(mode="equations", meanExpr="10*c*exp(-c/100)", sdExpr="2", cMax=500, levels=[0])
+    assert m.hook()["c"] == pytest.approx(100, rel=1e-6) and m.direction() == 1
+    assert L.limits(m)["uloq"]["c"] <= 100 + 1e-9 and A.ladder(m)[-1] <= 100
+    far = 10 * 300 * math.exp(-3)
+    r = A.recover(m, [far])[0]
+    assert r["hook"] and r["c"] < 100 and r["hi"] <= 100
+    assert RB.readback(m, [Sample(id="x", signal=far)])["rows"][0]["flag"] == "hook"
+    assert model(**LINE).hook() is None
+
+
+def test_direction_follows_the_largest_excursion_not_the_end_point():
+    # rises to 900 then dips just below the blank at cMax: still a rising (sandwich) curve
+    assert model(mode="equations", meanExpr="100 + 40*c - 0.42*c^2", sdExpr="5", cMax=100).direction() == 1
+
+
+def test_reads_average_within_run_noise_only():
+    # a lot layer is shared by every reading of a sample: 4 reads quarter the within variance, not the lot's
+    lot = {"name": "Lot", "units": 3, "on": True, "offsetSd": 20, "cv": 0, "gainCv": 0, "noiseCv": 0}
+    m = model(**LINE, layers=[lot])
+    sd = math.sqrt(10 ** 2 / 4 + 20 ** 2)
+    assert L.limits(m, reads=4)["blank"]["sd"] == pytest.approx(sd)
+    assert L.limits(m, reads=4)["lod"]["c"] == pytest.approx(2 * Z * sd / 20, rel=1e-6)
+    met = R.check(model(**LINE, layers=[lot], limits={"reads": 4}, requirements=[{"kind": "distinguish", "c": 0, "c2": 3}]))
+    assert met["results"][0]["value"] == pytest.approx(60 / math.sqrt(2 * sd ** 2))  # ssmd on per-result SDs
+
+
 def test_limits_on_a_falling_curve():
     r = L.limits(model(**FALL))
     assert r["direction"] == -1
@@ -187,6 +215,15 @@ def test_separate_equal_spreads_closed_form():
     assert r["readback"][0]["c"] == pytest.approx(1) and r["readback"][1]["c"] == pytest.approx(2)
 
 
+def test_separate_positive_is_the_higher_concentration_on_a_falling_curve():
+    # competitive: the higher concentration reads lower; unequal spreads so sensitivity != specificity
+    r = A.separate(model(mode="equations", meanExpr="1000 - 2*c", sdExpr="110 - 0.1*S", cMax=400), 0, 20, "ssmd", 3, runs=10)
+    t = r["threshold"]
+    assert r["sensitivity"] == pytest.approx(norm.cdf((t - 960) / 14))  # 20 read below the threshold
+    assert r["specificity"] == pytest.approx(norm.sf((t - 1000) / 10))  # 0 read above it
+    assert r["sensitivity"] != pytest.approx(r["specificity"])
+
+
 def test_separate_resolved_pair_needs_one_reading_and_blank_has_no_fold():
     r = A.separate(model(**LINE), 0, 50, "ssmd", 3, runs=20)
     assert r["pass"] and r["nNeeded"] == 1 and r["fold"] is None and r["power"]["pSig"] == 1
@@ -213,7 +250,7 @@ def test_requirements_on_a_line():
     assert res[1]["sdScale"] == pytest.approx(1 / lod, rel=1e-4)  # LoD is proportional to the noise
     assert res[3]["sdScale"] == pytest.approx((20 / (10 * math.sqrt(2))) / 3, rel=1e-6)
     assert res[4]["value"] == pytest.approx(0.1) and res[5]["sdScale"] == pytest.approx(0.4, rel=1e-6)
-    assert res[7]["value"] == pytest.approx(5, rel=1e-6)  # LoQ at 10% CV
+    assert res[7]["value"] == pytest.approx(0.5, rel=1e-6)  # worst CV across 1-100: 10 / (20 * 1)
     assert res[9]["sdScale"] is None  # 500 levels: not even at 1% of the noise
 
 
@@ -444,3 +481,12 @@ def test_api_surfaces():
     two = c.post("/api/compare", json={"series": [series, {**LINE, "meanExpr": "110 + 22*c"}], "concs": [10]}).json()
     assert two["rows"][0]["bias"][1] == pytest.approx(0.1)
     assert c.post("/api/compare", json={"series": []}).status_code == 422
+
+
+def test_range_requirement_checks_the_whole_interval_and_the_open_upper_limit():
+    # CV dips below 20% only in the middle: both ends pass, the middle of [1, 9] does not
+    m = model(mode="equations", meanExpr="100 + 20*c", sdExpr="2 + 60*exp(-((S - 220)/15)^2)", cMax=10,
+              requirements=[{"kind": "range", "c": 1, "c2": 9, "cv": 0.2}])
+    r = R.check(m)["results"][0]
+    assert not r["ok"] and r["value"] > 0.2
+    assert L.limits(model(**LINE), cv=0.5)["uloqOpen"] and not L.limits(model(**LINE), cv=0.5)["lod"] is None

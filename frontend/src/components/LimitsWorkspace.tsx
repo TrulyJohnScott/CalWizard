@@ -271,7 +271,9 @@ export function limitsSentence(lim: Limits, s: Pick<Series, 'units'>): string {
   if (!lim.lod) return 'Nothing in this range rises clearly above the blank.'
   const lod = withUnits(lim.lod.c, s.units)
   if (!lim.loq) return `Detects down to ${lod}, but never reaches ${fmt(lim.cv * 100, 3)}% CV.`
-  return `Detects down to ${lod} and quantifies from ${fmt(lim.loq.c)} to ${withUnits(lim.uloq ? lim.uloq.c : null, s.units)}.`
+  const top = `${lim.uloqOpen ? 'at least ' : ''}${withUnits(lim.uloq ? lim.uloq.c : null, s.units)}`
+  const hook = lim.hook ? ` Above ${withUnits(lim.hook.c, s.units)} the signal turns back (hook): a high sample reads like a lower one.` : ''
+  return `Detects down to ${lod} and quantifies from ${fmt(lim.loq.c)} to ${top}${lim.uloqOpen ? ' (the end of the range)' : ''}.${hook}`
 }
 
 /** The positive concentrations of the table that have at least two readings: candidates for the low-level columns. */
@@ -309,7 +311,7 @@ export function LimitsWorkspace({ d }: { d: Derived }) {
         <Stat label="LoB" value={withUnits(lim.lob.c, u)} sub={`signal ${fmt(lim.lob.signal, 4)}`} title="Limit of blank: blank mean + z(1 − α)·SD of the blank" />
         <Stat label="LoD" value={withUnits(lim.lod?.c, u)} tone="accent" sub={lim.lod ? `signal ${fmt(lim.lod.signal, 4)} · CV there ${pct2(lim.lod.cv)}` : 'not reached in this range'} title="Lowest concentration whose readings exceed the LoB with probability 1 − β" />
         <Stat label="LoQ" value={withUnits(lim.loq?.c, u)} tone="good" sub={lim.loq ? `signal ${fmt(lim.loq.signal, 4)}` : `never within ${fmt(lim.cv * 100, 3)}% CV`} title="Lowest concentration at or above the LoD whose result CV is within the allowed CV" />
-        <Stat label="Quantifiable range" value={lim.loq && lim.uloq ? `${fmt(lim.loq.c)} – ${fmt(lim.uloq.c)}` : '–'} sub={lim.loq && lim.uloq && lim.loq.c > 0 ? `${fmt(lim.uloq.c / lim.loq.c, 2)}-fold${u ? ` · ${u}` : ''}` : undefined} />
+        <Stat label="Quantifiable range" value={lim.loq && lim.uloq ? `${fmt(lim.loq.c)} – ${lim.uloqOpen ? '≥ ' : ''}${fmt(lim.uloq.c)}` : '–'} sub={lim.loq && lim.uloq && lim.loq.c > 0 ? `${fmt(lim.uloq.c / lim.loq.c, 2)}-fold${u ? ` · ${u}` : ''}` : undefined} />
       </div>
 
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-line pt-3">

@@ -24,6 +24,7 @@ const TONE: Record<Flag, string | undefined> = {
   belowLod: 'var(--muted)',
   belowLoq: 'var(--warm)',
   aboveLoq: 'var(--warm)',
+  hook: 'var(--bad)',
 }
 
 const blank = (): Sample => ({ id: '', signal: null, dilution: 1 })

@@ -6,7 +6,7 @@ import { concCv, limits } from './limits'
 import type { Model } from './model'
 import type { LimitSettings, Sample } from './types'
 
-export type Flag = 'ok' | 'invalid' | 'below' | 'above' | 'belowLod' | 'belowLoq' | 'aboveLoq'
+export type Flag = 'ok' | 'invalid' | 'below' | 'above' | 'belowLod' | 'belowLoq' | 'aboveLoq' | 'hook'
 
 export const FLAG_TEXT: Record<Flag, string> = {
   ok: '',
@@ -16,6 +16,7 @@ export const FLAG_TEXT: Record<Flag, string> = {
   belowLod: 'not detected (< LoD)',
   belowLoq: 'detected, below LoQ',
   aboveLoq: 'above the quantifiable range',
+  hook: 'ambiguous: also above the hook peak',
 }
 
 export interface ReadRow {
@@ -63,7 +64,7 @@ export function readback(m: Pick<Model, 'mean' | 'sd' | 'cMax'>, samples: Sample
     row.cv = concCv(m, r.c, lim.reads)
     row.resultLo = r.lo === null ? null : r.lo * dil
     row.resultHi = r.hi === null ? null : r.hi * dil
-    row.flag = lod !== null && r.c < lod ? 'belowLod' : loq !== null && r.c < loq ? 'belowLoq' : uloq !== null && r.c > uloq ? 'aboveLoq' : 'ok'
+    row.flag = r.hook ? 'hook' : lod !== null && r.c < lod ? 'belowLod' : loq !== null && r.c < loq ? 'belowLoq' : uloq !== null && r.c > uloq ? 'aboveLoq' : 'ok'
     return row
   })
   return { conf, lod, loq, uloq, rows }

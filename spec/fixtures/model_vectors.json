@@ -31,7 +31,9 @@
       "c": 500.0,
       "signal": 1800.0,
       "cv": 0.08273093836813393
-     }
+     },
+     "hook": null,
+     "uloqOpen": true
     },
     {
      "alpha": 0.01,
@@ -61,7 +63,9 @@
       "c": 500.0,
       "signal": 1800.0,
       "cv": 0.047764729537152474
-     }
+     },
+     "hook": null,
+     "uloqOpen": true
     }
    ],
    "cvAt": {
@@ -125,7 +129,8 @@
        "hi": 19.97034330484033,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 225.0,
@@ -134,7 +139,8 @@
        "hi": 65.00407390185752,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -189,7 +195,8 @@
        "hi": 181.8853775420416,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 1625.0,
@@ -198,7 +205,8 @@
        "hi": 500.0,
        "loOpen": false,
        "hiOpen": true,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -376,7 +384,8 @@
      "hi": 36.58344403292748,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 225.0,
@@ -385,7 +394,8 @@
      "hi": 65.00407390185752,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 575.0,
@@ -394,7 +404,8 @@
      "hi": 181.8853775420416,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 925.0,
@@ -403,7 +414,8 @@
      "hi": 299.98801152822045,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 1450.0,
@@ -412,7 +424,8 @@
      "hi": 477.5790662032009,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 50.0,
@@ -421,7 +434,8 @@
      "hi": 9.16968780840732,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 40.0,
@@ -430,7 +444,8 @@
      "hi": 6.132113571540444,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     }
    ],
    "series": {
@@ -812,7 +827,9 @@
       "c": 500.0,
       "signal": 3300.0,
       "cv": 0.007999999999994543
-     }
+     },
+     "hook": null,
+     "uloqOpen": true
     },
     {
      "alpha": 0.01,
@@ -842,7 +859,9 @@
       "c": 500.0,
       "signal": 3300.0,
       "cv": 0.004618802153513856
-     }
+     },
+     "hook": null,
+     "uloqOpen": true
     }
    ],
    "cvAt": {
@@ -906,7 +925,8 @@
        "hi": 14.94618057906337,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 442.5,
@@ -915,7 +935,8 @@
        "hi": 55.100953098485704,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -970,7 +991,8 @@
        "hi": 155.53396535329512,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 3042.5,
@@ -979,7 +1001,8 @@
        "hi": 457.4273159923303,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -1157,7 +1180,8 @@
      "hi": 30.003104823493718,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 442.5,
@@ -1166,7 +1190,8 @@
      "hi": 55.100953098485704,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 1182.5,
@@ -1175,7 +1200,8 @@
      "hi": 155.53396535329512,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 1862.5,
@@ -1184,7 +1210,8 @@
      "hi": 256.0475381297064,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 2770.0,
@@ -1193,7 +1220,8 @@
      "hi": 407.02631913797984,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 50.0,
@@ -1202,7 +1230,8 @@
      "hi": 4.908946620195107,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 40.0,
@@ -1211,7 +1240,8 @@
      "hi": 3.6549193747135065,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     }
    ],
    "series": {
@@ -1730,7 +1760,9 @@
       "c": 500.0,
       "signal": 1781.2398870886568,
       "cv": 0.1028881034720481
-     }
+     },
+     "hook": null,
+     "uloqOpen": true
     },
     {
      "alpha": 0.01,
@@ -1760,7 +1792,9 @@
       "c": 500.0,
       "signal": 1781.2398870886568,
       "cv": 0.059402474235997045
-     }
+     },
+     "hook": null,
+     "uloqOpen": true
     }
    ],
    "cvAt": {
@@ -1824,7 +1858,8 @@
        "hi": 13.998199786063601,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 324.3830311563959,
@@ -1833,7 +1868,8 @@
        "hi": 64.09861239147662,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -1888,7 +1924,8 @@
        "hi": 188.39925036704383,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 1641.297047796491,
@@ -1897,7 +1934,8 @@
        "hi": 500.0,
        "loOpen": false,
        "hiOpen": true,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -2075,7 +2113,8 @@
      "hi": 32.876167089113906,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 324.3830311563959,
@@ -2084,7 +2123,8 @@
      "hi": 64.09861239147662,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 710.7759888529738,
@@ -2093,7 +2133,8 @@
      "hi": 188.39925036704383,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 1044.3362052019963,
@@ -2102,7 +2143,8 @@
      "hi": 312.4556418108533,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 1498.2023207708396,
@@ -2111,7 +2153,8 @@
      "hi": 498.39741845960623,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 50.0,
@@ -2120,7 +2163,8 @@
      "hi": 0.7269314239650452,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 40.0,
@@ -2129,7 +2173,8 @@
      "hi": null,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     }
    ],
    "series": {
@@ -2524,7 +2569,9 @@
       "c": 500.0,
       "signal": 305.56224395722603,
       "cv": 0.04918709776189761
-     }
+     },
+     "hook": null,
+     "uloqOpen": true
     },
     {
      "alpha": 0.01,
@@ -2554,7 +2601,9 @@
       "c": 500.0,
       "signal": 305.56224395722603,
       "cv": 0.028398184133488023
-     }
+     },
+     "hook": null,
+     "uloqOpen": true
     }
    ],
    "cvAt": {
@@ -2618,7 +2667,8 @@
        "hi": 80.8186099915026,
        "loOpen": true,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 58.85611032640679,
@@ -2627,7 +2677,8 @@
        "hi": 117.16615696502188,
        "loOpen": true,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -2682,7 +2733,8 @@
        "hi": 210.44181467437528,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 251.98589857651785,
@@ -2691,7 +2743,8 @@
        "hi": 500.0,
        "loOpen": false,
        "hiOpen": true,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -2869,7 +2922,8 @@
      "hi": 94.37592000403129,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 58.85611032640679,
@@ -2878,7 +2932,8 @@
      "hi": 117.16615696502188,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 82.88475201562036,
@@ -2887,7 +2942,8 @@
      "hi": 210.44181467437528,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 118.7312731383618,
@@ -2896,7 +2952,8 @@
      "hi": 306.3949537393175,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 208.1212969758046,
@@ -2905,7 +2962,8 @@
      "hi": 453.7639431004185,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 50.0,
@@ -2914,7 +2972,8 @@
      "hi": 71.8315660147138,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 40.0,
@@ -2923,7 +2982,8 @@
      "hi": 8.522626308776962,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     }
    ],
    "series": {
@@ -3291,7 +3351,9 @@
       "c": 150.09669833847354,
       "signal": 1976.571333984896,
       "cv": 0.1999999999999912
-     }
+     },
+     "hook": null,
+     "uloqOpen": false
     },
     {
      "alpha": 0.01,
@@ -3321,7 +3383,9 @@
       "c": 89.7847634030058,
       "signal": 1582.5105311638931,
       "cv": 0.09999999999999527
-     }
+     },
+     "hook": null,
+     "uloqOpen": false
     }
    ],
    "cvAt": {
@@ -3385,7 +3449,8 @@
        "hi": 12.916432380286334,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 1177.4866716458312,
@@ -3394,7 +3459,8 @@
        "hi": 69.5115362829753,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -3449,7 +3515,8 @@
        "hi": 236.11585653281787,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 2891.300379035102,
@@ -3458,7 +3525,8 @@
        "hi": 500.0,
        "loOpen": false,
        "hiOpen": true,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -3636,7 +3704,8 @@
      "hi": 33.072682303479404,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 1177.4866716458312,
@@ -3645,7 +3714,8 @@
      "hi": 69.5115362829753,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 1976.0595471466436,
@@ -3654,7 +3724,8 @@
      "hi": 236.11585653281787,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 2392.4207168999455,
@@ -3663,7 +3734,8 @@
      "hi": 423.1959424161084,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 2790.070193951081,
@@ -3672,7 +3744,8 @@
      "hi": 500.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 50.0,
@@ -3681,7 +3754,8 @@
      "hi": 0.7260667341933468,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 40.0,
@@ -3690,7 +3764,8 @@
      "hi": 0.4826744881687728,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     }
    ],
    "series": {
@@ -4080,7 +4155,9 @@
       "c": 500.0,
       "signal": 3818.1009169078443,
       "cv": 0.09604899062825376
-     }
+     },
+     "hook": null,
+     "uloqOpen": true
     },
     {
      "alpha": 0.01,
@@ -4110,7 +4187,9 @@
       "c": 500.0,
       "signal": 3818.1009169078443,
       "cv": 0.05545391059461415
-     }
+     },
+     "hook": null,
+     "uloqOpen": true
     }
    ],
    "cvAt": {
@@ -4174,7 +4253,8 @@
        "hi": 10.621134570960017,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 2287.8563717583056,
@@ -4183,7 +4263,8 @@
        "hi": 51.71741194153997,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -4238,7 +4319,8 @@
        "hi": 159.28320623568575,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 3794.8590110712444,
@@ -4247,7 +4329,8 @@
        "hi": 500.0,
        "loOpen": false,
        "hiOpen": true,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -4425,7 +4508,8 @@
      "hi": 25.905417263372687,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 2287.8563717583056,
@@ -4434,7 +4518,8 @@
      "hi": 51.71741194153997,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3328.767340723218,
@@ -4443,7 +4528,8 @@
      "hi": 159.28320623568575,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3605.6654164197666,
@@ -4452,7 +4538,8 @@
      "hi": 275.29642767091605,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3765.563774744068,
@@ -4461,7 +4548,8 @@
      "hi": 469.9775367957028,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 50.0,
@@ -4470,7 +4558,8 @@
      "hi": 0.8634495976721617,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 40.0,
@@ -4479,7 +4568,8 @@
      "hi": 0.6741002144877265,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     }
    ],
    "series": {
@@ -5025,7 +5115,9 @@
       "c": 82.87031320558685,
       "signal": 2514.9015958277096,
       "cv": 0.19999999999997703
-     }
+     },
+     "hook": null,
+     "uloqOpen": false
     },
     {
      "alpha": 0.01,
@@ -5055,7 +5147,9 @@
       "c": 67.42445413350266,
       "signal": 2301.1610254740235,
       "cv": 0.09999999999999751
-     }
+     },
+     "hook": null,
+     "uloqOpen": false
     }
    ],
    "cvAt": {
@@ -5119,7 +5213,8 @@
        "hi": 12.019065597722493,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 1976.2746387347988,
@@ -5128,7 +5223,8 @@
        "hi": 70.19464989712894,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -5183,7 +5279,8 @@
        "hi": 424.40957101828576,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 3629.3522441415143,
@@ -5192,7 +5289,8 @@
        "hi": 500.0,
        "loOpen": false,
        "hiOpen": true,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -5370,7 +5468,8 @@
      "hi": 31.50411535838101,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 1976.2746387347988,
@@ -5379,7 +5478,8 @@
      "hi": 70.19464989712894,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3043.20723530338,
@@ -5388,7 +5488,8 @@
      "hi": 424.40957101828576,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3374.811022364882,
@@ -5397,7 +5498,8 @@
      "hi": 500.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3587.5804964286885,
@@ -5406,7 +5508,8 @@
      "hi": 500.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 50.0,
@@ -5415,7 +5518,8 @@
      "hi": 0.3115972665316938,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 40.0,
@@ -5424,7 +5528,8 @@
      "hi": null,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     }
    ],
    "series": {
@@ -5828,7 +5933,9 @@
       "c": 69.37164664955779,
       "signal": 2654.716027743044,
       "cv": 0.19999999999997553
-     }
+     },
+     "hook": null,
+     "uloqOpen": false
     },
     {
      "alpha": 0.01,
@@ -5858,7 +5965,9 @@
       "c": 57.24365391992311,
       "signal": 2443.3187033660206,
       "cv": 0.09999999999998772
-     }
+     },
+     "hook": null,
+     "uloqOpen": false
     }
    ],
    "cvAt": {
@@ -5922,7 +6031,8 @@
        "hi": 12.094659090840794,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 2287.8563717583056,
@@ -5931,7 +6041,8 @@
        "hi": 73.42509759444411,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -5986,7 +6097,8 @@
        "hi": 500.0,
        "loOpen": false,
        "hiOpen": true,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 3794.8590110712444,
@@ -5995,7 +6107,8 @@
        "hi": 500.0,
        "loOpen": false,
        "hiOpen": true,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -6173,7 +6286,8 @@
      "hi": 31.93718682738257,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 2287.8563717583056,
@@ -6182,7 +6296,8 @@
      "hi": 73.42509759444411,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3328.767340723218,
@@ -6191,7 +6306,8 @@
      "hi": 500.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3605.6654164197666,
@@ -6200,7 +6316,8 @@
      "hi": 500.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3765.563774744068,
@@ -6209,7 +6326,8 @@
      "hi": 500.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 50.0,
@@ -6218,7 +6336,8 @@
      "hi": 0.729794301606879,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 40.0,
@@ -6227,7 +6346,8 @@
      "hi": 0.5207142038838927,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     }
    ],
    "series": {
@@ -6619,7 +6739,9 @@
       "c": 69.59210932161743,
       "signal": 2658.0916848102215,
       "cv": 0.19999999999990112
-     }
+     },
+     "hook": null,
+     "uloqOpen": false
     },
     {
      "alpha": 0.01,
@@ -6649,7 +6771,9 @@
       "c": 57.47815632386537,
       "signal": 2447.9434703227903,
       "cv": 0.09999999999998739
-     }
+     },
+     "hook": null,
+     "uloqOpen": false
     }
    ],
    "cvAt": {
@@ -6713,7 +6837,8 @@
        "hi": 12.029224783161087,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 2287.8563717583056,
@@ -6722,7 +6847,8 @@
        "hi": 73.34029909974261,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -6777,7 +6903,8 @@
        "hi": 500.0,
        "loOpen": false,
        "hiOpen": true,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 3794.8590110712444,
@@ -6786,7 +6913,8 @@
        "hi": 500.0,
        "loOpen": false,
        "hiOpen": true,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -6964,7 +7092,8 @@
      "hi": 31.88638713090785,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 2287.8563717583056,
@@ -6973,7 +7102,8 @@
      "hi": 73.34029909974261,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3328.767340723218,
@@ -6982,7 +7112,8 @@
      "hi": 500.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3605.6654164197666,
@@ -6991,7 +7122,8 @@
      "hi": 500.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3765.563774744068,
@@ -7000,7 +7132,8 @@
      "hi": 500.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 50.0,
@@ -7009,7 +7142,8 @@
      "hi": 0.25865962078020516,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 40.0,
@@ -7018,7 +7152,8 @@
      "hi": null,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     }
    ],
    "series": {
@@ -7423,7 +7558,9 @@
       "c": 45.15966792615771,
       "signal": 2168.516630490223,
       "cv": 0.19999999999999815
-     }
+     },
+     "hook": null,
+     "uloqOpen": false
     },
     {
      "alpha": 0.01,
@@ -7453,7 +7590,9 @@
       "c": 36.081618815586666,
       "signal": 1902.986949403337,
       "cv": 0.09999999999999387
-     }
+     },
+     "hook": null,
+     "uloqOpen": false
     }
    ],
    "cvAt": {
@@ -7517,7 +7656,8 @@
        "hi": 12.694242944060498,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 2287.8563717583056,
@@ -7526,7 +7666,8 @@
        "hi": 91.24749661938108,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -7581,7 +7722,8 @@
        "hi": 500.0,
        "loOpen": false,
        "hiOpen": true,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 3794.8590110712444,
@@ -7590,7 +7732,8 @@
        "hi": 500.0,
        "loOpen": false,
        "hiOpen": true,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -7768,7 +7911,8 @@
      "hi": 35.300814339431234,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 2287.8563717583056,
@@ -7777,7 +7921,8 @@
      "hi": 91.24749661938108,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3328.767340723218,
@@ -7786,7 +7931,8 @@
      "hi": 500.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3605.6654164197666,
@@ -7795,7 +7941,8 @@
      "hi": 500.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3765.563774744068,
@@ -7804,7 +7951,8 @@
      "hi": 500.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 50.0,
@@ -7813,7 +7961,8 @@
      "hi": 0.34918155763809133,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 40.0,
@@ -7822,7 +7971,8 @@
      "hi": 0.05289977104741844,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     }
    ],
    "series": {
@@ -8213,7 +8363,9 @@
       "c": 800.0,
       "signal": 276.47058823529414,
       "cv": 0.14343749872940367
-     }
+     },
+     "hook": null,
+     "uloqOpen": true
     },
     {
      "alpha": 0.01,
@@ -8243,7 +8395,9 @@
       "c": 800.0,
       "signal": 276.47058823529414,
       "cv": 0.08281367850330783
-     }
+     },
+     "hook": null,
+     "uloqOpen": true
     }
    ],
    "cvAt": {
@@ -8291,8 +8445,8 @@
      },
      "closeness": 2.5241842065866575,
      "threshold": 1662.590383398591,
-     "sensitivity": 0.9999999830980636,
-     "specificity": 0.9999999906130782,
+     "sensitivity": 0.9999999906130782,
+     "specificity": 0.9999999830980636,
      "auc": 0.9999999999999817,
      "dprime": 10.709206616648464,
      "cv1": 0.05421455938697318,
@@ -8307,7 +8461,8 @@
        "hi": 23.41759368943727,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 1253.8461538461538,
@@ -8316,7 +8471,8 @@
        "hi": 96.47179875351017,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -8355,8 +8511,8 @@
      },
      "closeness": 2.2500116406543014,
      "threshold": 417.97306214080334,
-     "sensitivity": 0.9999994603736106,
-     "specificity": 0.9999996795038647,
+     "sensitivity": 0.9999996795038647,
+     "specificity": 0.9999994603736106,
      "auc": 0.9999999999926095,
      "dprime": 9.545990933131954,
      "cv1": 0.06620111731843575,
@@ -8371,7 +8527,8 @@
        "hi": 287.6088099165255,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 294.8051948051948,
@@ -8380,7 +8537,8 @@
        "hi": 800.0,
        "loOpen": false,
        "hiOpen": true,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -8558,7 +8716,8 @@
      "hi": 50.5942885743354,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 1253.8461538461538,
@@ -8567,7 +8726,8 @@
      "hi": 96.47179875351017,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 617.2413793103449,
@@ -8576,7 +8736,8 @@
      "hi": 287.6088099165255,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 433.3333333333333,
@@ -8585,7 +8746,8 @@
      "hi": 491.893300513282,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 317.39130434782606,
@@ -8594,7 +8756,8 @@
      "hi": 800.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3100.0,
@@ -8603,7 +8766,8 @@
      "hi": 5.443243766189159,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 266.47058823529414,
@@ -8612,7 +8776,8 @@
      "hi": 800.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     }
    ],
    "series": {
@@ -8986,7 +9151,9 @@
       "c": 152.48164132823663,
       "signal": 1989.1026771538761,
       "cv": 0.19999999999979107
-     }
+     },
+     "hook": null,
+     "uloqOpen": false
     },
     {
      "alpha": 0.01,
@@ -9016,7 +9183,9 @@
       "c": 92.02244007538083,
       "signal": 1600.6702419392516,
       "cv": 0.09999999999994574
-     }
+     },
+     "hook": null,
+     "uloqOpen": false
     }
    ],
    "cvAt": {
@@ -9080,7 +9249,8 @@
        "hi": 5.0854520601781825,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 673.8324625039508,
@@ -9089,7 +9259,8 @@
        "hi": 25.97528060134618,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -9144,7 +9315,8 @@
        "hi": 84.6001185600476,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 2122.326583694641,
@@ -9153,7 +9325,8 @@
        "hi": 200.0,
        "loOpen": false,
        "hiOpen": true,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -9331,7 +9504,8 @@
      "hi": 12.685322084064989,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 673.8324625039508,
@@ -9340,7 +9514,8 @@
      "hi": 25.97528060134618,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 1297.6649250079015,
@@ -9349,7 +9524,8 @@
      "hi": 84.6001185600476,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 1662.5835223052495,
@@ -9358,7 +9534,8 @@
      "hi": 149.18752814844433,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 2027.5021196025975,
@@ -9367,7 +9544,8 @@
      "hi": 200.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 50.0,
@@ -9376,7 +9554,8 @@
      "hi": 0.20768671652217516,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 40.0,
@@ -9385,7 +9564,8 @@
      "hi": null,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     }
    ],
    "series": {
@@ -9749,7 +9929,9 @@
       "c": 100.0,
       "signal": 1215.925,
       "cv": 0.04308586634763164
-     }
+     },
+     "hook": null,
+     "uloqOpen": true
     },
     {
      "alpha": 0.01,
@@ -9779,7 +9961,9 @@
       "c": 100.0,
       "signal": 1215.925,
       "cv": 0.024875636534073365
-     }
+     },
+     "hook": null,
+     "uloqOpen": true
     }
    ],
    "cvAt": {
@@ -9877,7 +10061,8 @@
        "hi": 2.608949541084221,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 164.84544669887532,
@@ -9886,7 +10071,8 @@
        "hi": 10.95233878540475,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -9941,7 +10127,8 @@
        "hi": 32.51618344728994,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 1136.2532999998523,
@@ -9950,7 +10137,8 @@
        "hi": 97.66011931772809,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -10128,7 +10316,8 @@
      "hi": 5.851957491069527,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 164.84544669887532,
@@ -10137,7 +10326,8 @@
      "hi": 10.95233878540475,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 467.21828866341156,
@@ -10146,7 +10336,8 @@
      "hi": 32.51618344728994,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 717.8901653157204,
@@ -10155,7 +10346,8 @@
      "hi": 53.97167652829692,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 1045.305717138502,
@@ -10164,7 +10356,8 @@
      "hi": 86.54487626823811,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 49.133333333333326,
@@ -10173,7 +10366,8 @@
      "hi": 0.7066546613666497,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 39.133333333333326,
@@ -10182,7 +10376,8 @@
      "hi": null,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     }
    ],
    "series": {
@@ -10635,7 +10830,9 @@
       "c": 200.0,
       "signal": 2110.0,
       "cv": 0.09376373871349418
-     }
+     },
+     "hook": null,
+     "uloqOpen": true
     },
     {
      "alpha": 0.01,
@@ -10665,7 +10862,9 @@
       "c": 200.0,
       "signal": 2110.0,
       "cv": 0.054134519786461596
-     }
+     },
+     "hook": null,
+     "uloqOpen": true
     }
    ],
    "cvAt": {
@@ -10763,7 +10962,8 @@
        "hi": 4.9753270399211145,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 283.46633067620246,
@@ -10772,7 +10972,8 @@
        "hi": 22.62938657883327,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -10827,7 +11028,8 @@
        "hi": 67.22698837476085,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 1957.4826235248534,
@@ -10836,7 +11038,8 @@
        "hi": 200.0,
        "loOpen": false,
        "hiOpen": true,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -11014,7 +11217,8 @@
      "hi": 11.919474574813973,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 283.46633067620246,
@@ -11023,7 +11227,8 @@
      "hi": 22.62938657883327,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 778.9788765248522,
@@ -11032,7 +11237,8 @@
      "hi": 67.22698837476085,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 1210.6969311037972,
@@ -11041,7 +11247,8 @@
      "hi": 113.36275931345537,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 1789.600449573098,
@@ -11050,7 +11257,8 @@
      "hi": 190.44450959841961,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 49.525,
@@ -11059,7 +11267,8 @@
      "hi": 0.8199909391221794,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 39.525,
@@ -11068,7 +11277,8 @@
      "hi": null,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     }
    ],
    "series": {
@@ -11530,7 +11740,9 @@
       "c": 85.35113221664861,
       "signal": 3692.1917378806793,
       "cv": 0.19999999999993875
-     }
+     },
+     "hook": null,
+     "uloqOpen": false
     },
     {
      "alpha": 0.01,
@@ -11560,7 +11772,9 @@
       "c": 72.64522757626739,
       "signal": 3516.9215560503762,
       "cv": 0.09999999999995512
-     }
+     },
+     "hook": null,
+     "uloqOpen": false
     }
    ],
    "cvAt": {
@@ -11624,7 +11838,8 @@
        "hi": 11.369905082300372,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 3051.7983898160846,
@@ -11633,7 +11848,8 @@
        "hi": 67.33329216475029,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -11688,7 +11904,8 @@
        "hi": 500.0,
        "loOpen": false,
        "hiOpen": true,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 4627.907928031711,
@@ -11697,7 +11914,8 @@
        "hi": 500.0,
        "loOpen": false,
        "hiOpen": true,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -11875,7 +12093,8 @@
      "hi": 29.93769511043695,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3051.7983898160846,
@@ -11884,7 +12103,8 @@
      "hi": 67.33329216475029,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 4171.874399045618,
@@ -11893,7 +12113,8 @@
      "hi": 500.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 4445.918685520827,
@@ -11902,7 +12123,8 @@
      "hi": 500.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 4600.0,
@@ -11911,7 +12133,8 @@
      "hi": 500.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 30.0,
@@ -11920,7 +12143,8 @@
      "hi": 0.3526836736580718,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 20.0,
@@ -11929,7 +12153,8 @@
      "hi": 0.20372062074733382,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     }
    ],
    "series": {
@@ -12352,7 +12577,9 @@
       "c": 800.0,
       "signal": 276.47058823529414,
       "cv": 0.1944915237024188
-     }
+     },
+     "hook": null,
+     "uloqOpen": true
     },
     {
      "alpha": 0.01,
@@ -12382,7 +12609,9 @@
       "c": 621.0183899216656,
       "signal": 328.54203028157144,
       "cv": 0.09999999999965438
-     }
+     },
+     "hook": null,
+     "uloqOpen": false
     }
    ],
    "cvAt": {
@@ -12430,8 +12659,8 @@
      },
      "closeness": 1.7190326810539462,
      "threshold": 1812.1085112312664,
-     "sensitivity": 0.9999066203604279,
-     "specificity": 0.9999498061899643,
+     "sensitivity": 0.9999498061899643,
+     "specificity": 0.9999066203604279,
      "auc": 0.9999998745967528,
      "dprime": 7.293237995127223,
      "cv1": 0.08077933450087565,
@@ -12446,7 +12675,8 @@
        "hi": 26.967456540188696,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 1357.6923076923076,
@@ -12455,7 +12685,8 @@
        "hi": 104.10085779824004,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -12494,8 +12725,8 @@
      },
      "closeness": 1.605393701532907,
      "threshold": 431.5826796692386,
-     "sensitivity": 0.9997360481322412,
-     "specificity": 0.9998521003125547,
+     "sensitivity": 0.9998521003125547,
+     "specificity": 0.9997360481322412,
      "auc": 0.9999992683413863,
      "dprime": 6.811108636968546,
      "cv1": 0.0979551451187335,
@@ -12510,7 +12741,8 @@
        "hi": 308.53436793876443,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 296.7532467532469,
@@ -12519,7 +12751,8 @@
        "hi": 800.0,
        "loOpen": false,
        "hiOpen": true,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -12697,7 +12930,8 @@
      "hi": 55.59760545311481,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 1357.6923076923076,
@@ -12706,7 +12940,8 @@
      "hi": 104.10085779824004,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 653.4482758620693,
@@ -12715,7 +12950,8 @@
      "hi": 308.53436793876443,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 450.00000000000045,
@@ -12724,7 +12960,8 @@
      "hi": 531.3249522363595,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 321.7391304347825,
@@ -12733,7 +12970,8 @@
      "hi": 800.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3400.0,
@@ -12742,7 +12980,8 @@
      "hi": 8.073307255696555,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 266.47058823529414,
@@ -12751,7 +12990,8 @@
      "hi": 800.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     }
    ],
    "series": {
@@ -13117,7 +13357,9 @@
       "c": 100.0,
       "signal": 1255.4206815732914,
       "cv": 0.02087177879190809
-     }
+     },
+     "hook": null,
+     "uloqOpen": true
     },
     {
      "alpha": 0.01,
@@ -13147,7 +13389,9 @@
       "c": 100.0,
       "signal": 1255.4206815732914,
       "cv": 0.012050327103974459
-     }
+     },
+     "hook": null,
+     "uloqOpen": true
     }
    ],
    "cvAt": {
@@ -13211,7 +13455,8 @@
        "hi": 2.606054369699005,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 151.37808748309476,
@@ -13220,7 +13465,8 @@
        "hi": 10.734967783797972,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -13275,7 +13521,8 @@
        "hi": 30.79462167342132,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 1157.9456148512563,
@@ -13284,7 +13531,8 @@
        "hi": 93.41224824229114,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -13462,7 +13710,8 @@
      "hi": 5.850663917332356,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 151.37808748309476,
@@ -13471,7 +13720,8 @@
      "hi": 10.734967783797972,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 459.60125331548454,
@@ -13480,7 +13730,8 @@
      "hi": 30.79462167342132,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 709.5156651913672,
@@ -13489,7 +13740,8 @@
      "hi": 51.202550055079456,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 1053.8220753472747,
@@ -13498,7 +13750,8 @@
      "hi": 82.59564131052633,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 49.133333333333326,
@@ -13507,7 +13760,8 @@
      "hi": 0.7601818339408243,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 39.133333333333326,
@@ -13516,7 +13770,8 @@
      "hi": null,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     }
    ],
    "series": {
@@ -14067,7 +14322,9 @@
       "c": 229.30773292475786,
       "signal": 2976.2001519439486,
       "cv": 0.19999999999987322
-     }
+     },
+     "hook": null,
+     "uloqOpen": false
     },
     {
      "alpha": 0.01,
@@ -14097,7 +14354,9 @@
       "c": 225.62292693466824,
       "signal": 2967.120428402943,
       "cv": 0.09999999999987635
-     }
+     },
+     "hook": null,
+     "uloqOpen": false
     }
    ],
    "cvAt": {
@@ -14161,7 +14420,8 @@
        "hi": 10.952386546743735,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 1272.463768115942,
@@ -14170,7 +14430,8 @@
        "hi": 56.55461435034462,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -14225,7 +14486,8 @@
        "hi": 171.55723636176535,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 3000.0,
@@ -14234,7 +14496,8 @@
        "hi": 500.0,
        "loOpen": false,
        "hiOpen": true,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -14412,7 +14675,8 @@
      "hi": 26.844699378188476,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 1272.463768115942,
@@ -14421,7 +14685,8 @@
      "hi": 56.55461435034462,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 2498.9797800363044,
@@ -14430,7 +14695,8 @@
      "hi": 171.55723636176535,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3000.0,
@@ -14439,7 +14705,8 @@
      "hi": 500.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3000.0,
@@ -14448,7 +14715,8 @@
      "hi": 500.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 20.0,
@@ -14457,7 +14725,8 @@
      "hi": 1.0650543913856985,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 10.0,
@@ -14466,7 +14735,8 @@
      "hi": 0.35186886264591216,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     }
    ],
    "series": {
@@ -14923,7 +15193,9 @@
       "c": 57.34731490453498,
       "signal": 2445.3659936757645,
       "cv": 0.19999999999997606
-     }
+     },
+     "hook": null,
+     "uloqOpen": false
     },
     {
      "alpha": 0.01,
@@ -14933,27 +15205,29 @@
      "direction": 1,
      "blank": {
       "mean": 50.0,
-      "sd": 11.382149767655202
+      "sd": 15.046151224371854
      },
      "lob": {
-      "signal": 76.47883991399912,
-      "c": 0.6209821552475648
+      "signal": 85.00258191331446,
+      "c": 0.7849954844082447
      },
      "lod": {
-      "c": 0.9127640261615892,
-      "signal": 91.87231507299794,
-      "cv": 0.24163431361888305
+      "c": 1.156536648598833,
+      "signal": 105.43426934807303,
+      "cv": 0.24309207204731106
      },
      "loq": {
-      "c": 2.25750585308469,
-      "signal": 171.59088350008642,
-      "cv": 0.09999999999999999
+      "c": 3.095919890091804,
+      "signal": 225.13659764271188,
+      "cv": 0.09999999999999967
      },
      "uloq": {
-      "c": 46.37915175509004,
-      "signal": 2199.8858873076215,
-      "cv": 0.09999999999998713
-     }
+      "c": 32.95869825436615,
+      "signal": 1796.5819633677756,
+      "cv": 0.09999999999999148
+     },
+     "hook": null,
+     "uloqOpen": false
     }
    ],
    "cvAt": {
@@ -15017,7 +15291,8 @@
        "hi": 12.489342710759983,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 2287.8563717583056,
@@ -15026,7 +15301,8 @@
        "hi": 79.39235021673369,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -15081,7 +15357,8 @@
        "hi": 500.0,
        "loOpen": false,
        "hiOpen": true,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 3794.8590110712444,
@@ -15090,7 +15367,8 @@
        "hi": 500.0,
        "loOpen": false,
        "hiOpen": true,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -15268,7 +15546,8 @@
      "hi": 33.37882888679885,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 2287.8563717583056,
@@ -15277,7 +15556,8 @@
      "hi": 79.39235021673369,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3328.767340723218,
@@ -15286,7 +15566,8 @@
      "hi": 500.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3605.6654164197666,
@@ -15295,7 +15576,8 @@
      "hi": 500.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3765.563774744068,
@@ -15304,7 +15586,8 @@
      "hi": 500.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 50.0,
@@ -15313,7 +15596,8 @@
      "hi": 0.8911727185667566,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 40.0,
@@ -15322,7 +15606,8 @@
      "hi": 0.6903261246343035,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     }
    ],
    "series": {
@@ -16151,7 +16436,9 @@
       "c": 100.0,
       "signal": 1500.0,
       "cv": 0.08233220311764239
-     }
+     },
+     "hook": null,
+     "uloqOpen": true
     },
     {
      "alpha": 0.01,
@@ -16168,20 +16455,22 @@
       "c": 2.4921004447205353
      },
      "lod": {
-      "c": 3.7724623549089813,
-      "signal": 82.43478167223128,
-      "cv": 0.2525173031899244
+      "c": 3.785211151015326,
+      "signal": 82.55899828137898,
+      "cv": 0.2540431687118978
      },
      "loq": {
-      "c": 7.876549449937109,
-      "signal": 129.49500667724644,
-      "cv": 0.09999999999999937
+      "c": 8.239210634241775,
+      "signal": 134.30013233046145,
+      "cv": 0.09999999999998949
      },
      "uloq": {
       "c": 100.0,
       "signal": 1500.0,
-      "cv": 0.047534519632945776
-     }
+      "cv": 0.06321275393265394
+     },
+     "hook": null,
+     "uloqOpen": true
     }
    ],
    "cvAt": {
@@ -16245,7 +16534,8 @@
        "hi": 5.3470093363192435,
        "loOpen": true,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 158.86093162983823,
@@ -16254,7 +16544,8 @@
        "hi": 12.831955831849852,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -16309,7 +16600,8 @@
        "hi": 36.13578571086628,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 1357.188126029234,
@@ -16318,7 +16610,8 @@
        "hi": 100.0,
        "loOpen": false,
        "hiOpen": true,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -16496,7 +16789,8 @@
      "hi": 7.926091788608976,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 158.86093162983823,
@@ -16505,7 +16799,8 @@
      "hi": 12.831955831849852,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 474.96819972962373,
@@ -16514,7 +16809,8 @@
      "hi": 36.13578571086628,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 773.0302266643641,
@@ -16523,7 +16819,8 @@
      "hi": 59.53305579377497,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 1212.9592713648033,
@@ -16532,7 +16829,8 @@
      "hi": 95.18687839936885,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 50.0,
@@ -16541,7 +16839,8 @@
      "hi": 3.6692034970920813,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 40.0,
@@ -16550,7 +16849,8 @@
      "hi": 2.524571248037878,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     }
    ],
    "series": {
@@ -17108,6 +17408,768 @@
      "direction": 1,
      "blank": {
       "mean": 50.0,
+      "sd": 7.5
+     },
+     "lob": {
+      "signal": 62.33640220213604,
+      "c": 1.2491468467598803
+     },
+     "lod": {
+      "c": 2.7637154283595895,
+      "signal": 76.88380021910366,
+      "cv": 0.33832882803465186
+     },
+     "loq": {
+      "c": 5.733322203816299,
+      "signal": 104.13857834148007,
+      "cv": 0.19999999999999676
+     },
+     "uloq": {
+      "c": 63.880312107471376,
+      "signal": 387.2394395210496,
+      "cv": 0.1999999999999595
+     },
+     "hook": {
+      "c": 99.9999999006877,
+      "signal": 417.87944117144235
+     },
+     "uloqOpen": false
+    },
+    {
+     "alpha": 0.01,
+     "beta": 0.1,
+     "cv": 0.1,
+     "reads": 3,
+     "direction": 1,
+     "blank": {
+      "mean": 50.0,
+      "sd": 4.330127018922194
+     },
+     "lob": {
+      "signal": 60.073381784796446,
+      "c": 1.0176416079919592
+     },
+     "lod": {
+      "c": 1.6492605050226166,
+      "signal": 66.22282979228767,
+      "cv": 0.300743162756303
+     },
+     "loq": {
+      "c": 7.296679939834021,
+      "signal": 117.83224931912726,
+      "cv": 0.09999999999999992
+     },
+     "uloq": {
+      "c": 57.776727673446885,
+      "signal": 374.2140271890973,
+      "cv": 0.0999999999999761
+     },
+     "hook": {
+      "c": 99.9999999006877,
+      "signal": 417.87944117144235
+     },
+     "uloqOpen": false
+    }
+   ],
+   "cvAt": {
+    "c": [
+     4.5,
+     22.5,
+     90.0,
+     270.0,
+     450.0
+    ],
+    "cv": [
+     0.2349088515431375,
+     0.11837945735839013,
+     0.7049664262829388,
+     0.05372505215801999,
+     0.057151014078388955
+    ]
+   },
+   "limitsData": null,
+   "separate": [
+    {
+     "c1": 9.0,
+     "c2": 45.0,
+     "mu1": 132.25380667441055,
+     "mu2": 336.932668229798,
+     "sd1": 11.61269033372053,
+     "sd2": 21.8466334114899,
+     "dmu": 204.67886155538747,
+     "dsum": 6.11724442233195,
+     "ssmd": 8.272774220398523,
+     "zprime": 0.509583107542992,
+     "ovl": 9.067918062202079e-10,
+     "err": 4.5341789734904255e-10,
+     "pass": true,
+     "metric": "ssmd",
+     "k": 3.0,
+     "stepsBetween": 2,
+     "whyNot": {
+      "c1": 9.0,
+      "c2": 45.0,
+      "needDmu": 74.22378132260724,
+      "dmu": 204.67886155538747,
+      "sdScale": 2.7575914067995075,
+      "moveTo": 16.19249929779266
+     },
+     "closeness": 2.7575914067995075,
+     "threshold": 204.07275532229315,
+     "sensitivity": 0.9999999994046171,
+     "specificity": 0.999999999688547,
+     "auc": 0.9999999999999999,
+     "dprime": 11.699469500938099,
+     "cv1": 0.08780609515693766,
+     "cv2": 0.06483976019977336,
+     "fold": 5.0,
+     "nNeeded": 1,
+     "readback": [
+      {
+       "signal": 132.25380667441055,
+       "c": 9.0,
+       "lo": 6.570286815685066,
+       "hi": 12.13557578781999,
+       "loOpen": false,
+       "hiOpen": false,
+       "conf": 0.95,
+       "hook": true
+      },
+      {
+       "signal": 336.932668229798,
+       "c": 45.0,
+       "lo": 35.28371056743701,
+       "hi": 62.432790422721816,
+       "loOpen": false,
+       "hiOpen": false,
+       "conf": 0.95,
+       "hook": true
+      }
+     ],
+     "power": {
+      "n": 3,
+      "runs": 40,
+      "seed": 5,
+      "alpha": 0.05,
+      "pSig": 1.0,
+      "pPass": 1.0
+     }
+    },
+    {
+     "c1": 135.0,
+     "c2": 405.0,
+     "mu1": 399.97435187195356,
+     "mu2": 120.56061728994874,
+     "sd1": 24.99871759359768,
+     "sd2": 11.028030864497438,
+     "dmu": -279.41373458200485,
+     "dsum": -7.755730021181563,
+     "ssmd": -10.226271691736061,
+     "zprime": 0.6131892172875096,
+     "ovl": 8.121571131665122e-15,
+     "err": 4.050378974950524e-15,
+     "pass": true,
+     "metric": "ssmd",
+     "k": 3.0,
+     "stepsBetween": 3,
+     "whyNot": {
+      "c1": 135.0,
+      "c2": 405.0,
+      "needDmu": 81.96938522799121,
+      "dmu": 279.41373458200485,
+      "sdScale": 3.408757230578687,
+      "moveTo": null
+     },
+     "closeness": 3.408757230578687,
+     "threshold": 206.89639619780445,
+     "sensitivity": 0.9999999999999976,
+     "specificity": 0.9999999999999943,
+     "auc": 1.0,
+     "dprime": 14.462132118965194,
+     "cv1": 0.06250080155539744,
+     "cv2": 0.09147291306559076,
+     "fold": 3.0,
+     "nNeeded": 1,
+     "readback": [
+      {
+       "signal": 399.97435187195356,
+       "c": 71.64535633810792,
+       "lo": 50.69488491385144,
+       "hi": 99.9999999006877,
+       "loOpen": false,
+       "hiOpen": true,
+       "conf": 0.95,
+       "hook": true
+      },
+      {
+       "signal": 120.56061728994874,
+       "c": 7.614316556426026,
+       "lo": 5.368086511686129,
+       "hi": 10.498684900917075,
+       "loOpen": false,
+       "hiOpen": false,
+       "conf": 0.95,
+       "hook": true
+      }
+     ],
+     "power": {
+      "n": 3,
+      "runs": 40,
+      "seed": 5,
+      "alpha": 0.05,
+      "pSig": 1.0,
+      "pPass": 1.0
+     }
+    }
+   ],
+   "readback": {
+    "samples": [
+     {
+      "id": "s0",
+      "signal": 229.66614922085984,
+      "dilution": 1.0
+     },
+     {
+      "id": "s1",
+      "signal": 336.932668229798,
+      "dilution": 2.0
+     },
+     {
+      "id": "s2",
+      "signal": 399.97435187195356,
+      "dilution": 3.0
+     },
+     {
+      "id": "s3",
+      "signal": 287.14825526419474,
+      "dilution": 4.0
+     },
+     {
+      "id": "s4",
+      "signal": 148.36540081025322,
+      "dilution": 5.0
+     },
+     {
+      "id": "s5",
+      "signal": 50.0,
+      "dilution": 6.0
+     },
+     {
+      "id": "s6",
+      "signal": 40.0,
+      "dilution": 7.0
+     },
+     {
+      "id": "s7",
+      "signal": 427.4346365667131,
+      "dilution": 8.0
+     }
+    ],
+    "result": {
+     "conf": 0.9,
+     "lod": 2.7637154283595895,
+     "loq": 5.733322203816299,
+     "uloq": 63.880312107471376,
+     "rows": [
+      {
+       "id": "s0",
+       "signal": 229.66614922085984,
+       "dilution": 1.0,
+       "c": 22.5,
+       "lo": 18.62708514779743,
+       "hi": 27.559254461075607,
+       "result": 22.5,
+       "resultLo": 18.62708514779743,
+       "resultHi": 27.559254461075607,
+       "cv": 0.11837945735839013,
+       "flag": "hook"
+      },
+      {
+       "id": "s1",
+       "signal": 336.932668229798,
+       "dilution": 2.0,
+       "c": 45.0,
+       "lo": 36.578829985687406,
+       "hi": 58.57814982448852,
+       "result": 90.0,
+       "resultLo": 73.15765997137481,
+       "resultHi": 117.15629964897704,
+       "cv": 0.1384336809288451,
+       "flag": "hook"
+      },
+      {
+       "id": "s2",
+       "signal": 399.97435187195356,
+       "dilution": 3.0,
+       "c": 71.64535633810792,
+       "lo": 53.0069603394204,
+       "hi": 99.9999999006877,
+       "result": 214.93606901432375,
+       "resultLo": 159.0208810182612,
+       "resultHi": 299.99999970206306,
+       "cv": 0.25191684040830514,
+       "flag": "hook"
+      },
+      {
+       "id": "s3",
+       "signal": 287.14825526419474,
+       "dilution": 4.0,
+       "c": 32.979954977226484,
+       "lo": 27.290862188466814,
+       "hi": 40.93494222980422,
+       "result": 131.91981990890594,
+       "resultLo": 109.16344875386726,
+       "resultHi": 163.73976891921689,
+       "cv": 0.1217930771570641,
+       "flag": "hook"
+      },
+      {
+       "id": "s4",
+       "signal": 148.36540081025322,
+       "dilution": 5.0,
+       "c": 10.977886071295995,
+       "lo": 8.669004278720356,
+       "hi": 13.854696635321606,
+       "result": 54.88943035647998,
+       "resultLo": 43.34502139360178,
+       "resultHi": 69.27348317660802,
+       "cv": 0.14181454736682456,
+       "flag": "hook"
+      },
+      {
+       "id": "s5",
+       "signal": 50.0,
+       "dilution": 6.0,
+       "c": 0.0,
+       "lo": 0.0,
+       "hi": 1.3626317315974175,
+       "result": 0.0,
+       "resultLo": 0.0,
+       "resultHi": 8.175790389584504,
+       "cv": null,
+       "flag": "belowLod"
+      },
+      {
+       "id": "s6",
+       "signal": 40.0,
+       "dilution": 7.0,
+       "c": null,
+       "lo": 0.0,
+       "hi": 0.25522792591273785,
+       "result": null,
+       "resultLo": null,
+       "resultHi": null,
+       "cv": null,
+       "flag": "below"
+      },
+      {
+       "id": "s7",
+       "signal": 427.4346365667131,
+       "dilution": 8.0,
+       "c": null,
+       "lo": 63.940136731341724,
+       "hi": 99.9999999006877,
+       "result": null,
+       "resultLo": null,
+       "resultHi": null,
+       "cv": null,
+       "flag": "above"
+      }
+     ]
+    }
+   },
+   "name": "eq-hook",
+   "recover": [
+    {
+     "signal": 229.66614922085984,
+     "c": 22.5,
+     "lo": 17.984562762272752,
+     "hi": 28.716063181591625,
+     "loOpen": false,
+     "hiOpen": false,
+     "conf": 0.95,
+     "hook": true
+    },
+    {
+     "signal": 336.932668229798,
+     "c": 45.0,
+     "lo": 35.28371056743701,
+     "hi": 62.432790422721816,
+     "loOpen": false,
+     "hiOpen": false,
+     "conf": 0.95,
+     "hook": true
+    },
+    {
+     "signal": 399.97435187195356,
+     "c": 71.64535633810792,
+     "lo": 50.69488491385144,
+     "hi": 99.9999999006877,
+     "loOpen": false,
+     "hiOpen": true,
+     "conf": 0.95,
+     "hook": true
+    },
+    {
+     "signal": 287.14825526419474,
+     "c": 32.979954977226484,
+     "lo": 26.37340020613463,
+     "hi": 42.86302689617493,
+     "loOpen": false,
+     "hiOpen": false,
+     "conf": 0.95,
+     "hook": true
+    },
+    {
+     "signal": 148.36540081025322,
+     "c": 10.977886071295995,
+     "lo": 8.2774003939745,
+     "hi": 14.489304304127792,
+     "loOpen": false,
+     "hiOpen": false,
+     "conf": 0.95,
+     "hook": true
+    },
+    {
+     "signal": 50.0,
+     "c": 0.0,
+     "lo": 0.0,
+     "hi": 1.6569057305622186,
+     "loOpen": true,
+     "hiOpen": false,
+     "conf": 0.95,
+     "hook": false
+    },
+    {
+     "signal": 40.0,
+     "c": null,
+     "lo": 0.0,
+     "hi": 0.5237694879036575,
+     "loOpen": true,
+     "hiOpen": false,
+     "conf": 0.95,
+     "hook": false
+    }
+   ],
+   "series": {
+    "name": "Untitled",
+    "analyte": "",
+    "units": "ng/mL",
+    "signalLabel": "Signal",
+    "mode": "equations",
+    "meanExpr": "10*c*exp(-c/100) + 50",
+    "sdExpr": "0.05*S + 5",
+    "levels": [
+     0.0,
+     10.0,
+     50.0,
+     200.0
+    ],
+    "cMax": 450.0,
+    "extraLevels": [],
+    "replicates": {
+     "concs": [
+      0.0
+     ],
+     "cells": [
+      []
+     ]
+    },
+    "summary": [],
+    "metric": "ssmd",
+    "kTarget": 3.0,
+    "sim": {
+     "n": 5,
+     "seed": 42
+    },
+    "adjust": null,
+    "limits": {
+     "alpha": 0.05,
+     "beta": 0.05,
+     "cv": 0.2,
+     "reads": 1
+    },
+    "requirements": [],
+    "samples": [],
+    "tolerance": {
+     "tea": 0.3,
+     "k": 2.0
+    },
+    "layers": []
+   },
+   "grid": [
+    0.0,
+    15.0,
+    30.0,
+    45.0,
+    60.0,
+    75.0,
+    90.0,
+    105.0,
+    120.0,
+    135.0,
+    150.0,
+    165.0,
+    180.0,
+    195.0,
+    210.0,
+    225.0,
+    240.0,
+    255.0,
+    270.0,
+    285.0,
+    300.0,
+    315.0,
+    330.0,
+    345.0,
+    360.0,
+    375.0,
+    390.0,
+    405.0,
+    420.0,
+    435.0,
+    450.0
+   ],
+   "mean": [
+    50.0,
+    179.10619646375866,
+    272.24546620451537,
+    336.932668229798,
+    379.2869816564159,
+    404.27491455576103,
+    415.9126937665392,
+    417.4346365667131,
+    411.43305429464255,
+    399.97435187195356,
+    384.6952402226447,
+    366.8823492242443,
+    347.53799879885577,
+    327.4344395937015,
+    307.158499331262,
+    287.14825526419474,
+    267.72308789459004,
+    249.10824830294058,
+    231.45488439732435,
+    214.8563144932896,
+    199.36120510359183,
+    184.98419963117658,
+    171.71445242409203,
+    159.52244550433437,
+    148.36540081025322,
+    138.19154696003415,
+    128.94345463863712,
+    120.56061728994874,
+    112.98142264600635,
+    106.14463472508746,
+    99.99048442209038
+   ],
+   "sd": [
+    7.5,
+    13.955309823187934,
+    18.612273310225767,
+    21.8466334114899,
+    23.964349082820796,
+    25.21374572778805,
+    25.79563468832696,
+    25.871731828335655,
+    25.571652714732128,
+    24.99871759359768,
+    24.234762011132236,
+    23.344117461212218,
+    22.37689993994279,
+    21.371721979685073,
+    20.357924966563104,
+    19.357412763209737,
+    18.386154394729502,
+    17.45541241514703,
+    16.572744219866216,
+    15.742815724664482,
+    14.968060255179592,
+    14.24920998155883,
+    13.585722621204601,
+    12.976122275216719,
+    12.418270040512661,
+    11.909577348001708,
+    11.447172731931857,
+    11.028030864497438,
+    10.649071132300318,
+    10.307231736254373,
+    9.999524221104519
+   ],
+   "rows": [
+    {
+     "c1": 0.0,
+     "c2": 10.0,
+     "mu1": 50.0,
+     "mu2": 140.48374180359593,
+     "sd1": 7.5,
+     "sd2": 12.024187090179797,
+     "dmu": 90.48374180359593,
+     "dsum": 4.634443492354522,
+     "ssmd": 6.384914634054353,
+     "zprime": 0.35267308686595833,
+     "ovl": 3.4792452117786684e-06,
+     "err": 1.7396999217485553e-06,
+     "pass": true
+    },
+    {
+     "c1": 10.0,
+     "c2": 50.0,
+     "mu1": 140.48374180359593,
+     "mu2": 353.2653298563167,
+     "sd1": 12.024187090179797,
+     "sd2": 22.663266492815836,
+     "dmu": 212.7815880527208,
+     "dsum": 6.13425218843478,
+     "ssmd": 8.293799812654562,
+     "zprime": 0.5109428325010743,
+     "ovl": 8.147294877611786e-10,
+     "err": 4.073670595278086e-10,
+     "pass": true
+    },
+    {
+     "c1": 50.0,
+     "c2": 200.0,
+     "mu1": 353.2653298563167,
+     "mu2": 320.6705664732254,
+     "sd1": 22.663266492815836,
+     "sd2": 21.03352832366127,
+     "dmu": -32.59476338309133,
+     "dsum": -0.7459303026683449,
+     "ssmd": -1.0541718130843576,
+     "zprime": -3.021823472338351,
+     "ovl": 0.45514759234520075,
+     "err": 0.22757367757196242,
+     "pass": false
+    }
+   ],
+   "inverse": {
+    "signals": [
+     229.66614922085984,
+     336.932668229798,
+     399.97435187195356,
+     287.14825526419474,
+     148.36540081025322,
+     40.0,
+     427.4346365667131
+    ],
+    "c": [
+     22.5,
+     45.0,
+     71.64535633810792,
+     32.979954977226484,
+     10.977886071295995,
+     null,
+     null
+    ]
+   },
+   "ladder": [
+    {
+     "metric": "dsum",
+     "k": 1,
+     "sig": 4,
+     "levels": [
+      0.0,
+      1.605,
+      3.442,
+      5.555,
+      8.003,
+      10.87,
+      14.25,
+      18.3,
+      23.25,
+      29.47,
+      37.65,
+      49.38,
+      70.87
+     ]
+    },
+    {
+     "metric": "ssmd",
+     "k": 3,
+     "sig": 4,
+     "levels": [
+      0.0,
+      3.718,
+      8.754,
+      15.84,
+      26.5,
+      45.22
+     ]
+    },
+    {
+     "metric": "zprime",
+     "k": 0.5,
+     "sig": 4,
+     "levels": [
+      0.0,
+      14.93,
+      94.92
+     ]
+    },
+    {
+     "metric": "ssmd",
+     "k": 3,
+     "sig": 0,
+     "levels": [
+      0.0,
+      3.7178126050678406,
+      8.75333301712435,
+      15.836426363834969,
+      26.493178554593502,
+      45.20091919188588
+     ]
+    }
+   ],
+   "measure": [
+    {
+     "c1": 9.0,
+     "c2": 45.0,
+     "mu1": 132.25380667441055,
+     "mu2": 336.932668229798,
+     "sd1": 11.61269033372053,
+     "sd2": 21.8466334114899,
+     "dmu": 204.67886155538747,
+     "dsum": 6.11724442233195,
+     "ssmd": 8.272774220398523,
+     "zprime": 0.509583107542992,
+     "ovl": 9.067918062202079e-10,
+     "err": 4.5341789734904255e-10,
+     "pass": true,
+     "metric": "ssmd",
+     "k": 3.0,
+     "stepsBetween": 2
+    },
+    {
+     "c1": 135.0,
+     "c2": 405.0,
+     "mu1": 399.97435187195356,
+     "mu2": 120.56061728994874,
+     "sd1": 24.99871759359768,
+     "sd2": 11.028030864497438,
+     "dmu": -279.41373458200485,
+     "dsum": -7.755730021181563,
+     "ssmd": -10.226271691736061,
+     "zprime": 0.6131892172875096,
+     "ovl": 8.121571131665122e-15,
+     "err": 4.050378974950524e-15,
+     "pass": true,
+     "metric": "ssmd",
+     "k": 3.0,
+     "stepsBetween": 3
+    }
+   ]
+  },
+  {
+   "limits": [
+    {
+     "alpha": 0.05,
+     "beta": 0.05,
+     "cv": 0.2,
+     "reads": 1,
+     "direction": 1,
+     "blank": {
+      "mean": 50.0,
       "sd": 15.0
      },
      "lob": {
@@ -17128,7 +18190,9 @@
       "c": 420.93211187633887,
       "signal": 3401.7794722947174,
       "cv": 0.1999999999993627
-     }
+     },
+     "hook": null,
+     "uloqOpen": false
     },
     {
      "alpha": 0.01,
@@ -17158,7 +18222,9 @@
       "c": 404.7833445949409,
       "signal": 3359.0261732037643,
       "cv": 0.09999999999987247
-     }
+     },
+     "hook": null,
+     "uloqOpen": false
     }
    ],
    "cvAt": {
@@ -17222,7 +18288,8 @@
        "hi": 12.59190076221293,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 805.2910272294444,
@@ -17231,7 +18298,8 @@
        "hi": 56.714107552492784,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -17286,7 +18354,8 @@
        "hi": 182.90024275522742,
        "loOpen": false,
        "hiOpen": false,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       },
       {
        "signal": 3459.995604487609,
@@ -17295,7 +18364,8 @@
        "hi": 500.0,
        "loOpen": false,
        "hiOpen": true,
-       "conf": 0.95
+       "conf": 0.95,
+       "hook": false
       }
      ],
      "power": {
@@ -17473,7 +18543,8 @@
      "hi": 29.25599459408068,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 805.2910272294444,
@@ -17482,7 +18553,8 @@
      "hi": 56.714107552492784,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 1907.469231413262,
@@ -17491,7 +18563,8 @@
      "hi": 182.90024275522742,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 2624.9529052243806,
@@ -17500,7 +18573,8 @@
      "hi": 310.0148997610086,
      "loOpen": false,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 3344.9849296718016,
@@ -17509,7 +18583,8 @@
      "hi": 500.0,
      "loOpen": false,
      "hiOpen": true,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 50.0,
@@ -17518,7 +18593,8 @@
      "hi": 3.586318131980862,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     },
     {
      "signal": 40.0,
@@ -17527,7 +18603,8 @@
      "hi": 2.4459667020414257,
      "loOpen": true,
      "hiOpen": false,
-     "conf": 0.95
+     "conf": 0.95,
+     "hook": false
     }
    ],
    "series": {
@@ -20082,7 +21159,7 @@
       "n": null,
       "label": "",
       "ok": true,
-      "value": 1.5277075898016739,
+      "value": 0.17919646649924284,
       "sdScale": 1.0,
       "error": null
      },
@@ -20094,7 +21171,7 @@
       "n": null,
       "label": "",
       "ok": false,
-      "value": 2.1360157452071435,
+      "value": 0.5349743083925982,
       "sdScale": 0.280387296448398,
       "error": null
      },
@@ -20311,7 +21388,7 @@
       "n": null,
       "label": "",
       "ok": true,
-      "value": 3.7216756753567397,
+      "value": 5.263244214843549,
       "sdScale": 1.0,
       "error": null
      },
@@ -20323,8 +21400,8 @@
       "n": null,
       "label": "",
       "ok": false,
-      "value": 0.5054219964154434,
-      "sdScale": 0.5054219964145521,
+      "value": 0.7147746420524058,
+      "sdScale": 0.7147746420515704,
       "error": null
      },
      {
@@ -20359,7 +21436,7 @@
       "n": null,
       "label": "",
       "ok": true,
-      "value": 0.870574798263885,
+      "value": 0.12671103662628258,
       "sdScale": 1.0,
       "error": null
      },
@@ -20371,7 +21448,7 @@
       "n": null,
       "label": "",
       "ok": false,
-      "value": 1.4349685540145287,
+      "value": 0.3782839612249895,
       "sdScale": 0.3965275173555347,
       "error": null
      },
@@ -20383,7 +21460,7 @@
       "n": 8,
       "label": "",
       "ok": true,
-      "value": 22.0,
+      "value": 31.0,
       "sdScale": 1.0,
       "error": null
      },
@@ -20394,9 +21471,9 @@
       "cv": null,
       "n": 30,
       "label": "",
-      "ok": false,
-      "value": 22.0,
-      "sdScale": 0.7406292185883012,
+      "ok": true,
+      "value": 31.0,
+      "sdScale": 1.0,
       "error": null
      },
      {
@@ -20412,7 +21489,7 @@
       "error": "needs a concentration c > 0"
      }
     ],
-    "met": 5,
+    "met": 6,
     "total": 11
    }
   },
@@ -20657,7 +21734,7 @@
       "n": null,
       "label": "",
       "ok": false,
-      "value": 6.764680661156228,
+      "value": 0.8904526812891522,
       "sdScale": 0.2246048602047631,
       "error": null
      },
@@ -20669,7 +21746,7 @@
       "n": null,
       "label": "",
       "ok": false,
-      "value": 8.562822499170553,
+      "value": null,
       "sdScale": null,
       "error": null
      },
@@ -20933,7 +22010,7 @@
       "n": null,
       "label": "",
       "ok": false,
-      "value": 19.926436212685687,
+      "value": 1.4351966030768633,
       "sdScale": 0.1393537300539447,
       "error": null
      },
@@ -20945,7 +22022,7 @@
       "n": null,
       "label": "",
       "ok": false,
-      "value": 31.66993225192661,
+      "value": 2.810093085490019,
       "sdScale": 0.05337901465734832,
       "error": null
      },

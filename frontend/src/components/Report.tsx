@@ -158,7 +158,7 @@ export function Report({ d, opt = {} }: { d: Derived; opt?: ReportOptions }) {
             </div>
             <div className="rp-tile">
               <span>Quantifiable range</span>
-              <b>{lim?.loq && lim.uloq ? `${fmt(lim.loq.c)} – ${fmt(lim.uloq.c)}` : '–'}</b>
+              <b>{lim?.loq && lim.uloq ? `${fmt(lim.loq.c)} – ${lim.uloqOpen ? '≥ ' : ''}${fmt(lim.uloq.c)}` : '–'}</b>
               <small>within {fmt(s.limits.cv * 100, 3)}% CV</small>
             </div>
             {chk.total > 0 ? (

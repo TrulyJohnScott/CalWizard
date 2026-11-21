@@ -136,6 +136,8 @@ def build_cases() -> list[dict]:
     cases.append(case("summary-layers", mode="summary", summary=[
         {"c": 0, "mean": 50, "sd": 15}, {"c": 5, "mean": 95, "sd": 16}, {"c": 25, "mean": 400, "sd": 30},
         {"c": 100, "mean": 1500, "sd": 90}], layers=[{"name": "Lot", "units": 2, "gainCv": 0.05, "noiseCv": 0.2}]))
+    cases.append(case("eq-hook", mode="equations", meanExpr="10*c*exp(-c/100) + 50", sdExpr="0.05*S + 5",
+                      levels=[0, 10, 50, 200], cMax=450))  # high-dose hook: peak at c = 100 (spec 15.4)
     cases.append(case("summary", mode="summary", summary=[
         {"c": 0, "mean": 50, "sd": 15}, {"c": 5, "mean": 95, "sd": 16}, {"c": 25, "mean": 400, "sd": 30},
         {"c": 100, "mean": 1500, "sd": 90}, {"c": 500, "mean": 3500, "sd": 210}]))

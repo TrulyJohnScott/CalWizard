@@ -63,8 +63,13 @@ export function separate(m: Pick<Model, 'mean' | 'sd' | 'cMax' | 'levels'>, c1: 
   const hi = mu1 <= mu2 ? { m: mu2, s: s2 } : { m: mu1, s: s1 }
   const t = crossing(mu1, s1, mu2, s2)
   const v = s1 * s1 + s2 * s2
-  const sensitivity = hi.s > 0 ? 1 - normCdf((t - hi.m) / hi.s) : hi.m > t ? 1 : 0.5
-  const specificity = lo.s > 0 ? normCdf((t - lo.m) / lo.s) : lo.m < t ? 1 : 0.5
+  // correct-call rates of the high-signal and low-signal groups; positive = the higher concentration (spec §16), which
+  // on a falling (competitive) curve is the low-signal group
+  const pHi = hi.s > 0 ? 1 - normCdf((t - hi.m) / hi.s) : hi.m > t ? 1 : 0.5
+  const pLo = lo.s > 0 ? normCdf((t - lo.m) / lo.s) : lo.m < t ? 1 : 0.5
+  const rising = (c2 > c1) === (mu2 >= mu1)
+  const sensitivity = rising ? pHi : pLo
+  const specificity = rising ? pLo : pHi
   const auc = v > 0 ? normCdf(Math.abs(mu2 - mu1) / Math.sqrt(v)) : mu1 !== mu2 ? 1 : 0.5
   const dprime = v > 0 ? Math.abs(mu2 - mu1) / Math.sqrt(v / 2) : Infinity
   const q = closenessQ(row, metric, k)
@@ -80,7 +85,7 @@ export function separate(m: Pick<Model, 'mean' | 'sd' | 'cMax' | 'levels'>, c1: 
     ...row,
     metric,
     k,
-    stepsBetween: ladder({ mean: m.mean, sd: m.sd, cMax: cHi }, metric, k, 0, 200, cLo).length - 1,
+    stepsBetween: ladder(m, metric, k, 0, 200, cLo, cHi).length - 1,
     whyNot: whyNot(m, c1, c2, metric, k),
     closeness: q,
     threshold: t,
