@@ -283,8 +283,22 @@ def measure_points(model: Model, concs, metric: str = "ssmd", k: float = 3.0) ->
 
 
 # ---------------------------------------------------------------- separation of two concentrations (spec section 16)
+def rates_at(t: float, c1: float, mu1: float, s1: float, c2: float, mu2: float, s2: float) -> dict:
+    """Call rates of one reading at a fixed signal threshold t: sensitivity = the higher concentration called
+    positive, specificity = the lower one called negative; positive is the higher concentration's side of t."""
+    (_, ml, sl), (_, mh, sh) = sorted([(c1, mu1, s1), (c2, mu2, s2)])
+    up = mh >= ml
+
+    def above(m, s):
+        return float(1 - ndtr((t - m) / s)) if s > 0 else (1.0 if m > t else 0.0 if m < t else 0.5)
+
+    return {"threshold": float(t), "sensitivity": above(mh, sh) if up else 1 - above(mh, sh),
+            "specificity": 1 - above(ml, sl) if up else above(ml, sl)}
+
+
 def separate(model: Model, c1: float, c2: float, metric: str = "ssmd", k: float = 3.0, n: int = 3,
-             runs: int = 1000, seed: int = 1, conf: float = 0.95, alpha: float = 0.05) -> dict:
+             runs: int = 1000, seed: int = 1, conf: float = 0.95, alpha: float = 0.05,
+             threshold: float | None = None) -> dict:
     """Everything about telling two concentrations apart: the section 5 row, the decision threshold with its
     sensitivity / specificity, AUC, d-prime, CVs, replicates needed, read-back ranges and the power of an
     n-versus-n experiment."""
@@ -321,6 +335,8 @@ def separate(model: Model, c1: float, c2: float, metric: str = "ssmd", k: float 
         "whyNot": why_not(model, c1, c2, metric, k),
         "closeness": q,
         "threshold": float(t), "sensitivity": sens, "specificity": spec, "auc": auc, "dprime": float(dprime),
+        # the rates at a threshold that stays put (e.g. the shipped cut-off while the curve changes; spec 16)
+        "at": None if threshold is None else rates_at(float(threshold), c1, mu1, s1, c2, mu2, s2),
         "cv1": float(s1 / abs(mu1)) if mu1 != 0 else None, "cv2": float(s2 / abs(mu2)) if mu2 != 0 else None,
         "fold": (c2 / c1) if c1 > 0 else None,
         "nNeeded": n_needed,

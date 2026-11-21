@@ -33,6 +33,8 @@ export interface Separation extends PairRow {
   threshold: number
   sensitivity: number
   specificity: number
+  /** the rates at a fixed threshold (the shipped cut-off while the curve changes); null when none was given */
+  at: Rates | null
   auc: number
   dprime: number
   cv1: number | null
@@ -50,6 +52,22 @@ export interface SeparateArgs {
   seed?: number
   conf?: number
   alpha?: number
+  /** also give the rates at this fixed signal threshold */
+  threshold?: number | null
+}
+
+export interface Rates {
+  threshold: number
+  sensitivity: number
+  specificity: number
+}
+
+/** Call rates of one reading at a fixed threshold t; positive = the higher concentration's side. Port of analysis.rates_at. */
+export function ratesAt(t: number, c1: number, mu1: number, s1: number, c2: number, mu2: number, s2: number): Rates {
+  const [l, h] = c1 <= c2 ? [{ m: mu1, s: s1 }, { m: mu2, s: s2 }] : [{ m: mu2, s: s2 }, { m: mu1, s: s1 }]
+  const up = h.m >= l.m
+  const above = (m: number, s: number) => (s > 0 ? 1 - normCdf((t - m) / s) : m > t ? 1 : m < t ? 0 : 0.5)
+  return { threshold: t, sensitivity: up ? above(h.m, h.s) : 1 - above(h.m, h.s), specificity: up ? 1 - above(l.m, l.s) : above(l.m, l.s) }
 }
 
 export function separate(m: Pick<Model, 'mean' | 'sd' | 'cMax' | 'levels'>, c1: number, c2: number, metric: MetricKey, k: number, a: SeparateArgs = {}): Separation {
@@ -91,6 +109,7 @@ export function separate(m: Pick<Model, 'mean' | 'sd' | 'cMax' | 'levels'>, c1: 
     threshold: t,
     sensitivity,
     specificity,
+    at: a.threshold === null || a.threshold === undefined ? null : ratesAt(a.threshold, c1, mu1, s1, c2, mu2, s2),
     auc,
     dprime,
     cv1: mu1 !== 0 ? s1 / Math.abs(mu1) : null,

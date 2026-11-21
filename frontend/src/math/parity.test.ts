@@ -127,7 +127,8 @@ suite(`parity with backend fixtures${fx ? '' : ` (${why})`}`, () => {
         }
       }
       for (const [i, w] of (cs.separate ?? []).entries()) {
-        const got = separate(m, w.c1, w.c2, w.metric, w.k, { n: w.power.n, runs: w.power.runs, seed: w.power.seed, alpha: w.power.alpha })
+        const got = separate(m, w.c1, w.c2, w.metric, w.k, { n: w.power.n, runs: w.power.runs, seed: w.power.seed, alpha: w.power.alpha, threshold: w.at?.threshold })
+        if (w.at) for (const k of ['sensitivity', 'specificity'] as const) close(got.at![k], w.at[k], `separate[${i}].at.${k}`, 1e-6, 1e-12)
         for (const k of ['threshold', 'sensitivity', 'specificity', 'auc', 'dprime', 'cv1', 'cv2', 'fold', 'closeness'] as const)
           close(got[k] as number, w[k], `separate[${i}].${k}`, 1e-6, 1e-12)
         expect(got.nNeeded, `separate[${i}].nNeeded`).toBe(w.nNeeded)

@@ -308,6 +308,7 @@ class SeparateRequest(SeriesRequest):
     seed: int = 1
     conf: float = 0.95
     alpha: float = 0.05
+    threshold: float | None = None
 
 
 @router.post("/separate")
@@ -315,7 +316,7 @@ def separate(req: SeparateRequest):
     m = _compile(req.series)
     return _guard(lambda: A.separate(m, req.c1, req.c2, req.metric or req.series.metric,
                                      req.series.k_target if req.k is None else req.k, req.n, req.runs, req.seed,
-                                     req.conf, req.alpha))
+                                     req.conf, req.alpha, req.threshold))
 
 
 @router.post("/requirements")

@@ -490,3 +490,18 @@ def test_range_requirement_checks_the_whole_interval_and_the_open_upper_limit():
     r = R.check(m)["results"][0]
     assert not r["ok"] and r["value"] > 0.2
     assert L.limits(model(**LINE), cv=0.5)["uloqOpen"] and not L.limits(model(**LINE), cv=0.5)["lod"] is None
+
+
+def test_import_survives_a_semicolon_preamble_and_keeps_every_replicate_beside_a_control_column():
+    text = ("Reader X; firmware 2.1\nDate: 2026-11-20\n"
+            "Conc (mg/L),C line,Rep 1,Rep 2,Rep 3\n0,900,48,52,47\n10,905,90,101,95\n40,899,400,,410\n")
+    r = IM.parse_reader(text)
+    assert r["units"] == "mg/L" and r["cells"][1] == [90, 101, 95] and r["cells"][2] == [400, 410]
+    assert IM.parse_reader(text, signal="Rep 1,Rep 3")["cells"][0] == [48, 47]
+    assert IM.to_series(r)["cMax"] == 40
+
+
+def test_separate_rates_at_a_fixed_threshold():
+    # LINE: 1 -> 120, 2 -> 140, sd 10; a cut-off left at 125 by an earlier curve
+    at = A.separate(model(**LINE), 2, 1, "ssmd", 3, runs=10, threshold=125)["at"]
+    assert at["sensitivity"] == pytest.approx(norm.sf(-1.5)) and at["specificity"] == pytest.approx(norm.cdf(0.5))

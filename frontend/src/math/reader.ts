@@ -51,9 +51,28 @@ export function concNumber(cell: string): number | null {
   return m ? Number(m[1]) : null
 }
 
+/** The delimiter that splits the most lines into the same number (≥ 2) of fields (ties: tab, `;`, `,`). */
+function delimiter(lines: string[]): string {
+  let best = ','
+  let score = -1
+  for (const d of ['\t', ';', ',']) {
+    const counts = new Map<number, number>()
+    for (const ln of lines) {
+      const k = ln.split(d).length
+      if (k >= 2) counts.set(k, (counts.get(k) ?? 0) + 1)
+    }
+    const s = Math.max(0, ...counts.values())
+    if (s > score) {
+      best = d
+      score = s
+    }
+  }
+  return best
+}
+
 function split(text: string): string[][] {
   const lines = text.split('\r').join('').split('\n').filter((ln) => ln.trim() !== '')
-  const delim = lines.some((ln) => ln.includes('\t')) ? '\t' : lines.some((ln) => ln.includes(';')) ? ';' : ','
+  const delim = delimiter(lines)
   return lines.map((ln) => ln.split(delim).map(clean))
 }
 
@@ -102,12 +121,15 @@ export function parseReader(text: string, conc?: string | number | null, signal?
   const cands = idx.filter((j) => j !== cc && names[j] !== '' && !SKIP.test(names[j]) && share(j) >= 0.8)
   let sig: number[]
   if (signal !== null && signal !== undefined) {
-    const sj = pick(names, signal)
-    if (sj === null || sj === cc) return null
-    sig = [sj]
+    // one column, or several separated by commas ("Rep 1,Rep 2")
+    const wants = typeof signal === 'string' && signal.includes(',') ? signal.split(',').map((w) => w.trim()) : [signal]
+    const picked = wants.map((w) => pick(names, w))
+    if (picked.some((j) => j === null || j === cc)) return null
+    sig = picked as number[]
   } else {
     if (!cands.length) return null
-    if (cands.length >= 2 && cands.every((j) => REPCOL.test(names[j]))) sig = cands
+    const reps = cands.filter((j) => REPCOL.test(names[j]))
+    if (reps.length >= 2) sig = reps // replicate columns win even beside other numeric columns (C line, T line)
     else sig = [cands.find((j) => PREF[0].test(names[j])) ?? cands.find((j) => PREF[1].test(names[j])) ?? cands[0]]
   }
   const groups = new Map<number, number[]>()

@@ -49,9 +49,25 @@ def conc_number(cell: str) -> float | None:
     return float(m.group(1)) if m else None
 
 
+def _delimiter(lines: list[str]) -> str:
+    """The delimiter that splits the most lines into the same number (>= 2) of fields: a stray `;` or `,` in a
+    preamble line or a comma decimal does not win over a consistent table. Ties: tab, then `;`, then `,`."""
+    best, score = ",", -1
+    for d in ("\t", ";", ","):
+        counts: dict[int, int] = {}
+        for ln in lines:
+            k = len(ln.split(d))
+            if k >= 2:
+                counts[k] = counts.get(k, 0) + 1
+        s = max(counts.values(), default=0)
+        if s > score:
+            best, score = d, s
+    return best
+
+
 def split(text: str) -> list[list[str]]:
     lines = [ln for ln in text.replace("\r", "").split("\n") if ln.strip() != ""]
-    delim = "\t" if any("\t" in ln for ln in lines) else ";" if any(";" in ln for ln in lines) else ","
+    delim = _delimiter(lines)
     return [[_clean(c) for c in ln.split(delim)] for ln in lines]
 
 
@@ -108,16 +124,17 @@ def parse_reader(text: str, conc=None, signal=None) -> dict | None:
         return sum(1 for c in cells if number(c) is not None) / len(cells) if cells else 0.0
 
     cands = [j for j in range(width) if j != cj and names[j] != "" and not SKIP.match(names[j]) and numeric_share(j) >= 0.8]
-    sj = _pick(names, signal)
-    if signal is not None:
-        if sj is None or sj == cj:
+    if signal is not None:  # one column, or several separated by commas ("Rep 1,Rep 2")
+        wants = [w.strip() for w in signal.split(",")] if isinstance(signal, str) and "," in signal else [signal]
+        sig = [_pick(names, w) for w in wants]
+        if any(j is None or j == cj for j in sig):
             return None
-        sig = [sj]
     else:
         if not cands:
             return None
-        if len(cands) >= 2 and all(REPCOL.match(names[j]) for j in cands):
-            sig = cands
+        reps = [j for j in cands if REPCOL.match(names[j])]
+        if len(reps) >= 2:  # replicate columns win even beside other numeric columns (C line, T line)
+            sig = reps
         else:
             sig = [next((j for j in cands if PREF[0].search(names[j])), None)]
             if sig[0] is None:
@@ -148,6 +165,9 @@ def to_series(parsed: dict, base: dict | None = None) -> dict:
     out = dict(base or {})
     out.update(mode="replicates", replicates={"concs": parsed["concs"], "cells": parsed["cells"]}, summary=[],
                extraLevels=[], adjust=None)
+    top = max(parsed["concs"], default=0.0)
+    if top > 0:
+        out["cMax"] = top
     if parsed["units"]:
         out["units"] = parsed["units"]
     if parsed["signalLabel"]:

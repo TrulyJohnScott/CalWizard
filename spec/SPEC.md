@@ -390,6 +390,7 @@ Implemented in `backend/app/analysis.py` and `frontend/src/math/{analysis,closen
 
 **Pair (measure).** `pair(c1, c2, metric, k)` = the §5 row with `μ = mean(c)`, `σ = sd(c)` evaluated at the two
 concentrations, in the order given. `stepsBetween` = `len(ladder(from = min(c1,c2), to = max(c1,c2), sig = 0)) − 1`.
+The ladder's default stop is the top of the usable range: a hook's peak (§15.4), else cMax.
 
 **Pass.** `passes(metric, v, k)`: NaN never passes; `zprime` passes on `v ≥ k`, `dsum`/`ssmd` on `|v| ≥ k`.
 `±inf` (σ = 0 with Δμ ≠ 0) passes, since `|inf| ≥ k`. (The TypeScript `passes` currently rejects every non-finite
@@ -424,7 +425,8 @@ range = hull of `{c ∈ [0, cMax] : |S − mean(c)| ≤ z·sd(c)}`, `z = Φ⁻¹
 single-reading spread covers S (classical inverse-prediction interval). 2001-point scan `c_j = cMax·j/2000`, then 60
 bisections at each end (outside ↔ inside). `loOpen` = range touches 0 (zero cannot be excluded: at or below the
 detection limit), `hiOpen` = touches cMax. No scan point inside → `lo = hi = null`. Row:
-`{signal, c, lo, hi, loOpen, hiOpen, conf}`. GUI: **Read signal** button on the scatter places a draggable signal line
+`{signal, c, lo, hi, loOpen, hiOpen, conf, hook}`. With a high-dose hook (§15.4) the scan covers [0, peak] and
+`hook` is true when the signal is also within z·sd of the curve above the peak (the reading is ambiguous). GUI: **Read signal** button on the scatter places a draggable signal line
 (horizontal in c → S, vertical in S → c); it shows `S → c (lo–hi)` on the chart, marks c on the curve and shades lo–hi
 on the concentration axis. Not undo history; × or Esc removes it.
 
@@ -546,8 +548,12 @@ under the cursor. The unadjusted curve stays visible as a dashed line. Levels ar
 
 ## 15. Limits: LoB, LoD, LoQ (CLSI EP17 style)
 
-`limits(model, alpha = 0.05, beta = 0.05, cv = 0.2, reads = 1)`; `sd_r(c) = sd(c)/√reads`;
-direction `d = +1` if `mean(cMax) ≥ mean(0)` else `−1` (competitive assays); `z_a = Φ⁻¹(1 − alpha)`, `z_b = Φ⁻¹(1 − beta)`.
+`limits(model, alpha = 0.05, beta = 0.05, cv = 0.2, reads = 1)`; `sd_r(c)` = SD of one result, the mean of `reads`
+readings of a sample: `√(within(c)/reads + Σ layer terms(c))` with the §22.1 terms (without layers `sd(c)/√reads`). Only
+within-run noise averages; lot, reader, day and the other layer terms are shared by the reads. Direction `d` = the sign
+of the largest excursion `mean(c) − mean(0)` on a 2001-point grid over [0, cMax] (`−1` for competitive assays; robust to
+a hook or a fit that dips at the far end); `z_a = Φ⁻¹(1 − alpha)`, `z_b = Φ⁻¹(1 − beta)`. All limits are searched on
+[0, top], `top` = the hook's peak (§15.4) or cMax.
 
 - **LoB** (signal) `= mean(0) + d·z_a·sd_r(0)`; as a concentration: the smallest c with `d·(mean(c) − LoB) ≥ 0`.
 - **LoD** = smallest c in [0, cMax] with `d·(mean(c) − LoB) − z_b·sd_r(c) ≥ 0`.
@@ -558,7 +564,14 @@ direction `d = +1` if `mean(cMax) ≥ mean(0)` else `−1` (competitive assays);
   first passing point. `null` when nothing passes.
 - `profile`: 201 points over [0, cMax]: `c`, `cv`, `cvSignal = sd_r/|mean|`.
 
-Output: `{alpha, beta, cv, reads, direction, blank: {mean, sd}, lob: {signal, c}, lod, loq, uloq: {c, signal, cv} | null, profile}`.
+Output: `{alpha, beta, cv, reads, direction, blank: {mean, sd}, lob: {signal, c}, lod, loq, uloq: {c, signal, cv} | null,
+uloqOpen, hook, profile}`. `uloqOpen`: the CV is still within target at `top` (the end of the data or of the range), so
+the true upper limit lies beyond it; shown as "≥".
+
+**15.4 High-dose hook.** `hook` = `{c, signal}` of the peak of `d·mean(c)` when it lies inside [0, cMax] and the signal
+turns back after it by more than 1e-6 of the signal span (2001-point scan, then 60 golden-section steps), else null.
+Above the peak a signal is also produced by a lower concentration, so every claim stops there: limits, the ladder (§12),
+range requirements (§17) and read-back (§18 flag `hook`).
 
 **From replicates (`data`).** For a replicates series with a blank column and at least one c > 0 column of ≥ 2 readings:
 LoB `= mean_b + d·z_a/(1 − 1/(4(n_b − 1)))·sd_b`, plus the nonparametric rank percentile (rank `0.5 + n·p`, linear
@@ -580,8 +593,11 @@ Headless: `calwizard limits SERIES [--alpha --beta --cv --reads --low C... --no-
 ## 16. Separation of two concentrations
 
 `separate(model, c1, c2, metric, k, n = 3, runs = 1000, seed = 1, conf = 0.95, alpha = 0.05)` = the §5 row plus:
-`threshold` (PDF crossing between the means; midpoint for equal SDs), `sensitivity = P(X_hi > t)`,
-`specificity = P(X_lo < t)`, `auc = Φ(|Δμ|/√(σ₁² + σ₂²))`, `dprime = |Δμ|/√((σ₁² + σ₂²)/2)`, `cv1`, `cv2`, `fold = c2/c1`,
+`threshold` (PDF crossing between the means; midpoint for equal SDs). Positive = the higher concentration's side of
+the threshold (above it on a rising curve, below it on a falling one): `sensitivity` = P(the higher concentration called
+positive), `specificity` = P(the lower one called negative). With `threshold = T` the output also has
+`at = {threshold, sensitivity, specificity}` at that fixed threshold (the shipped cut-off while the curve changes; the GUI
+passes the measured curve's threshold while a what-if is on); `--threshold T` on the CLI. Also `auc = Φ(|Δμ|/√(σ₁² + σ₂²))`, `dprime = |Δμ|/√((σ₁² + σ₂²)/2)`, `cv1`, `cv2`, `fold = c2/c1`,
 `closeness` q (§12), `nNeeded = ⌈1/q²⌉` (readings to average per sample for the pair to pass; null if unreachable),
 `stepsBetween`, `whyNot`, `readback` (§12 recover of each mean) and `power` (§13 simulate on the two concentrations with
 `n` each: `pSig`, `pPass`). Headless: `calwizard separate SERIES C1 C2 [...]`, `POST /api/separate`.
@@ -593,10 +609,12 @@ Headless: `calwizard limits SERIES [--alpha --beta --cv --reads --low C... --no-
 | kind | sentence | met when | value |
 |---|---|---|---|
 | `detect` | Detect c | LoD ≤ c | LoD |
-| `distinguish` | Tell c from c2 | the pair passes the series' rule | metric value |
+| `distinguish` | Tell c from c2 | the pair passes the series' rule (SDs of one result, §15 `sd_r`) | metric value |
 | `precision` | Measure c within cv | `cv(c) ≤ cv` | `cv(c)` |
-| `range` | Quantify from c to c2 within cv | LoQ ≤ c and upper LoQ ≥ c2 (cv defaults to `limits.cv`) | LoQ |
-| `levels` | Resolve at least n levels | resolvable levels ≥ n | the count |
+| `range` | Quantify from c to c2 within cv | c2 ≤ top (§15.4) and the worst `cv(x)` over 201 points of [c, c2] ≤ cv (cv defaults to `limits.cv`) | that worst CV (null past the hook) |
+| `levels` | Resolve at least n levels | resolvable levels (on one-result SDs) ≥ n | the count |
+
+Every kind is judged on one result = the mean of `limits.reads` readings (§15 `sd_r`).
 
 Each result also has `sdScale`: 1 when met; otherwise the largest factor in [0.01, 1) on every SD that makes it met
 (40 bisections; null if even ×0.01 does not) — "met if the noise were 0.4× of today". Invalid rows come back with
@@ -606,21 +624,26 @@ Each result also has `sdScale`: 1 when met; otherwise the largest factor in [0.0
 
 `samples: [{id, signal, dilution}]`. `readback(model, samples?, conf = 0.95)` → per row `c`, `lo`, `hi` (§12 recover),
 `result = c·dilution` (and its range), `cv` (§15) and `flag`: `invalid` (no signal), `below` (beyond the blank),
-`above` (beyond the top), `belowLod`, `belowLoq`, `aboveLoq`, `ok`. `calwizard read SERIES [S...] [--conf] [-o file.xlsx]`
+`above` (beyond the top), `hook` (the signal also occurs above the hook's peak, §15.4), `belowLod`, `belowLoq`,
+`aboveLoq`, `ok`. `calwizard read SERIES [S...] [--conf] [-o file.xlsx]`
 (signals given on the command line replace the series' samples); `POST /api/readback`, `POST /api/readback/export` (xlsx:
 `Results` and `About` sheets).
 
 ## 19. Reader import
 
-`parse_reader(text, conc?, signal?)` turns a delimited reader export into a replicate table: delimiter = tab, else `;`,
-else `,`; the header is the first row with ≥ 2 cells that are not all numbers and whose next row has ≥ 2 concentration-like
+`parse_reader(text, conc?, signal?)` turns a delimited reader export into a replicate table: delimiter = the one of
+tab, `;`, `,` that splits the most lines into the same number (≥ 2) of fields (ties in that order), so a stray `;` in a
+preamble or comma decimals do not win; the header is the first row with ≥ 2 cells that are not all numbers and whose next row has ≥ 2 concentration-like
 cells (so preamble lines are skipped). Concentration column = first header matching
 `conc|dose|standard|^std$|level|calibrator|ng/|pg/|ug/|mg/|iu/|mol`, else the first non-bookkeeping column that is all
 concentrations. Concentration cells accept numbers, numbers with a unit suffix, and blank words (`blank`, `neg`, `zero`,
-`buffer`… → 0). Signal: all replicate-named columns (`Rep 1`, `2`…) when there are several, else the first column
+`buffer`… → 0). Signal: all replicate-named columns (`Rep 1`, `2`…) when there are several, even beside other numeric columns
+(`C line`), else the first column
 matching `T/C|ratio`, else `test|signal|intensity|peak|area…`, else the first numeric column. Units come from
 `(…)`/`[…]` in the concentration header. Returns `null` for anything else (concentrations-across-the-top tables keep
-using §11's paste). `calwizard import FILE [--conc COL --signal COL --name N]` → `{series, columns, …}`; `POST /api/import`.
+using §11's paste). `signal` may name several columns separated by commas (`"Rep 1,Rep 2"`). The series gets `cMax` = the highest
+concentration. `calwizard import FILE [--conc COL --signal COL[,COL…] --name N]` → `{series, columns, …}`;
+`POST /api/import`.
 
 ## 20. Report (claim sheet)
 

@@ -2,7 +2,7 @@
  * Separate workspace (spec §16, §21): two concentrations are the centrepiece. One question ("can the assay tell
  * A from B?"), one picture (their two signal distributions), then the numbers and what would change the answer.
  */
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { areaPath, Chart, gaussPdf, Label, linePath, linspace, type Ctx } from '../charts/svg'
 import { concLabel, fmt, pct2, withUnits } from '../format'
 import { METRIC_LABEL } from '../math/metrics'
@@ -28,6 +28,12 @@ export function sepPair(d: Derived, sep: { a: number; b: number } | null): { a: 
 function CurvePicker({ m, a, b, xLabel, yLabel, onChange }: { m: Model; a: number; b: number; xLabel: string; yLabel: string; onChange: (p: { a: number; b: number }) => void }) {
   const fit = (hi: number) => (hi <= m.cMax / 6 ? Math.min(m.cMax, hi * 3) : m.cMax)
   const [x1, setX1] = useState(() => fit(Math.max(a, b)))
+  // rescale when the pair leaves the view or shrinks far inside it (typed values, another workspace, Undo)
+  useEffect(() => {
+    const top = Math.max(a, b)
+    if (!drag.current && (top > x1 || top < x1 / 6)) setX1(fit(top))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [a, b, m.cMax])
   const cs = useMemo(() => linspace(0, x1, 140), [x1])
   const mu = cs.map((c) => m.mean(c))
   const sd = cs.map((c) => m.sd(c))
@@ -156,13 +162,22 @@ export function SeparateWorkspace({ d }: { d: Derived }) {
   const { series: s, model: m } = d
   const { a, b } = sepPair(d, ui.sep)
   const n = ui.sepN
-  const r = useMemo(() => {
+  // under a what-if the shipped cut-off stays where the measured curve put it: report the rates there too (spec §16)
+  const fixedT = useMemo(() => {
+    if (!d.baseline) return null
     try {
-      return separate(m, a, b, s.metric, s.kTarget, { n, runs: 600, seed: 1 })
+      return separate(d.baseline.model, a, b, s.metric, s.kTarget, { n: 2, runs: 1, seed: 1 }).threshold
     } catch {
       return null
     }
-  }, [m, a, b, s.metric, s.kTarget, n])
+  }, [d.baseline, a, b, s.metric, s.kTarget])
+  const r = useMemo(() => {
+    try {
+      return separate(m, a, b, s.metric, s.kTarget, { n, runs: 600, seed: 1, threshold: fixedT })
+    } catch {
+      return null
+    }
+  }, [m, a, b, s.metric, s.kTarget, n, fixedT])
   const set = (p: { a: number; b: number }) => setUi({ sep: p })
   const u = s.units
   const step = Math.max(m.cMax / 400, 1e-6)
@@ -177,7 +192,9 @@ export function SeparateWorkspace({ d }: { d: Derived }) {
   const why = r.whyNot
   const rb = (i: 0 | 1) => {
     const x = r.readback[i]
-    return x.lo === null || x.hi === null ? '–' : `${x.loOpen ? '< ' : `${fmt(x.lo)} – `}${x.hiOpen ? `> ${fmt(x.lo)}` : fmt(x.hi)}`
+    if (x.lo === null || x.hi === null) return '–'
+    if (x.loOpen && x.hiOpen) return 'anywhere in the range'
+    return x.loOpen ? `< ${fmt(x.hi)}` : x.hiOpen ? `≥ ${fmt(x.lo)}` : `${fmt(x.lo)} – ${fmt(x.hi)}`
   }
   return (
     <Page>
@@ -230,6 +247,15 @@ export function SeparateWorkspace({ d }: { d: Derived }) {
             sub={`sensitivity ${pct2(r.sensitivity)} (${r.c2 > r.c1 ? 'B' : 'A'}) · specificity ${pct2(r.specificity)} (${r.c2 > r.c1 ? 'A' : 'B'})`}
             title="Where the two distributions cross. Sensitivity: the higher concentration called positive; specificity: the lower one called negative."
           />
+          {r.at && (
+            <Stat
+              label="At today's cut-off"
+              value={fmt(r.at.threshold, 4)}
+              tone={Math.min(r.at.sensitivity, r.at.specificity) < Math.min(r.sensitivity, r.specificity) - 0.005 ? 'bad' : undefined}
+              sub={`sensitivity ${pct2(r.at.sensitivity)} · specificity ${pct2(r.at.specificity)}`}
+              title="The what-if moves the curve but not the cut-off you ship: the threshold set on the measured curve, applied to the changed one"
+            />
+          )}
           <Stat label={`A · ${withUnits(r.c1, u)}`} value={`${fmt(r.mu1, 4)} ± ${fmt(r.sd1)}`} sub={`CV ${pct2(r.cv1)} · reads back ${rb(0)}`} />
           <Stat label={`B · ${withUnits(r.c2, u)}`} value={`${fmt(r.mu2, 4)} ± ${fmt(r.sd2)}`} sub={`CV ${pct2(r.cv2)} · reads back ${rb(1)}`} />
           <Stat label="Signal difference" value={fmt(Math.abs(r.dmu), 4)} sub={why.needDmu !== null ? `rule needs ${fmt(why.needDmu)}` : undefined} />

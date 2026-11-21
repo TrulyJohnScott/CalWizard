@@ -35,8 +35,11 @@ export function Scrub({
   const show = (v: number | null) => (v === null || !Number.isFinite(v) ? '' : String(+v.toPrecision(digits)))
   const [text, setText] = useState(show(value))
   const focus = useRef(false)
+  const last = useRef(value)
   useEffect(() => {
-    if (!focus.current) setText(show(value))
+    // follow outside changes (Undo, another control) unless the user has typed something not yet committed
+    if (!focus.current || text === show(last.current)) setText(show(value))
+    last.current = value
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value])
   const clamp = (v: number) => Math.min(max ?? Infinity, Math.max(min ?? -Infinity, v))

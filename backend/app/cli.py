@@ -249,7 +249,8 @@ def cmd_separate(args) -> None:
     m = _compile(s)
     metric, k = _metric_k(args, s)
     try:
-        _out(A.separate(m, args.c1, args.c2, metric, k, args.n, args.runs, args.seed, args.conf, args.alpha))
+        _out(A.separate(m, args.c1, args.c2, metric, k, args.n, args.runs, args.seed, args.conf, args.alpha,
+                        args.threshold))
     except ValueError as e:
         raise CliError(str(e)) from e
 
@@ -418,6 +419,8 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--seed", type=int, default=1)
     sp.add_argument("--conf", type=float, default=0.95, help="coverage of the read-back ranges (default 0.95)")
     sp.add_argument("--alpha", type=float, default=0.05)
+    sp.add_argument("--threshold", type=float, default=None,
+                    help="also give sensitivity / specificity at this fixed signal threshold (the shipped cut-off)")
     add("requirements", cmd_requirements, "check the series' requirements: met or not, measured value, SD factor needed")
     sp = add("read", cmd_read, "read signals back to concentrations (the series' samples, or the signals given)")
     sp.add_argument("signals", type=float, nargs="*", metavar="S")

@@ -12,7 +12,8 @@ import { sanitizeSeries, useStore } from './store'
 /** Series fields for a parsed reader export (the table drives the curve; labels come from the headers). */
 export function readerPatch(p: ReaderImport): Partial<Series> {
   const t = fromTable({ concs: p.concs, cells: p.cells, typed: p.concs.map(() => ({ mean: null, sd: null })) })
-  return { ...t, extraLevels: [], adjust: null, ...(p.units ? { units: p.units } : {}), ...(p.signalLabel ? { signalLabel: p.signalLabel } : {}) }
+  const top = Math.max(0, ...p.concs)
+  return { ...t, extraLevels: [], adjust: null, ...(top > 0 ? { cMax: top } : {}), ...(p.units ? { units: p.units } : {}), ...(p.signalLabel ? { signalLabel: p.signalLabel } : {}) }
 }
 
 export function applyReader(p: ReaderImport, name?: string): void {

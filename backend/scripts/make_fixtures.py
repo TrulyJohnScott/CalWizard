@@ -69,7 +69,8 @@ def case(name: str, **kw) -> dict:
     separate = []
     for f1, f2 in MEASURE_PAIRS:
         try:
-            separate.append(A.separate(m, m.c_max * f1, m.c_max * f2, series.metric, series.k_target, n=3, runs=40, seed=5))
+            separate.append(A.separate(m, m.c_max * f1, m.c_max * f2, series.metric, series.k_target, n=3, runs=40, seed=5,
+                                       threshold=float(m.mean(m.c_max * 0.3))))
         except ValueError:
             pass
     cv_at = [m.c_max * f for f in (0.01, 0.05, 0.2, 0.6, 1.0)]
@@ -252,6 +253,8 @@ IMPORT_TEXTS = [
     ("0\t1\t5\n48\t55\t90\n", None, None),
     ("just some text\nwith, a comma\n", None, None),
     ("Sample,T,C\na,1,2\nb,3,4\n", "Missing", None),
+    ("Reader X; firmware 2.1\nConc (mg/L),C line,Rep 1,Rep 2\n0,900,48,52\n10,905,90,101\n", None, None),
+    ("Conc,C line,Rep 1,Rep 2\n0,900,48,52\n10,905,90,101\n", None, "Rep 1,Rep 2"),
 ]
 
 
